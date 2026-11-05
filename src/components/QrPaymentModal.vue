@@ -18,7 +18,7 @@
               Platební předpis & SPAYD QR platba
             </h2>
             <p class="text-xs text-slate-400">
-              Příjemce: {{ settings.accountNumber }} • Plátce: <span class="text-emerald-400 font-semibold">{{ settlement.roommateName }}</span>
+              Příjemce: {{ settings.accountNumber }} • Plátce: <span class="text-emerald-400 font-semibold">{{ settlement.roommateName }} {{ settlement.roommateId === currentUser.id ? '(Vy)' : '' }}</span>
             </p>
           </div>
           <button 
@@ -169,7 +169,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import QRCode from 'qrcode'
 import { useSpolubyt } from '../composables/useSpolubyt'
 
-const { selectedSettlement, settings, closeModal, showToast } = useSpolubyt()
+const { selectedSettlement, settings, currentUser, closeModal, showToast } = useSpolubyt()
 
 const settlement = computed(() => selectedSettlement.value!)
 const qrCanvas = ref<HTMLCanvasElement | null>(null)

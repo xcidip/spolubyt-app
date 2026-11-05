@@ -84,7 +84,7 @@
           isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
           currentPage === 'SETTLEMENT' ? 'bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/25' : 'text-slate-300 hover:bg-slate-800 hover:text-white border border-transparent'
         ]"
-        :title="isSidebarCollapsed ? ('Vyrovnání a matice' + (overdueDebtorsCount > 0 ? ` (${overdueDebtorsCount} po splatnosti)` : '')) : ''"
+        :title="isSidebarCollapsed ? 'Vyrovnání a matice' : ''"
       >
         <div class="flex items-center gap-3 min-w-0" :class="{ 'justify-center': isSidebarCollapsed }">
           <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -92,16 +92,37 @@
           </svg>
           <span v-if="!isSidebarCollapsed" class="truncate">Vyrovnání a matice</span>
         </div>
+
+        <!-- Badge for Master Tenant (overdue count) -->
         <span 
-          v-if="!isSidebarCollapsed && overdueDebtorsCount > 0"
+          v-if="!isSidebarCollapsed && isMasterTenant && overdueDebtorsCount > 0"
           class="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap"
         >
           {{ overdueDebtorsCount }} po spl.
         </span>
-        <!-- Collapsed overdue dot indicator -->
+
+        <!-- Badge for Regular Member (personal overdue or debt) -->
         <span 
-          v-if="isSidebarCollapsed && overdueDebtorsCount > 0"
+          v-else-if="!isSidebarCollapsed && !isMasterTenant && isCurrentUserOverdue"
+          class="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap animate-pulse"
+        >
+          Po splatnosti
+        </span>
+        <span 
+          v-else-if="!isSidebarCollapsed && !isMasterTenant && currentUserDebt > 0"
+          class="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap"
+        >
+          K úhradě
+        </span>
+
+        <!-- Collapsed dot indicator -->
+        <span 
+          v-if="isSidebarCollapsed && ((isMasterTenant && overdueDebtorsCount > 0) || (!isMasterTenant && isCurrentUserOverdue))"
           class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-900 animate-pulse"
+        ></span>
+        <span 
+          v-else-if="isSidebarCollapsed && !isMasterTenant && currentUserDebt > 0"
+          class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-slate-900"
         ></span>
       </button>
 
@@ -230,6 +251,9 @@ const {
   overdueDebtorsCount, 
   cartTotalCount, 
   currentUser,
+  isMasterTenant,
+  isCurrentUserOverdue,
+  currentUserDebt,
   isSidebarCollapsed,
   toggleSidebar
 } = useSpolubyt()

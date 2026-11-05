@@ -44,6 +44,19 @@
           </h2>
         </div>
 
+        <!-- Banner for non-manager members -->
+        <div 
+          v-if="!isMasterTenant"
+          class="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-sky-200 flex items-center gap-2.5"
+        >
+          <svg class="w-4 h-4 text-sky-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>
+            Prohlížíte aplikaci jako spolubydlící (<strong>{{ currentUser.name }}</strong>). Kmenové parametry bytu a bankovní účet spravuje <strong>{{ managerRoommate.name }}</strong>.
+          </span>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
             <label class="block text-slate-300 mb-1 font-medium">Název bytu *</label>
@@ -124,8 +137,15 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800">
-              <tr v-for="r in roommates" :key="r.id" class="hover:bg-slate-800/50 transition-colors">
-                <td class="py-2.5 px-3.5 font-medium text-slate-200">{{ r.roomName }}</td>
+              <tr 
+                v-for="r in roommates" 
+                :key="r.id" 
+                :class="r.id === currentUser.id ? 'bg-emerald-500/10 font-medium' : 'hover:bg-slate-800/50 transition-colors'"
+              >
+                <td class="py-2.5 px-3.5 font-medium text-slate-200">
+                  <span>{{ r.roomName }}</span>
+                  <span v-if="r.id === currentUser.id" class="text-emerald-400 text-[10px] ml-1.5 font-bold">[Váš pokoj]</span>
+                </td>
                 <td class="py-2.5 px-3.5 text-slate-300">
                   <div class="flex items-center gap-2">
                     <span 
@@ -135,7 +155,8 @@
                       {{ r.avatarInitial }}
                     </span>
                     <span>{{ r.name }}</span>
-                    <span v-if="r.role === 'Správce'" class="text-[10px] text-emerald-400 font-semibold">[Správce]</span>
+                    <span v-if="r.id === currentUser.id" class="text-[10px] text-emerald-400 font-semibold">[Vy]</span>
+                    <span v-else-if="r.role === 'Správce'" class="text-[10px] text-emerald-400 font-semibold">[Správce]</span>
                   </div>
                 </td>
                 <td class="py-2.5 px-3.5 text-center">
@@ -282,6 +303,9 @@ import { useSpolubyt } from '../composables/useSpolubyt'
 const { 
   settings, 
   roommates, 
+  currentUser,
+  isMasterTenant,
+  managerRoommate,
   saveApartmentSettings, 
   updateRoommateArea, 
   resetDemoData, 

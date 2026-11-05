@@ -220,6 +220,61 @@ export function useSpolubyt() {
     return settlements.value.filter(s => s.status === 'PO_SPLATNOSTI').length
   })
 
+  // Perspective of the current logged-in user
+  const managerRoommate = computed(() => {
+    return roommates.value.find(r => r.role === 'Správce') || roommates.value[0]
+  })
+
+  const currentUserSettlement = computed(() => {
+    return settlements.value.find(s => s.roommateId === currentUserId.value) || null
+  })
+
+  const currentUserDebt = computed(() => {
+    if (isMasterTenant.value) return 0
+    return currentUserSettlement.value?.totalDebt || 0
+  })
+
+  const currentUserStatus = computed(() => {
+    if (isMasterTenant.value) return 'SPRÁVCE'
+    return currentUserSettlement.value?.status || 'VYROVNÁNO'
+  })
+
+  const isCurrentUserOverdue = computed(() => {
+    return !isMasterTenant.value && currentUserSettlement.value?.status === 'PO_SPLATNOSTI'
+  })
+
+  const currentUserReceivables = computed(() => {
+    if (isMasterTenant.value) {
+      return totalReceivables.value
+    }
+    // Receivables for a member from expenses they paid where others owe them
+    return expenses.value.reduce((sum, e) => {
+      if (e.payerId !== currentUserId.value) return sum
+      const unpaidOthers = e.shares
+        .filter(s => s.roommateId !== currentUserId.value && s.status === 'DLUŽÍ')
+        .reduce((shareSum, s) => shareSum + s.amount, 0)
+      return sum + unpaidOthers
+    }, 0)
+  })
+
+  const currentUserMonthlyExpenses = computed(() => {
+    return expenses.value
+      .filter(e => e.date.startsWith('2026-11'))
+      .reduce((sum, e) => {
+        const share = e.shares.find(s => s.roommateId === currentUserId.value)
+        return sum + (share ? share.amount : 0)
+      }, 0)
+  })
+
+  const currentUserPreviousMonthExpenses = computed(() => {
+    return expenses.value
+      .filter(e => e.date.startsWith('2026-10'))
+      .reduce((sum, e) => {
+        const share = e.shares.find(s => s.roommateId === currentUserId.value)
+        return sum + (share ? share.amount : 0)
+      }, 0)
+  })
+
   // Expenses Filter & Sort
   const filteredExpenses = computed(() => {
     let result = [...expenses.value]
@@ -672,8 +727,16 @@ export function useSpolubyt() {
     // Users
     roommates,
     currentUser,
+    managerRoommate,
     isMasterTenant,
     setCurrentUser,
+    currentUserSettlement,
+    currentUserDebt,
+    currentUserStatus,
+    isCurrentUserOverdue,
+    currentUserReceivables,
+    currentUserMonthlyExpenses,
+    currentUserPreviousMonthExpenses,
 
     // Settings
     settings,

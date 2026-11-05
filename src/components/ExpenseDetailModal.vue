@@ -95,9 +95,14 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-800">
-                    <tr v-for="share in expense.shares" :key="share.roommateId" class="hover:bg-slate-800/50 transition-colors">
+                    <tr 
+                      v-for="share in expense.shares" 
+                      :key="share.roommateId" 
+                      :class="share.roommateId === currentUser.id ? 'bg-emerald-500/10 font-bold' : 'hover:bg-slate-800/50 transition-colors'"
+                    >
                       <td class="py-2.5 px-3 font-medium text-slate-200">
-                        {{ share.roommateName }}
+                        <span>{{ share.roommateName }}</span>
+                        <span v-if="share.roommateId === currentUser.id" class="text-emerald-400 text-[11px] ml-1.5">[Vy]</span>
                       </td>
                       <td class="py-2.5 px-3 font-mono font-bold text-slate-100 text-right">
                         {{ Math.round(share.amount).toLocaleString('cs-CZ') }} CZK
@@ -122,14 +127,20 @@
                         <span v-else-if="share.status === 'UHRAZENO'" class="text-[11px] text-emerald-400">
                           {{ share.settledDate || 'Uhrazeno' }}
                         </span>
+                        <span v-else-if="share.roommateId === currentUser.id" class="text-[11px] text-amber-400 font-semibold">
+                          Váš dluh k úhradě
+                        </span>
                         <button
-                          v-else
+                          v-else-if="isMasterTenant || expense.payerId === currentUser.id"
                           @click="triggerReminder(share.roommateId)"
                           class="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-medium transition-colors"
                           title="Odeslat diskrétní notifikaci dlužníkovi"
                         >
                           Upomínka
                         </button>
+                        <span v-else class="text-[11px] text-slate-500">
+                          Čeká na úhradu
+                        </span>
                       </td>
                     </tr>
                   </tbody>
@@ -373,6 +384,8 @@ import { Expense } from '../types'
 
 const { 
   selectedExpense, 
+  currentUser,
+  isMasterTenant,
   closeModal, 
   deleteExpense, 
   sendReminder, 

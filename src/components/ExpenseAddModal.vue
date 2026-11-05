@@ -286,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CalculationKey, ExpenseCategory, ExpenseShare } from '../types'
 
@@ -302,6 +302,13 @@ const form = reactive({
   payerId: currentUser.value.id,
   calculationKey: 'EQUAL' as CalculationKey
 })
+
+// Automatically keep payer in sync with active persona
+watch(() => currentUser.value.id, (newId) => {
+  if (newId) {
+    form.payerId = newId
+  }
+}, { immediate: true })
 
 // Checkboxes for roommates
 const participantMap = reactive<Record<string, boolean>>({

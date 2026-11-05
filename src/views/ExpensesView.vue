@@ -9,7 +9,8 @@
         </h1>
         <p class="text-xs text-slate-400 mt-0.5">
           Zobrazeno <strong class="text-slate-200">{{ filteredExpenses.length }}</strong> z {{ expenses.length }} záznamů • 
-          Součet vyfiltrovaných nákladů: <strong class="text-emerald-400 font-mono">{{ filteredExpensesSum.toLocaleString('cs-CZ') }} CZK</strong>
+          Součet vyfiltrovaných nákladů: <strong class="text-emerald-400 font-mono">{{ filteredExpensesSum.toLocaleString('cs-CZ') }} CZK</strong> •
+          Váš podíl: <strong class="text-sky-300 font-mono">{{ Math.round(myFilteredShareSum).toLocaleString('cs-CZ') }} CZK</strong>
         </p>
       </div>
 
@@ -93,7 +94,7 @@
           >
             <option value="ALL">Všichni plátci</option>
             <option v-for="r in roommates" :key="r.id" :value="r.id">
-              {{ r.name.split(' ')[0] }}
+              {{ r.name.split(' ')[0] }} {{ r.id === currentUser.id ? '(Vy)' : '' }}
             </option>
           </select>
         </div>
@@ -335,6 +336,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { Expense } from '../types'
 
@@ -350,6 +352,13 @@ const {
   deleteExpense, 
   exportExpensesCsv 
 } = useSpolubyt()
+
+const myFilteredShareSum = computed(() => {
+  return filteredExpenses.value.reduce((sum, e) => {
+    const s = e.shares.find(sh => sh.roommateId === currentUser.value.id)
+    return sum + (s ? s.amount : 0)
+  }, 0)
+})
 
 const toggleSort = (col: 'date' | 'amount' | 'title') => {
   if (expenseFilters.value.sortBy === col) {
