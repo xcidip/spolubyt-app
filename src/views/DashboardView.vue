@@ -45,17 +45,19 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       
       <!-- Card 1: Monthly Expenses -->
-      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span class="font-bold uppercase tracking-wider">
-            {{ isMasterTenant ? 'Měsíční náklady bytu (Listopad)' : 'Můj měsíční podíl nákladů (Listopad)' }}
-          </span>
-          <span class="text-emerald-400 font-mono text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-            {{ isMasterTenant ? '+2.4 % m/m' : `${currentUser.areaSharePct} % plochy bytu` }}
-          </span>
-        </div>
-        <div class="text-2xl font-mono font-extrabold text-white tracking-tight">
-          {{ (isMasterTenant ? monthlyTotalExpenses : currentUserMonthlyExpenses).toLocaleString('cs-CZ') }} CZK
+      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-2.5 text-xs text-slate-400 mb-2">
+            <span class="font-bold uppercase tracking-wider min-w-0">
+              {{ isMasterTenant ? 'Měsíční náklady bytu (Listopad)' : 'Můj měsíční podíl nákladů (Listopad)' }}
+            </span>
+            <span class="text-emerald-400 font-semibold text-[11px] bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0 whitespace-nowrap leading-tight">
+              {{ isMasterTenant ? '+2,4 % m/m' : `Podíl ${currentUser.areaSharePct} %` }}
+            </span>
+          </div>
+          <div class="text-2xl font-extrabold text-white tracking-tight">
+            {{ (isMasterTenant ? monthlyTotalExpenses : currentUserMonthlyExpenses).toLocaleString('cs-CZ') }} CZK
+          </div>
         </div>
         <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
           <span v-if="isMasterTenant">Předchozí měsíc: {{ previousMonthTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
@@ -67,46 +69,48 @@
       </div>
 
       <!-- Card 2: Receivables / Personal Debt -->
-      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span class="font-bold uppercase tracking-wider">
-            {{ isMasterTenant ? 'Pohledávky správce (Dluží bytu)' : 'Můj aktuální nedoplatek (K úhradě)' }}
-          </span>
-          
-          <!-- Badge -->
-          <span 
-            v-if="isMasterTenant"
-            class="text-[11px] font-mono px-2 py-0.5 rounded-full border"
-            :class="overdueDebtorsCount > 0 ? 'bg-rose-500/10 text-rose-300 border-rose-500/20' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'"
-          >
-            {{ debtorsCount }} dlužníci
-          </span>
-          <span 
-            v-else
-            class="text-[11px] font-mono px-2 py-0.5 rounded-full border font-bold"
+      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-2.5 text-xs text-slate-400 mb-2">
+            <span class="font-bold uppercase tracking-wider min-w-0">
+              {{ isMasterTenant ? 'Pohledávky správce (Dluží bytu)' : 'Můj aktuální nedoplatek (K úhradě)' }}
+            </span>
+            
+            <!-- Badge -->
+            <span 
+              v-if="isMasterTenant"
+              class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap leading-tight"
+              :class="debtorsBadgeClass"
+            >
+              {{ debtorsBadgeText }}
+            </span>
+            <span 
+              v-else
+              class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap leading-tight"
+              :class="[
+                isCurrentUserOverdue ? 'bg-rose-500/20 text-rose-300 border-rose-500/30 animate-pulse' :
+                currentUserDebt > 0 ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+              ]"
+            >
+              {{ isCurrentUserOverdue ? 'Po splatnosti (4 dny)' : (currentUserDebt > 0 ? 'Před splatností' : 'Vyrovnáno') }}
+            </span>
+          </div>
+
+          <div 
+            class="text-2xl font-extrabold tracking-tight"
             :class="[
-              isCurrentUserOverdue ? 'bg-rose-500/20 text-rose-300 border-rose-500/30 animate-pulse' :
-              currentUserDebt > 0 ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
-              'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+              isMasterTenant ? 'text-emerald-400' :
+              (isCurrentUserOverdue ? 'text-rose-400' : (currentUserDebt > 0 ? 'text-amber-400' : 'text-emerald-400'))
             ]"
           >
-            {{ isCurrentUserOverdue ? 'Po splatnosti (4 dny)' : (currentUserDebt > 0 ? 'Před splatností' : 'Vyrovnáno') }}
-          </span>
-        </div>
-
-        <div 
-          class="text-2xl font-mono font-extrabold tracking-tight"
-          :class="[
-            isMasterTenant ? 'text-emerald-400' :
-            (isCurrentUserOverdue ? 'text-rose-400' : (currentUserDebt > 0 ? 'text-amber-400' : 'text-emerald-400'))
-          ]"
-        >
-          {{ (isMasterTenant ? totalReceivables : currentUserDebt).toLocaleString('cs-CZ') }} CZK
+            {{ (isMasterTenant ? totalReceivables : currentUserDebt).toLocaleString('cs-CZ') }} CZK
+          </div>
         </div>
 
         <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
           <span v-if="isMasterTenant" :class="overdueDebtorsCount > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'">
-            {{ overdueDebtorsCount > 0 ? `${overdueDebtorsCount} člen v prodlení se splátkou` : 'Vše před termínem splatnosti' }}
+            {{ overdueDebtorsSubtitle }}
           </span>
           <span v-else :class="isCurrentUserOverdue ? 'text-rose-400 font-semibold' : (currentUserDebt > 0 ? 'text-amber-300' : 'text-emerald-400 font-medium')">
             {{ isCurrentUserOverdue ? '⚠️ Splatnost vypršela 01. 11. 2026!' : (currentUserDebt > 0 ? 'Termín splatnosti: 10. 11. 2026' : '✓ Všechny platby máte vyrovnány') }}
@@ -130,46 +134,48 @@
       </div>
 
       <!-- Card 3: Due date to Landlord or to Manager -->
-      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span class="font-bold uppercase tracking-wider">
-            {{ isMasterTenant ? 'Nájem majiteli (Splatnost)' : 'Termín mé úhrady správci' }}
-          </span>
-          <span 
-            class="font-mono text-[11px] px-2 py-0.5 rounded-full border"
+      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-2.5 text-xs text-slate-400 mb-2">
+            <span class="font-bold uppercase tracking-wider min-w-0">
+              {{ isMasterTenant ? 'Nájem majiteli (Splatnost)' : 'Termín mé úhrady správci' }}
+            </span>
+            <span 
+              class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap leading-tight"
+              :class="[
+                isMasterTenant ? 'text-amber-300 bg-amber-500/10 border-amber-500/25' :
+                (isCurrentUserOverdue ? 'text-rose-300 bg-rose-500/15 border-rose-500/30' : 
+                 (currentUserDebt > 0 ? 'text-amber-300 bg-amber-500/15 border-amber-500/30' : 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'))
+              ]"
+            >
+              {{ isMasterTenant ? 'Termín: 10. 11.' : (isCurrentUserOverdue ? 'Byl: 01. 11.' : (currentUserDebt > 0 ? 'Termín: 10. 11.' : 'Uhrazeno')) }}
+            </span>
+          </div>
+
+          <div 
+            class="text-2xl font-extrabold tracking-tight flex items-baseline gap-2"
             :class="[
-              isMasterTenant ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
-              (isCurrentUserOverdue ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 
-               (currentUserDebt > 0 ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'))
+              isMasterTenant ? 'text-amber-300' :
+              (isCurrentUserOverdue ? 'text-rose-400' : (currentUserDebt > 0 ? 'text-amber-300' : 'text-emerald-300'))
             ]"
           >
-            {{ isMasterTenant ? 'Termín: 10. 11.' : (isCurrentUserOverdue ? 'Byl: 01. 11.' : (currentUserDebt > 0 ? 'Termín: 10. 11.' : 'Uhrazeno')) }}
-          </span>
-        </div>
-
-        <div 
-          class="text-2xl font-extrabold tracking-tight flex items-baseline gap-2"
-          :class="[
-            isMasterTenant ? 'text-amber-300' :
-            (isCurrentUserOverdue ? 'text-rose-400' : (currentUserDebt > 0 ? 'text-amber-300' : 'text-emerald-300'))
-          ]"
-        >
-          <template v-if="isMasterTenant">
-            <span>Zbývá 5 dní</span>
-            <span class="text-xs font-normal text-slate-400">({{ settings.monthlyRent.toLocaleString('cs-CZ') }} CZK)</span>
-          </template>
-          <template v-else-if="isCurrentUserOverdue">
-            <span>4 dny po termínu</span>
-            <span class="text-xs font-normal text-slate-400">({{ currentUserDebt.toLocaleString('cs-CZ') }} CZK)</span>
-          </template>
-          <template v-else-if="currentUserDebt > 0">
-            <span>Zbývá 5 dní</span>
-            <span class="text-xs font-normal text-slate-400">({{ currentUserDebt.toLocaleString('cs-CZ') }} CZK)</span>
-          </template>
-          <template v-else>
-            <span>V pořádku</span>
-            <span class="text-xs font-normal text-slate-400">(0 CZK nedoplatek)</span>
-          </template>
+            <template v-if="isMasterTenant">
+              <span>Zbývá 5 dní</span>
+              <span class="text-xs font-normal text-slate-400">({{ settings.monthlyRent.toLocaleString('cs-CZ') }} CZK)</span>
+            </template>
+            <template v-else-if="isCurrentUserOverdue">
+              <span>4 dny po termínu</span>
+              <span class="text-xs font-normal text-slate-400">({{ currentUserDebt.toLocaleString('cs-CZ') }} CZK)</span>
+            </template>
+            <template v-else-if="currentUserDebt > 0">
+              <span>Zbývá 5 dní</span>
+              <span class="text-xs font-normal text-slate-400">({{ currentUserDebt.toLocaleString('cs-CZ') }} CZK)</span>
+            </template>
+            <template v-else>
+              <span>V pořádku</span>
+              <span class="text-xs font-normal text-slate-400">(0 CZK nedoplatek)</span>
+            </template>
+          </div>
         </div>
 
         <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
@@ -181,7 +187,7 @@
             Platba za listopad zaúčtována
           </span>
 
-          <span class="text-[11px] text-slate-500 font-mono">
+          <span class="text-[11px] text-slate-400 font-medium">
             Účet: {{ settings.accountNumber.split(' ')[0] }}
           </span>
         </div>
@@ -500,7 +506,7 @@
               </svg>
               <span>Nákupní košík bytu</span>
             </h2>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-bold">
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-bold shrink-0 whitespace-nowrap">
               {{ cartTotalCount }} ks
             </span>
           </div>
@@ -586,6 +592,30 @@ const {
 
 const recentExpenses = computed(() => {
   return expenses.value.slice(0, 4)
+})
+
+const debtorsBadgeText = computed(() => {
+  if (debtorsCount.value === 0) return 'Vše vyrovnáno'
+  if (overdueDebtorsCount.value > 0) {
+    return overdueDebtorsCount.value === 1 ? '1 po splatnosti' : `${overdueDebtorsCount.value} po splatnosti`
+  }
+  if (debtorsCount.value === 1) return '1 dlužník'
+  if (debtorsCount.value >= 2 && debtorsCount.value <= 4) return `${debtorsCount.value} dlužníci`
+  return `${debtorsCount.value} dlužníků`
+})
+
+const debtorsBadgeClass = computed(() => {
+  if (debtorsCount.value === 0) return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+  if (overdueDebtorsCount.value > 0) return 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+  return 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+})
+
+const overdueDebtorsSubtitle = computed(() => {
+  const count = overdueDebtorsCount.value
+  if (count === 0) return 'Vše před termínem splatnosti'
+  if (count === 1) return '1 člen v prodlení se splátkou'
+  if (count >= 2 && count <= 4) return `${count} členové v prodlení se splátkou`
+  return `${count} členů v prodlení se splátkou`
 })
 
 const otherSettlements = computed(() => {

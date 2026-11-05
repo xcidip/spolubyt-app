@@ -276,16 +276,10 @@
 
               <!-- Action buttons -->
               <td class="py-3 px-3.5 text-right whitespace-nowrap" @click.stop>
-                <div class="flex items-center justify-end gap-1.5">
-                  <button
-                    @click="openModal('EXP_DETAIL', exp)"
-                    class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-[11px] font-semibold border border-slate-700 transition-colors"
-                  >
-                    Detail
-                  </button>
+                <div class="flex items-center justify-end">
                   <button
                     @click="deleteExpense(exp.id)"
-                    class="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                     title="Smazat výdaj"
                     aria-label="Smazat výdaj"
                   >

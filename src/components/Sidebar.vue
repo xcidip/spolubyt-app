@@ -70,7 +70,7 @@
         </div>
         <span 
           v-if="!isSidebarCollapsed"
-          class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono shrink-0 ml-2 whitespace-nowrap"
+          class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold shrink-0 ml-2 whitespace-nowrap"
         >
           {{ expenses.length }}
         </span>
@@ -144,7 +144,7 @@
         </div>
         <span 
           v-if="!isSidebarCollapsed"
-          class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono shrink-0 ml-2 whitespace-nowrap"
+          class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold shrink-0 ml-2 whitespace-nowrap"
         >
           4 měřidla
         </span>

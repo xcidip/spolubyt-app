@@ -54,7 +54,7 @@
         </div>
         <div class="text-xs text-slate-400 mt-2">
           <template v-if="isMasterTenant">
-            Celkem {{ debtorsCount }} otevřené platební předpisy ({{ overdueDebtorsCount }} po splatnosti)
+            {{ settlementDebtorsSummary }}
           </template>
           <template v-else-if="isCurrentUserOverdue">
             <span class="text-rose-400 font-semibold">⚠️ 4 dny po splatnosti (termín byl 01. 11. 2026)</span>
@@ -363,6 +363,16 @@ const {
   sendReminder, 
   showToast 
 } = useSpolubyt()
+
+const settlementDebtorsSummary = computed(() => {
+  const dCount = debtorsCount.value
+  const odCount = overdueDebtorsCount.value
+  let dText = `${dCount} otevřených platebních předpisů`
+  if (dCount === 1) dText = '1 otevřený platební předpis'
+  else if (dCount >= 2 && dCount <= 4) dText = `${dCount} otevřené platební předpisy`
+  else if (dCount === 0) dText = '0 otevřených platebních předpisů'
+  return `Celkem ${dText} (${odCount} po splatnosti)`
+})
 
 // All settlements including the manager for complete overview
 const allDisplaySettlements = computed<DebtSettlement[]>(() => {
