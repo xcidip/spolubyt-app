@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#14b8a6" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#022c22" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <!-- Background rounded squircle -->
+  <rect x="32" y="32" width="960" height="960" rx="220" ry="220" fill="url(#bgGrad)" />
+  
+  <!-- Subtle inner border highlight -->
+  <rect x="34" y="34" width="956" height="956" rx="218" ry="218" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.25" />
+
+  <!-- Home Icon Graphic -->
+  <g filter="url(#shadow)">
+    <!-- Roof & Walls -->
+    <path
+      d="M512 210 L230 450 C218 460 226 480 242 480 H284 V760 C284 782 302 800 324 800 H444 V600 C444 582 458 568 476 568 H548 C566 568 580 582 580 600 V800 H700 C722 800 740 782 740 760 V480 H782 C798 480 806 460 794 450 Z"
+      fill="#ffffff"
+    />
+    <!-- Spark / Community accent dot -->
+    <circle cx="512" cy="390" r="42" fill="#047857" opacity="0.9" />
+  </g>
+</svg>
+

@@ -1,0 +1,226 @@
+<template>
+  <teleport to="body">
+    <div 
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-qr-title"
+      @keydown.esc="closeModal"
+    >
+      <div 
+        class="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-6 text-slate-100"
+        @click.stop
+      >
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-850">
+          <div>
+            <h2 id="modal-qr-title" class="text-lg font-bold text-white tracking-tight">
+              Platební předpis & SPAYD QR platba
+            </h2>
+            <p class="text-xs text-slate-400">
+              Příjemce: {{ settings.accountNumber }} • Plátce: <span class="text-emerald-400 font-semibold">{{ settlement.roommateName }}</span>
+            </p>
+          </div>
+          <button 
+            @click="closeModal"
+            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            aria-label="Zavřít"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+          
+          <!-- Left Column (5 cols): Rendered SPAYD QR Code -->
+          <div class="sm:col-span-5 flex flex-col items-center justify-center p-4 bg-slate-950 rounded-2xl border border-slate-800 text-center">
+            
+            <div class="bg-white p-3 rounded-xl shadow-lg border border-slate-300">
+              <canvas ref="qrCanvas" class="w-44 h-44"></canvas>
+            </div>
+
+            <div class="mt-3 space-y-1">
+              <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-200">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Standard SPAYD (ČR)</span>
+              </div>
+              <p class="text-[11px] text-slate-400 max-w-[200px]">
+                Naskenujte v aplikaci mobilního bankovnictví (ČS, Air Bank, KB, Fio, ČSOB...)
+              </p>
+            </div>
+          </div>
+
+          <!-- Right Column (7 cols): Structured bank details with copy buttons -->
+          <div class="sm:col-span-7 space-y-2.5">
+            
+            <!-- Amount Highlight -->
+            <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+              <div>
+                <span class="text-[11px] text-emerald-400/80 font-medium block">Částka k úhradě:</span>
+                <span class="text-xl font-mono font-extrabold text-emerald-300">
+                  {{ settlement.totalDebt.toLocaleString('cs-CZ') }},00 CZK
+                </span>
+              </div>
+              <button
+                @click="copyText(`${settlement.totalDebt}`, 'Částka k úhradě')"
+                class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold transition-colors flex items-center gap-1"
+              >
+                Kopírovat
+              </button>
+            </div>
+
+            <!-- Account Number -->
+            <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
+              <div>
+                <span class="text-slate-400 text-[10px] block">Číslo účtu příjemce:</span>
+                <span class="font-mono font-bold text-slate-200">{{ settings.accountNumber.split(' ')[0] }}</span>
+              </div>
+              <button
+                @click="copyText(settings.accountNumber.split(' ')[0], 'Číslo účtu')"
+                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-[11px]"
+              >
+                Kopírovat
+              </button>
+            </div>
+
+            <!-- IBAN -->
+            <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
+              <div>
+                <span class="text-slate-400 text-[10px] block">IBAN:</span>
+                <span class="font-mono text-slate-200">{{ settings.iban }}</span>
+              </div>
+              <button
+                @click="copyText(settings.iban, 'IBAN')"
+                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-[11px]"
+              >
+                Kopírovat
+              </button>
+            </div>
+
+            <!-- Variable Symbol -->
+            <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
+              <div>
+                <span class="text-slate-400 text-[10px] block">Variabilní symbol:</span>
+                <span class="font-mono font-bold text-slate-200">{{ variableSymbol }}</span>
+              </div>
+              <button
+                @click="copyText(variableSymbol, 'Variabilní symbol')"
+                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-[11px]"
+              >
+                Kopírovat
+              </button>
+            </div>
+
+            <!-- Message for recipient -->
+            <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
+              <div class="min-w-0 pr-2">
+                <span class="text-slate-400 text-[10px] block">Zpráva pro příjemce:</span>
+                <span class="font-mono text-slate-200 truncate block">{{ paymentMessage }}</span>
+              </div>
+              <button
+                @click="copyText(paymentMessage, 'Zpráva pro příjemce')"
+                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-[11px] shrink-0"
+              >
+                Kopírovat
+              </button>
+            </div>
+
+            <!-- Due Date info -->
+            <div class="text-[11px] text-slate-400 flex items-center justify-between px-1">
+              <span>Termín splatnosti:</span>
+              <span class="font-bold text-slate-200">10. 11. 2026</span>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-850">
+          <button
+            type="button"
+            @click="copyAll"
+            class="px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 rounded-xl border border-slate-700 transition-colors"
+          >
+            Kopírovat všechny údaje
+          </button>
+          
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              @click="closeModal"
+              class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all shadow-md focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+            >
+              Hotovo / Zavřít
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </teleport>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, nextTick } from 'vue'
+import QRCode from 'qrcode'
+import { useSpolubyt } from '../composables/useSpolubyt'
+
+const { selectedSettlement, settings, closeModal, showToast } = useSpolubyt()
+
+const settlement = computed(() => selectedSettlement.value!)
+const qrCanvas = ref<HTMLCanvasElement | null>(null)
+
+const variableSymbol = '20261101'
+const paymentMessage = computed(() => `Spolubyt: Najem 11/2026 - ${settlement.value.roommateName}`)
+
+// Standard SPAYD string syntax:
+// SPD*1.0*ACC:CZ...*AM:...*CC:CZK*MSG:...*X-VS:...
+const spaydString = computed(() => {
+  const iban = settings.value.iban.replace(/\s+/g, '')
+  const amount = settlement.value.totalDebt.toFixed(2)
+  const msg = encodeURIComponent(`Spolubyt Najem 11/2026 ${settlement.value.roommateName}`).slice(0, 60)
+  return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*MSG:${msg}*X-VS:${variableSymbol}`
+})
+
+const renderQrCode = async () => {
+  await nextTick()
+  if (qrCanvas.value) {
+    try {
+      await QRCode.toCanvas(qrCanvas.value, spaydString.value, {
+        width: 176,
+        margin: 1,
+        color: {
+          dark: '#0f172a',
+          light: '#ffffff'
+        }
+      })
+    } catch (err) {
+      console.error('Failed to generate SPAYD QR', err)
+    }
+  }
+}
+
+onMounted(() => {
+  renderQrCode()
+})
+
+const copyText = (text: string, label: string) => {
+  navigator.clipboard.writeText(text)
+  showToast('Zkopírováno', `${label} (${text}) byl zkopírován do schránky.`, 'info', 2500)
+}
+
+const copyAll = () => {
+  const allInfo = `Účet: ${settings.value.accountNumber}
+IBAN: ${settings.value.iban}
+Částka: ${settlement.value.totalDebt} CZK
+VS: ${variableSymbol}
+Zpráva: ${paymentMessage.value}`
+  navigator.clipboard.writeText(allInfo)
+  showToast('Kompletní údaje zkopírovány', 'Veškeré platební instrukce byly vloženy do schránky.', 'success')
+}
+</script>
+
