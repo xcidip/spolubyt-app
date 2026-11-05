@@ -1,6 +1,6 @@
 <template>
   <aside 
-    class="bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 min-h-[calc(100vh-57px)] transition-all duration-200 ease-in-out select-none"
+    class="bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 h-full overflow-y-auto overflow-x-hidden transition-all duration-200 ease-in-out select-none z-20"
     :class="isSidebarCollapsed ? 'w-16' : 'w-72'"
   >
     <!-- Main nav links -->

@@ -1,17 +1,17 @@
 <template>
-  <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300">
+  <div class="h-screen h-dvh bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300 overflow-hidden">
     
     <!-- Top System Bar -->
-    <Header />
+    <Header class="shrink-0" />
 
     <!-- Main Layout: Left Sidebar + Central Work Area -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="flex-1 flex overflow-hidden min-h-0">
       
       <!-- Permanent Left Navigation -->
-      <Sidebar class="hidden md:flex" />
+      <Sidebar class="hidden md:flex shrink-0 h-full" />
 
       <!-- Central Content Area -->
-      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0">
         
         <!-- Mobile Bottom Nav -->
         <div class="md:hidden flex items-center justify-around bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs">
