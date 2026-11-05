@@ -46,6 +46,12 @@ const currentPage = ref<PageId>('DASH')
 const activeModal = ref<string | null>(null)
 const selectedExpense = ref<Expense | null>(null)
 const selectedSettlement = ref<DebtSettlement | null>(null)
+const isSidebarCollapsed = ref<boolean>(loadFromStorage('sidebar_collapsed', false))
+
+function toggleSidebar(): void {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  saveToStorage('sidebar_collapsed', isSidebarCollapsed.value)
+}
 
 // Generic Confirmation Dialog State
 interface ConfirmModalState {
@@ -651,6 +657,8 @@ export function useSpolubyt() {
   return {
     // Nav & Modals
     currentPage,
+    isSidebarCollapsed,
+    toggleSidebar,
     activeModal,
     selectedExpense,
     selectedSettlement,

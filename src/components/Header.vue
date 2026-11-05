@@ -162,7 +162,9 @@ const {
   setCurrentUser, 
   openModal, 
   navigateTo, 
-  resetDemoData 
+  resetDemoData,
+  isSidebarCollapsed,
+  toggleSidebar
 } = useSpolubyt()
 
 const isUserMenuOpen = ref(false)
