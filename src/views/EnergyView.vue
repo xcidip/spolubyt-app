@@ -101,7 +101,10 @@
             <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
               Monitoring spotřeby v čase (Měsíční trendy)
             </h2>
-            <p class="text-xs text-slate-400">Porovnání reálné spotřeby vůči fixní hranici měsíčních záloh</p>
+            <p class="text-xs text-slate-400">
+              Porovnání reálné spotřeby vůči fixní hranici měsíčních záloh
+              <span class="text-slate-300 font-mono">({{ currentConfig.allowance }} {{ currentConfig.unit }}/měs.)</span>
+            </p>
           </div>
 
           <!-- Medium selector pills -->
@@ -123,13 +126,13 @@
           
           <div class="relative flex-1 flex items-end justify-between gap-4 px-4 border-b border-l border-slate-700">
             
-            <!-- Reference Allowance line (160 kWh) -->
+            <!-- Reference Allowance line (Zálohová hranice) -->
             <div 
-              class="absolute left-0 right-0 border-b border-dashed border-amber-400/80 pointer-events-none flex items-center justify-end pr-2"
-              style="bottom: 64%;"
+              class="absolute left-0 right-0 border-b border-dashed border-amber-400/80 pointer-events-none flex items-center justify-end pr-2 z-20"
+              :style="{ bottom: `${(currentConfig.allowance / currentConfig.maxScale) * 100}%` }"
             >
-              <span class="text-[10px] font-mono font-bold text-amber-300 bg-slate-900/90 px-1.5 py-0.5 rounded border border-amber-400/40">
-                Zálohová hranice: 160 kWh
+              <span class="text-[10px] font-mono font-bold text-amber-300 bg-slate-900/95 px-2 py-0.5 rounded border border-amber-400/50 shadow-md backdrop-blur-sm whitespace-nowrap">
+                Zálohová hranice: {{ currentConfig.allowance }} {{ currentConfig.unit }}
               </span>
             </div>
 
@@ -137,18 +140,18 @@
             <div 
               v-for="bar in chartData" 
               :key="bar.month"
-              class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer"
+              class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
             >
               <!-- Bar value tooltip on hover -->
-              <span class="text-[10px] font-mono text-slate-300 mb-1 group-hover:text-emerald-400 font-bold transition-colors">
+              <span class="text-[10px] font-mono text-slate-300 mb-1 group-hover:text-emerald-400 font-bold transition-all group-hover:scale-110 group-hover:z-30 relative">
                 {{ bar.value }}
               </span>
 
               <!-- Visual Bar -->
               <div 
-                class="w-full max-w-[42px] rounded-t-lg transition-all duration-300 group-hover:opacity-90"
-                :class="bar.value > 160 ? 'bg-gradient-to-t from-amber-600 to-amber-400' : 'bg-gradient-to-t from-emerald-600 to-teal-400'"
-                :style="{ height: `${(bar.value / 250) * 100}%` }"
+                class="w-full max-w-[42px] rounded-t-lg transition-all duration-300 group-hover:opacity-90 relative"
+                :class="bar.value > currentConfig.allowance ? 'bg-gradient-to-t from-amber-600 to-amber-400' : 'bg-gradient-to-t from-emerald-600 to-teal-400'"
+                :style="{ height: `${(bar.value / currentConfig.maxScale) * 100}%` }"
               ></div>
             </div>
 
@@ -174,7 +177,9 @@
               <span>Nad zálohovou hranicí</span>
             </span>
           </div>
-          <span class="font-mono text-[11px]">Jednotky: {{ activeChartMedium === 'Elektřina' ? 'kWh' : 'm³' }}</span>
+          <span class="font-mono text-[11px] text-slate-400">
+            Záloha: <strong class="text-amber-300 font-semibold">{{ currentConfig.allowance }} {{ currentConfig.unit }}</strong> • Jednotky: {{ currentConfig.unit }}
+          </span>
         </div>
 
       </div>
@@ -291,27 +296,55 @@ import { ENERGY_MONTHLY_HISTORY } from '../data/mockData'
 const { meters, latestMeters, openModal } = useSpolubyt()
 
 const activeChartMedium = ref('Elektřina')
-const chartData = computed(() => {
-  if (activeChartMedium.value === 'Plyn') {
-    return [
+
+interface MediumConfig {
+  unit: string
+  allowance: number
+  maxScale: number
+  data: { month: string; value: number }[]
+}
+
+const MEDIUM_CONFIGS: Record<string, MediumConfig> = {
+  'Elektřina': {
+    unit: 'kWh',
+    allowance: 160,
+    maxScale: 220,
+    data: ENERGY_MONTHLY_HISTORY.map(item => ({ month: item.month, value: item.value })),
+  },
+  'Plyn': {
+    unit: 'm³',
+    allowance: 22,
+    maxScale: 32,
+    data: [
       { month: '05/26', value: 20 },
       { month: '06/26', value: 18 },
       { month: '07/26', value: 14 },
       { month: '08/26', value: 16 },
       { month: '09/26', value: 24 },
       { month: '10/26', value: 28 },
-    ]
-  } else if (activeChartMedium.value === 'Voda') {
-    return [
+    ],
+  },
+  'Voda': {
+    unit: 'm³',
+    allowance: 9,
+    maxScale: 12,
+    data: [
       { month: '05/26', value: 8 },
       { month: '06/26', value: 9 },
       { month: '07/26', value: 7 },
       { month: '08/26', value: 8 },
       { month: '09/26', value: 9 },
       { month: '10/26', value: 10 },
-    ]
-  }
-  return ENERGY_MONTHLY_HISTORY
+    ],
+  },
+}
+
+const currentConfig = computed(() => {
+  return MEDIUM_CONFIGS[activeChartMedium.value] || MEDIUM_CONFIGS['Elektřina']
+})
+
+const chartData = computed(() => {
+  return currentConfig.value.data
 })
 
 const formatDate = (dateStr: string) => {
