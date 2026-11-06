@@ -128,10 +128,11 @@
             
             <!-- Reference Allowance line (Zálohová hranice) -->
             <div 
-              class="absolute left-0 right-0 border-b border-dashed border-amber-400/80 pointer-events-none flex items-center justify-end pr-2 z-20"
+              class="absolute left-0 right-0 border-b border-dashed border-amber-400/80 flex items-center justify-end pr-2 z-20 transition-opacity duration-200 pointer-events-auto cursor-default before:content-[''] before:absolute before:-top-2.5 before:-bottom-2.5 before:left-0 before:right-0"
+              :class="hasValueAboveAllowance ? 'opacity-40 hover:opacity-100' : 'opacity-100'"
               :style="{ bottom: `${(currentConfig.allowance / currentConfig.maxScale) * 100}%` }"
             >
-              <span class="text-[10px] font-mono font-bold text-amber-300 bg-slate-900/95 px-2 py-0.5 rounded border border-amber-400/50 shadow-md backdrop-blur-sm whitespace-nowrap">
+              <span class="text-[10px] font-mono font-bold text-amber-300 bg-slate-900/80 px-2 py-0.5 rounded border border-amber-400/50 shadow-md backdrop-blur-sm whitespace-nowrap">
                 Zálohová hranice: {{ currentConfig.allowance }} {{ currentConfig.unit }}
               </span>
             </div>
@@ -345,6 +346,10 @@ const currentConfig = computed(() => {
 
 const chartData = computed(() => {
   return currentConfig.value.data
+})
+
+const hasValueAboveAllowance = computed(() => {
+  return chartData.value.some(bar => bar.value > currentConfig.value.allowance)
 })
 
 const formatDate = (dateStr: string) => {
