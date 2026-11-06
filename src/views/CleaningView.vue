@@ -18,32 +18,6 @@
           Férová týdenní rotace povinností ve společných prostorách. Každá akce se dokončuje týdně a role se postupně střídají.
         </p>
       </div>
-
-      <!-- Quick Persona Switcher for easy testing of permissions -->
-      <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col gap-1.5 shrink-0">
-        <div class="text-[11px] font-semibold text-slate-400 flex items-center justify-between gap-2">
-          <span>Aktivní spolubydlící (testování práv):</span>
-          <span class="text-emerald-400 font-mono text-[10px]">{{ currentUser.role }}</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <button
-            v-for="r in roommates"
-            :key="r.id"
-            @click="setCurrentUser(r.id)"
-            class="px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
-            :class="[
-              currentUser.id === r.id 
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-950/50 scale-102' 
-                : 'bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750'
-            ]"
-            :title="`Přepnout na ${r.name} (${r.role})`"
-          >
-            <span class="w-2 h-2 rounded-full" :class="r.role === 'Správce' ? 'bg-amber-400' : 'bg-sky-400'"></span>
-            <span>{{ r.name.split(' ')[0] }}</span>
-            <span v-if="r.role === 'Správce'" class="text-[10px] opacity-75">👑</span>
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Permission Rule Banner -->
@@ -512,7 +486,6 @@ const {
   roommates,
   currentUser,
   isMasterTenant,
-  setCurrentUser,
   cleaningTaskDefs,
   selectedCleaningWeek,
   currentWeekNumber,
