@@ -1,53 +1,120 @@
-# Spolubyt.cz – Hi-Fi Interaktivní Prototyp (ČZU PEF)
+# Spolubyt – Interaktivní prototyp aplikace
 
-> **Předmět:** Interakční design (INFO5v / EIE64E / EIE94E / EIEF7E)  
-> **Katedra:** Katedra informačních technologií, PEF ČZU v Praze  
-> **Garant:** Ing. Josef Pavlíček, Ph.D.  
-> **Téma:** Sdílení nákladů a správa společné domácnosti – Spolubyt.cz  
-> **Tech Stack:** Tauri (Rust + Vue 3 + TypeScript + Tailwind CSS)
+> **Semestrální práce z předmětu Interakční design**  
+> Katedra informačních technologií, PEF ČZU v Praze  
+> Garant předmětu: Ing. Josef Pavlíček, Ph.D.  
+> Téma: Sdílení nákladů a správa společné domácnosti
 
 ---
 
-## 🚀 Rychlé spuštění pro uživatelské testování (Usability Testing)
+## O projektu
 
-Aplikace je plně interaktivní produkční SPA připravená jak pro **webové testování v prohlížeči**, tak jako **desktopová aplikace přes Tauri**.
+Každý, kdo někdy bydlel ve spolubydlení, tenhle scénář dobře zná: nepřehledné excelovské tabulky, ztracené účtenky, lístečky na lednici a nekonečné diskuze ve společné chatovací skupině o tom, kdo naposledy kupoval tablety do myčky, kdo ještě neposlal peníze za plyn a čí je tento týden řada na úklid koupelny. Běžné zahraniční aplikace typu Splitwise sice pomohou rozpočítat jednorázovou večeři, ale už si neporadí s českými QR platbami, zálohami na energie nebo rozpisem služeb.
 
-### 1. Spuštění v prohlížeči (doporučeno pro rychlé testování)
+**Spolubyt** je interaktivní prototyp aplikace, který se snaží všechny tyto provozní i finanční záležitosti sdíleného bytu spojit do jednoho čistého a přehledného rozhraní. 
+
+Aplikace funguje jako webová SPA v prohlížeči a je připravená i pro spuštění jako nativní desktopová aplikace přes Tauri.
+
+---
+
+## 🚀 Jak aplikaci spustit
+
+Ke spuštění stačí mít nainstalovaný **Node.js** (doporučeno v20 nebo novější).
+
+### 1. Spuštění v prohlížeči (nejrychlejší cesta)
+
 ```bash
+# 1. Přejděte do složky aplikace
 cd spolubyt-app
-npm install      # (již nainstalováno)
+
+# 2. Nainstalujte závislosti
+npm install
+
+# 3. Spusťte vývojový server
 npm run dev
 ```
-Aplikace běží na: **`http://localhost:5173/`**
 
-### 2. Spuštění jako desktopová aplikace přes Tauri
+Aplikace se otevře na adrese: **[http://localhost:5173/](http://localhost:5173/)**
+
+### 2. Spuštění jako desktopová aplikace (přes Tauri)
+
+Pokud máte nainstalovaný Rust a Tauri CLI, můžete aplikaci spustit v samostatném okně:
+
 ```bash
 cd spolubyt-app
 npm run tauri dev
 ```
 
----
+### 3. Spuštění testů
 
-## 📋 Splnění požadavků zadání prototypu
+Součástí projektu je také sada 131 E2E testů, které ověřují funkčnost komponent, logiku výpočtů i jednotlivé uživatelské scénáře:
 
-| Požadavek ze zadání | Stav | Implementace v prototypu |
-| :--- | :---: | :--- |
-| **1. Funkční navigace mezi hlavními stránkami dle Task Graphu** | ✅ Splněno | Všech 10 uzlů z Mermaid diagramu (`DASH`, `EXPENSES`, `EXP_DETAIL`, `EXP_ADD`, `SETTLEMENT`, `QR_MODAL`, `CONFIRM_MODAL`, `ENERGY`, `METER_ADD`, `SETTINGS`) + `CART`. |
-| **2. Filtrování a řazení v reálném čase** | ✅ Splněno | Období (11/2026, 10/2026, 09/2026), kategorie, plátce, stav úhrady, textové fulltextové vyhledávání a řazení dle sloupců (datum, částka, název) s okamžitým přepočtem celkového součtu. |
-| **3. Detail položky s přepínáním záložek / fotografií** | ✅ Splněno | Dvousloupcový modál s rozpadem nákladů a 3 přepínatelnými záložkami (*Doklad/Účtenka*, *Položkový rozpad*, *Auditní stopa*) + celoobrazovkový Lightbox náhled. |
-| **4. Košík s okamžitým přepočtem ceny a počtu kusů** | ✅ Splněno | Společný nákupní košík s tlačítky `+` / `-`, přidáváním a odebíráním položek, okamžitým přepočtem a možností 1-click převodu na společný výdaj. |
-| **5. Dialog pro potvrzení akce** | ✅ Splněno | Přístupný modální konfirmační dialog pro smazání výdaje, vysypání košíku i obnovení výchozích dat s klávesovou zkratkou `Escape`. |
-| **6. Zpětná vazba pro uživatele (notifikace / toasty)** | ✅ Splněno | Kontextový toast systém (úspěch, varování, info, chyba), konfety při vyrovnání dluhu, indikátory synchronizace a stavu splatnosti. |
-| **7. Správa stavu a mock data** | ✅ Splněno | Reaktivní Vue 3 state composable `useSpolubyt` s automatickou perzistencí do `LocalStorage` a tlačítkem pro reset výchozích dat. |
-| **8. Přístupnost a čistý moderní vzhled** | ✅ Splněno | Responzivní Tailwind rozvržení, sémantické HTML, ARIA dialogy, focus stavy a české SPAYD QR kódy generované na canvas. |
+```bash
+npm test
+```
 
 ---
 
-## 👥 Přepínání testovacích person (Role Switcher)
+## 🧭 Průvodce testováním: Co si v aplikaci vyzkoušet
 
-V pravém horním rohu navigace je k dispozici **přepínač aktivní persony**:
-1. **Bc. Tomáš Beránek (Správce bytu / Master Tenant)** – spravuje kmenové parametry bytu, páruje platby, odesílá upomínky.
-2. **Jakub Kovář (Pokoj 1, dluh 9 850 Kč – před splatností)** – testování pohledu spolubydlícího a generování platebního QR kódu.
-3. **Eliška Malá (Pokoj 2, dluh 4 500 Kč – po splatnosti)** – testování upomínkového mechanismu a dlužných stavů.
-4. **Martin Pospíšil (Pokoj 3, 0 Kč – vyrovnáno)** – testování bezdlužného profilu.
+Aby bylo testování co nejpohodlnější a nebylo nutné se složitě odhlašovat a přihlašovat pod různými účty, je v **pravém horním rohu obrazovky připraven přepínač uživatelů (person)**. 
 
+Díky němu si můžete rozhraní projít z pohledu různých členů domácnosti:
+
+* **Bc. Tomáš Beránek (Správce bytu)**  
+  Hlavní nájemce, který má smlouvu s majitelem bytu i dodavateli služeb. Vidí celou finanční bilanci, může odesílat upomínky, párovat došlé platby a jako jediný má přístup k editaci parametrů bytu v Nastavení.
+* **Jakub Kovář (Pokoj 1)**  
+  Spolubydlící, který má aktuálně dluh 9 850 Kč před splatností (nájem + poplatky). Skvělá role pro otestování rychlé QR platby.
+* **Eliška Malá (Pokoj 2)**  
+  Spolubydlící s dluhem 4 500 Kč po splatnosti. Umožňuje otestovat, jak systém vizuálně upozorňuje na prodlení a jak fungují upomínky.
+* **Martin Pospíšil (Pokoj 3)**  
+  Spolubydlící s čistým štítem (0 Kč dluh), na kterém je vidět stav plně vyrovnaného profilu.
+
+### Tipy na konkrétní scénáře k proklikání:
+
+1. **Rychlá platba přes český bankovní QR kód (SPAYD)**  
+   Přepněte se na *Jakuba* a v levém menu otevřete sekci **Vyrovnání**. U svého jména klikněte na **Zaplatit**. Otevře se okno s vygenerovaným českým platebním QR kódem ve standardu SPAYD (obsahuje částku, účet i variabilní symbol – kód je skutečně validní a lze ho načíst bankovní aplikací). Po kliknutí na *Potvrdit zaplacení* vyskočí konfety a dluh se okamžitě vynuluje.
+2. **Převod nákupu z košíku přímo do výdajů**  
+   V sekci **Košík** najdete společný nákupní lístek s možností měnit počty kusů (`+` / `-`). Označte některou položku tlačítkem *Koupeno* a následně klikněte na *Převést do výdajů*. Otevře se formulář pro zadání výdaje s již předvyplněným názvem i částkou. Po uložení položka z košíku sama zmizí a objeví se mezi výdaji.
+3. **Úklidový rozpis a výměna směn (Shift Swap)**  
+   V sekci **Úklid** je týdenní harmonogram služeb pro čtyři zóny bytu (kuchyň, koupelna, chodba, odpadky). Svou službu můžete označit jako splněnou. Pokud zrovna nemáte čas, můžete kliknout na *Požádat o výměnu*, vybrat spolubydlícího a odeslat žádost. Když se pak přepnete na daného člověka, uvidí žádost s možností ji přijmout nebo odmítnout.
+4. **Energie a predikce ročního vyúčtování**  
+   V záložce **Energie** je přehled historie odečtů elektřiny, plynu a vody. Můžete přidat nový odečet měřidla a sledovat, jak se chová prediktivní kalkulačka: na základě nastavených záloh a reálné spotřeby systém počítá, jestli domácnosti na konci zúčtovacího období hrozí nedoplatek, nebo naopak vyjde přeplatek.
+5. **Vyhledávání, filtry a detail účtenky**  
+   V sekci **Výdaje** si můžete vyzkoušet okamžité fulltextové vyhledávání, filtrování podle kategorií, plátce nebo měsíce a řazení tabulky kliknutím na záhlaví sloupců. Kliknutím na libovolný řádek se otevře detail výdaje se záložkami (*Doklad/Účtenka*, *Položkový rozpad*, *Auditní stopa*) a možností zvětšit si účtenku na celou obrazovku.
+6. **Obnovení výchozích dat**  
+   Všechny změny, které v prototypu provedete, se automaticky ukládají do `localStorage` vašeho prohlížeče, takže o ně nepřijdete ani po obnovení stránky. Kdykoliv budete chtít začít znovu od nuly, stačí kliknout na **Obnovit demo data** v zápatí aplikace nebo v sekci Nastavení.
+
+---
+
+## 🛠 Jak je aplikace postavená
+
+Při vývoji byl kladen důraz na čisté a reaktivní uživatelské rozhraní bez nutnosti složitého externího backendu:
+
+* **Frontend:** [Vue 3](https://vuejs.org/) (Composition API, `<script setup>`) s [TypeScriptem](https://www.typescriptlang.org/)
+* **Stylování:** [Tailwind CSS](https://tailwindcss.com/) – responzivní layout optimalizovaný pro desktop i menší obrazovky
+* **Build nástroj:** [Vite](https://vitejs.dev/) pro rychlý vývoj a optimalizovaný produkční bundle
+* **Desktop obal:** [Tauri 2](https://tauri.app/) (Rust) pro možnost distribuce jako samostatná desktopová aplikace
+* **Správa stavu:** Centrální reaktivní composable (`useSpolubyt.ts`) propojený s `localStorage`
+* **Doplňkové knihovny:** 
+  * `lucide-vue-next` pro konzistentní ikonografii
+  * `qrcode` pro generování SPAYD platebních kódů na HTML5 canvas
+  * `canvas-confetti` pro hravou vizuální odezvu při zaplacení
+
+---
+
+## 📋 Vazba na zadání semestrální práce
+
+Prototyp v plném rozsahu pokrývá funkční požadavky, analytické use cases i wireframy navržené v úvodních fázích studie:
+
+* **Kompletní navigace podle Task Graphu:** Propojení všech navržených obrazovek (Nástěnka, Výdaje, Detail, Nový výdaj, Vyrovnání, QR platba, Energie, Zápis měřidla, Košík, Úklid, Nastavení).
+* **Filtrování a řazení v reálném čase:** Okamžitá odezva bez nutnosti načítat stránku znovu, s dynamickým přepočtem souhrnů.
+* **Detail položky s přepínáním záložek:** Dvousloupcové okno s položkovým rozpadem, dokladem a historií změn.
+* **Interaktivní košík:** Přidávání položek, změna počtu kusů v reálném čase a přímý převod do výdajů.
+* **Prevence chyb a konfirmační dialogy:** Zabezpečení nevratných akcí (mazání výdajů, reset dat, vysypání košíku) s podporou klávesy `Escape`.
+* **Zpětná vazba pro uživatele:** Kontextové toast notifikace, vizuální odznaky stavu úklidu i platební morálky.
+* **Přístupnost a čistota kódu:** Sémantické HTML, viditelné focus stavy, přístupné modály a responzivní chování.
+
+---
+
+*Vytvořeno v rámci studia na Provozně ekonomické fakultě ČZU v Praze.*
