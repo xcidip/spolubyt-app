@@ -51,6 +51,13 @@
             Košík
           </button>
           <button 
+            @click="navigateTo('CLEANING')"
+            class="px-2 py-1.5 rounded-lg"
+            :class="currentPage === 'CLEANING' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
+          >
+            Úklid
+          </button>
+          <button 
             @click="navigateTo('SETTINGS')"
             class="px-2 py-1.5 rounded-lg"
             :class="currentPage === 'SETTINGS' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
@@ -114,6 +121,7 @@ import ExpensesView from './views/ExpensesView.vue'
 import SettlementView from './views/SettlementView.vue'
 import EnergyView from './views/EnergyView.vue'
 import CartView from './views/CartView.vue'
+import CleaningView from './views/CleaningView.vue'
 import SettingsView from './views/SettingsView.vue'
 
 const { 
@@ -131,6 +139,7 @@ const activeViewComponent = computed(() => {
     case 'SETTLEMENT': return SettlementView
     case 'ENERGY': return EnergyView
     case 'CART': return CartView
+    case 'CLEANING': return CleaningView
     case 'SETTINGS': return SettingsView
     default: return DashboardView
   }

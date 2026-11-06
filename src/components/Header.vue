@@ -176,6 +176,7 @@ const pageLabels: Record<string, string> = {
   SETTLEMENT: 'Vyrovnání a matice závazků',
   ENERGY: 'Energie a odečty měřidel',
   CART: 'Společný nákupní košík',
+  CLEANING: 'Úklidové směny a rotace',
   SETTINGS: 'Nastavení bytu a členů'
 }
 

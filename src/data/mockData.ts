@@ -4,7 +4,9 @@ import {
   DebtSettlement, 
   MeterReading, 
   CartItem, 
-  ApartmentSettings 
+  ApartmentSettings,
+  CleaningTaskDef,
+  CleaningShift
 } from '../types'
 
 export const INITIAL_ROOMMATES: Roommate[] = [
@@ -606,4 +608,350 @@ export const INITIAL_CART_ITEMS: CartItem[] = [
     addedAt: 'Před 3 dny'
   }
 ]
+
+export const CLEANING_TASK_DEFS: CleaningTaskDef[] = [
+  {
+    key: 'KITCHEN',
+    title: 'Uklízení kuchyně a myčky',
+    shortTitle: 'Kuchyň a myčka',
+    description: 'Pravidelný týdenní úklid kuchyňské linky, varné desky, myčky na nádobí a jídelního stolu.',
+    subtasks: [
+      'Vyklidit čisté nádobí a zapnout plnou myčku',
+      'Setřít a odmastit varnou desku a linku',
+      'Umýt dřez, baterii a vyčistit odtokové sítko',
+      'Utřít jídelní stůl a vynést bioodpad'
+    ],
+    icon: 'utensils',
+    color: 'emerald'
+  },
+  {
+    key: 'BATHROOM',
+    title: 'Koupelna a toaleta',
+    shortTitle: 'Koupelna a WC',
+    description: 'Důkladná dezinfekce toalety, vyčištění sprchy/vany, umyvadla a vyleštění zrcadel.',
+    subtasks: [
+      'Dezinfikovat a umýt toaletní mísu i prkénko',
+      'Vyčistit sprchový kout / vanu a odstranit vodní kámen',
+      'Umýt umyvadlo a vyleštit zrcadlo',
+      'Doplnit toaletní papír a vyměnit ručníky'
+    ],
+    icon: 'bath',
+    color: 'sky'
+  },
+  {
+    key: 'CORRIDOR',
+    title: 'Chodba a vysávání',
+    shortTitle: 'Chodba a vysávání',
+    description: 'Vyluxování všech společných prostor bytu, vytření podlahy a úklid předsíně s botníkem.',
+    subtasks: [
+      'Vyluxovat koberce a podlahy ve společných prostorách',
+      'Vytřít podlahu v předsíni a chodbě namokro',
+      'Srovnat botník a vyklepat vstupní rohožku',
+      'Otřít prach ze společných komod a parapetů'
+    ],
+    icon: 'sparkles',
+    color: 'amber'
+  },
+  {
+    key: 'TRASH',
+    title: 'Odpadky a třídění',
+    shortTitle: 'Odpadky a třídění',
+    description: 'Vynesení směsného i tříděného odpadu do venkovních kontejnerů a výměna sáčků.',
+    subtasks: [
+      'Vynést směsný komunální odpad do černé popelnice',
+      'Vytřídit a vynést plast, papír, plechovky a sklo',
+      'Otřít a vydezinfikovat odpadkové koše',
+      'Založit nové pevné pytle do všech košů'
+    ],
+    icon: 'trash',
+    color: 'purple'
+  }
+]
+
+export const INITIAL_CLEANING_SHIFTS: CleaningShift[] = [
+  // Week 44 (Past week, complete)
+  {
+    id: 'shift-w44-kitchen',
+    weekNumber: 44,
+    year: 2026,
+    weekLabel: 'Týden 44 (26. 10. – 1. 11. 2026)',
+    startDate: '2026-10-26',
+    endDate: '2026-11-01',
+    taskKey: 'KITCHEN',
+    taskTitle: 'Uklízení kuchyně a myčky',
+    roommateId: 'user-martin',
+    roommateName: 'Martin Pospíšil',
+    isCompleted: true,
+    completedAt: '01. 11. 2026 18:30',
+    completedBy: 'Martin Pospíšil'
+  },
+  {
+    id: 'shift-w44-bathroom',
+    weekNumber: 44,
+    year: 2026,
+    weekLabel: 'Týden 44 (26. 10. – 1. 11. 2026)',
+    startDate: '2026-10-26',
+    endDate: '2026-11-01',
+    taskKey: 'BATHROOM',
+    taskTitle: 'Koupelna a toaleta',
+    roommateId: 'user-tomas',
+    roommateName: 'Tomáš Beránek',
+    isCompleted: true,
+    completedAt: '31. 10. 2026 14:15',
+    completedBy: 'Tomáš Beránek'
+  },
+  {
+    id: 'shift-w44-corridor',
+    weekNumber: 44,
+    year: 2026,
+    weekLabel: 'Týden 44 (26. 10. – 1. 11. 2026)',
+    startDate: '2026-10-26',
+    endDate: '2026-11-01',
+    taskKey: 'CORRIDOR',
+    taskTitle: 'Chodba a vysávání',
+    roommateId: 'user-jakub',
+    roommateName: 'Jakub Kovář',
+    isCompleted: true,
+    completedAt: '01. 11. 2026 11:20',
+    completedBy: 'Jakub Kovář'
+  },
+  {
+    id: 'shift-w44-trash',
+    weekNumber: 44,
+    year: 2026,
+    weekLabel: 'Týden 44 (26. 10. – 1. 11. 2026)',
+    startDate: '2026-10-26',
+    endDate: '2026-11-01',
+    taskKey: 'TRASH',
+    taskTitle: 'Odpadky a třídění',
+    roommateId: 'user-eliska',
+    roommateName: 'Eliška Malá',
+    isCompleted: true,
+    completedAt: '30. 10. 2026 20:00',
+    completedBy: 'Eliška Malá'
+  },
+
+  // Week 45 (Current active week)
+  {
+    id: 'shift-w45-kitchen',
+    weekNumber: 45,
+    year: 2026,
+    weekLabel: 'Týden 45 (2. 11. – 8. 11. 2026)',
+    startDate: '2026-11-02',
+    endDate: '2026-11-08',
+    taskKey: 'KITCHEN',
+    taskTitle: 'Uklízení kuchyně a myčky',
+    roommateId: 'user-tomas',
+    roommateName: 'Tomáš Beránek',
+    isCompleted: true,
+    completedAt: '04. 11. 2026 21:15',
+    completedBy: 'Tomáš Beránek',
+    notes: 'Myčka zkontrolována, linka otřena.'
+  },
+  {
+    id: 'shift-w45-bathroom',
+    weekNumber: 45,
+    year: 2026,
+    weekLabel: 'Týden 45 (2. 11. – 8. 11. 2026)',
+    startDate: '2026-11-02',
+    endDate: '2026-11-08',
+    taskKey: 'BATHROOM',
+    taskTitle: 'Koupelna a toaleta',
+    roommateId: 'user-jakub',
+    roommateName: 'Jakub Kovář',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w45-corridor',
+    weekNumber: 45,
+    year: 2026,
+    weekLabel: 'Týden 45 (2. 11. – 8. 11. 2026)',
+    startDate: '2026-11-02',
+    endDate: '2026-11-08',
+    taskKey: 'CORRIDOR',
+    taskTitle: 'Chodba a vysávání',
+    roommateId: 'user-eliska',
+    roommateName: 'Eliška Malá',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w45-trash',
+    weekNumber: 45,
+    year: 2026,
+    weekLabel: 'Týden 45 (2. 11. – 8. 11. 2026)',
+    startDate: '2026-11-02',
+    endDate: '2026-11-08',
+    taskKey: 'TRASH',
+    taskTitle: 'Odpadky a třídění',
+    roommateId: 'user-martin',
+    roommateName: 'Martin Pospíšil',
+    isCompleted: true,
+    completedAt: '05. 11. 2026 19:40',
+    completedBy: 'Martin Pospíšil',
+    notes: 'Vynesen plast i papír, nový pytel v koši.'
+  },
+
+  // Week 46 (Upcoming week)
+  {
+    id: 'shift-w46-kitchen',
+    weekNumber: 46,
+    year: 2026,
+    weekLabel: 'Týden 46 (9. 11. – 15. 11. 2026)',
+    startDate: '2026-11-09',
+    endDate: '2026-11-15',
+    taskKey: 'KITCHEN',
+    taskTitle: 'Uklízení kuchyně a myčky',
+    roommateId: 'user-jakub',
+    roommateName: 'Jakub Kovář',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w46-bathroom',
+    weekNumber: 46,
+    year: 2026,
+    weekLabel: 'Týden 46 (9. 11. – 15. 11. 2026)',
+    startDate: '2026-11-09',
+    endDate: '2026-11-15',
+    taskKey: 'BATHROOM',
+    taskTitle: 'Koupelna a toaleta',
+    roommateId: 'user-eliska',
+    roommateName: 'Eliška Malá',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w46-corridor',
+    weekNumber: 46,
+    year: 2026,
+    weekLabel: 'Týden 46 (9. 11. – 15. 11. 2026)',
+    startDate: '2026-11-09',
+    endDate: '2026-11-15',
+    taskKey: 'CORRIDOR',
+    taskTitle: 'Chodba a vysávání',
+    roommateId: 'user-martin',
+    roommateName: 'Martin Pospíšil',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w46-trash',
+    weekNumber: 46,
+    year: 2026,
+    weekLabel: 'Týden 46 (9. 11. – 15. 11. 2026)',
+    startDate: '2026-11-09',
+    endDate: '2026-11-15',
+    taskKey: 'TRASH',
+    taskTitle: 'Odpadky a třídění',
+    roommateId: 'user-tomas',
+    roommateName: 'Tomáš Beránek',
+    isCompleted: false
+  },
+
+  // Week 47 (Upcoming week +2)
+  {
+    id: 'shift-w47-kitchen',
+    weekNumber: 47,
+    year: 2026,
+    weekLabel: 'Týden 47 (16. 11. – 22. 11. 2026)',
+    startDate: '2026-11-16',
+    endDate: '2026-11-22',
+    taskKey: 'KITCHEN',
+    taskTitle: 'Uklízení kuchyně a myčky',
+    roommateId: 'user-eliska',
+    roommateName: 'Eliška Malá',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w47-bathroom',
+    weekNumber: 47,
+    year: 2026,
+    weekLabel: 'Týden 47 (16. 11. – 22. 11. 2026)',
+    startDate: '2026-11-16',
+    endDate: '2026-11-22',
+    taskKey: 'BATHROOM',
+    taskTitle: 'Koupelna a toaleta',
+    roommateId: 'user-martin',
+    roommateName: 'Martin Pospíšil',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w47-corridor',
+    weekNumber: 47,
+    year: 2026,
+    weekLabel: 'Týden 47 (16. 11. – 22. 11. 2026)',
+    startDate: '2026-11-16',
+    endDate: '2026-11-22',
+    taskKey: 'CORRIDOR',
+    taskTitle: 'Chodba a vysávání',
+    roommateId: 'user-tomas',
+    roommateName: 'Tomáš Beránek',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w47-trash',
+    weekNumber: 47,
+    year: 2026,
+    weekLabel: 'Týden 47 (16. 11. – 22. 11. 2026)',
+    startDate: '2026-11-16',
+    endDate: '2026-11-22',
+    taskKey: 'TRASH',
+    taskTitle: 'Odpadky a třídění',
+    roommateId: 'user-jakub',
+    roommateName: 'Jakub Kovář',
+    isCompleted: false
+  },
+
+  // Week 48 (Upcoming week +3)
+  {
+    id: 'shift-w48-kitchen',
+    weekNumber: 48,
+    year: 2026,
+    weekLabel: 'Týden 48 (23. 11. – 29. 11. 2026)',
+    startDate: '2026-11-23',
+    endDate: '2026-11-29',
+    taskKey: 'KITCHEN',
+    taskTitle: 'Uklízení kuchyně a myčky',
+    roommateId: 'user-martin',
+    roommateName: 'Martin Pospíšil',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w48-bathroom',
+    weekNumber: 48,
+    year: 2026,
+    weekLabel: 'Týden 48 (23. 11. – 29. 11. 2026)',
+    startDate: '2026-11-23',
+    endDate: '2026-11-29',
+    taskKey: 'BATHROOM',
+    taskTitle: 'Koupelna a toaleta',
+    roommateId: 'user-tomas',
+    roommateName: 'Tomáš Beránek',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w48-corridor',
+    weekNumber: 48,
+    year: 2026,
+    weekLabel: 'Týden 48 (23. 11. – 29. 11. 2026)',
+    startDate: '2026-11-23',
+    endDate: '2026-11-29',
+    taskKey: 'CORRIDOR',
+    taskTitle: 'Chodba a vysávání',
+    roommateId: 'user-jakub',
+    roommateName: 'Jakub Kovář',
+    isCompleted: false
+  },
+  {
+    id: 'shift-w48-trash',
+    weekNumber: 48,
+    year: 2026,
+    weekLabel: 'Týden 48 (23. 11. – 29. 11. 2026)',
+    startDate: '2026-11-23',
+    endDate: '2026-11-29',
+    taskKey: 'TRASH',
+    taskTitle: 'Odpadky a třídění',
+    roommateId: 'user-eliska',
+    roommateName: 'Eliška Malá',
+    isCompleted: false
+  }
+]
+
 

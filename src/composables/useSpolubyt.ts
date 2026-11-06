@@ -10,7 +10,9 @@ import {
   Roommate,
   ToastNotification,
   CalculationKey,
-  ExpenseCategory
+  ExpenseCategory,
+  CleaningShift,
+  CleaningTaskDef
 } from '../types'
 import {
   INITIAL_ROOMMATES,
@@ -18,7 +20,9 @@ import {
   INITIAL_SETTLEMENTS,
   INITIAL_EXPENSES,
   INITIAL_METERS,
-  INITIAL_CART_ITEMS
+  INITIAL_CART_ITEMS,
+  INITIAL_CLEANING_SHIFTS,
+  CLEANING_TASK_DEFS
 } from '../data/mockData'
 
 const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v1_'
@@ -82,6 +86,8 @@ const settlements = ref<DebtSettlement[]>(loadFromStorage('settlements', INITIAL
 const expenses = ref<Expense[]>(loadFromStorage('expenses', INITIAL_EXPENSES))
 const meters = ref<MeterReading[]>(loadFromStorage('meters', INITIAL_METERS))
 const cartItems = ref<CartItem[]>(loadFromStorage('cartItems', INITIAL_CART_ITEMS))
+const cleaningShifts = ref<CleaningShift[]>(loadFromStorage('cleaning_shifts', INITIAL_CLEANING_SHIFTS))
+const selectedCleaningWeek = ref<number>(45)
 const toasts = ref<ToastNotification[]>([])
 
 // Auto-save watchers
@@ -92,6 +98,7 @@ watch(settlements, (val) => saveToStorage('settlements', val), { deep: true })
 watch(expenses, (val) => saveToStorage('expenses', val), { deep: true })
 watch(meters, (val) => saveToStorage('meters', val), { deep: true })
 watch(cartItems, (val) => saveToStorage('cartItems', val), { deep: true })
+watch(cleaningShifts, (val) => saveToStorage('cleaning_shifts', val), { deep: true })
 
 // Filters for Expenses list
 const expenseFilters = ref({
@@ -636,6 +643,147 @@ export function useSpolubyt() {
     return true
   }
 
+  // Cleaning & Shifts
+  const currentWeekNumber = 45
+  const cleaningTaskDefs = CLEANING_TASK_DEFS
+
+  const ensureShiftsForWeek = (targetWeek: number) => {
+    const existing = cleaningShifts.value.filter(s => s.weekNumber === targetWeek)
+    if (existing.length >= 4) return
+
+    const diff = targetWeek - 45
+    // Week 45 starts on Monday 2026-11-02
+    const baseStart = new Date(2026, 10, 2)
+    const startDateObj = new Date(baseStart.getTime() + diff * 7 * 24 * 60 * 60 * 1000)
+    const endDateObj = new Date(startDateObj.getTime() + 6 * 24 * 60 * 60 * 1000)
+
+    const fmtDayMonth = (d: Date) => `${d.getDate()}. ${d.getMonth() + 1}.`
+    const fmtIso = (d: Date) => `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`
+    const weekLabel = `Týden ${targetWeek} (${fmtDayMonth(startDateObj)} – ${fmtDayMonth(endDateObj)} ${endDateObj.getFullYear()})`
+
+    const tasksOrder: { key: import('../types').CleaningTaskKey; title: string }[] = [
+      { key: 'KITCHEN', title: 'Uklízení kuchyně a myčky' },
+      { key: 'BATHROOM', title: 'Koupelna a toaleta' },
+      { key: 'CORRIDOR', title: 'Chodba a vysávání' },
+      { key: 'TRASH', title: 'Odpadky a třídění' }
+    ]
+
+    tasksOrder.forEach((task, taskIdx) => {
+      // Check if already exists
+      const id = `shift-w${targetWeek}-${task.key.toLowerCase()}`
+      if (cleaningShifts.value.some(s => s.id === id)) return
+
+      const roommateIdx = ((taskIdx + (diff % 4)) % 4 + 4) % 4
+      const rm = roommates.value[roommateIdx] || roommates.value[0]
+      cleaningShifts.value.push({
+        id,
+        weekNumber: targetWeek,
+        year: endDateObj.getFullYear(),
+        weekLabel,
+        startDate: fmtIso(startDateObj),
+        endDate: fmtIso(endDateObj),
+        taskKey: task.key,
+        taskTitle: task.title,
+        roommateId: rm.id,
+        roommateName: rm.name,
+        isCompleted: false
+      })
+    })
+  }
+
+  const selectCleaningWeek = (weekNum: number) => {
+    selectedCleaningWeek.value = weekNum
+    ensureShiftsForWeek(weekNum)
+  }
+
+  const canConfirmShift = (shift: CleaningShift): boolean => {
+    return isMasterTenant.value || shift.roommateId === currentUserId.value
+  }
+
+  const toggleShiftStatus = (shiftId: string, notes?: string): boolean => {
+    const shift = cleaningShifts.value.find(s => s.id === shiftId)
+    if (!shift) return false
+
+    if (!canConfirmShift(shift)) {
+      showToast(
+        'Přístup odepřen',
+        `Tuto směnu může potvrdit pouze ${shift.roommateName} nebo správce bytu.`,
+        'warning'
+      )
+      return false
+    }
+
+    if (!shift.isCompleted) {
+      shift.isCompleted = true
+      const now = new Date()
+      const d = now.getDate().toString().padStart(2, '0')
+      const m = (now.getMonth() + 1).toString().padStart(2, '0')
+      const y = now.getFullYear()
+      const hh = now.getHours().toString().padStart(2, '0')
+      const mm = now.getMinutes().toString().padStart(2, '0')
+      shift.completedAt = `${d}. ${m}. ${y} ${hh}:${mm}`
+      shift.completedBy = currentUser.value.name
+      if (notes) shift.notes = notes
+
+      confetti({
+        particleCount: 65,
+        spread: 60,
+        origin: { y: 0.65 }
+      })
+
+      const actingNote = (isMasterTenant.value && shift.roommateId !== currentUserId.value)
+        ? ` (potvrzeno správcem bytu za spolubydlícího ${shift.roommateName})`
+        : ''
+
+      showToast(
+        'Úklidová směna splněna 🎉',
+        `Směna "${shift.taskTitle}" byla úspěšně označena jako splněná${actingNote}.`,
+        'success'
+      )
+    } else {
+      shift.isCompleted = false
+      shift.completedAt = undefined
+      shift.completedBy = undefined
+      showToast(
+        'Stav směny změněn',
+        `Směna "${shift.taskTitle}" byla vrácena do stavu "Čeká na splnění".`,
+        'info'
+      )
+    }
+    return true
+  }
+
+  const sendCleaningReminder = (shiftId: string) => {
+    const shift = cleaningShifts.value.find(s => s.id === shiftId)
+    if (!shift) return
+
+    showToast(
+      'Připomínka úklidu odeslána',
+      `Spolubydlícímu ${shift.roommateName} byla odeslána notifikace k povinnosti "${shift.taskTitle}".`,
+      'info'
+    )
+  }
+
+  const selectedWeekShifts = computed(() => {
+    return cleaningShifts.value.filter(s => s.weekNumber === selectedCleaningWeek.value)
+  })
+
+  const currentWeekCleaningShifts = computed(() => {
+    return cleaningShifts.value.filter(s => s.weekNumber === currentWeekNumber)
+  })
+
+  const myCurrentCleaningShift = computed(() => {
+    return currentWeekCleaningShifts.value.find(s => s.roommateId === currentUserId.value)
+  })
+
+  const pendingCurrentWeekCleaningCount = computed(() => {
+    return currentWeekCleaningShifts.value.filter(s => !s.isCompleted).length
+  })
+
+  const myCurrentCleaningPending = computed(() => {
+    return myCurrentCleaningShift.value ? !myCurrentCleaningShift.value.isCompleted : false
+  })
+
   // Settings & Apartment configuration
   const saveApartmentSettings = (newSettings: ApartmentSettings) => {
     settings.value = { ...newSettings }
@@ -678,6 +826,8 @@ export function useSpolubyt() {
         expenses.value = JSON.parse(JSON.stringify(INITIAL_EXPENSES))
         meters.value = JSON.parse(JSON.stringify(INITIAL_METERS))
         cartItems.value = JSON.parse(JSON.stringify(INITIAL_CART_ITEMS))
+        cleaningShifts.value = JSON.parse(JSON.stringify(INITIAL_CLEANING_SHIFTS))
+        selectedCleaningWeek.value = 45
         currentUserId.value = 'user-tomas'
         currentPage.value = 'DASH'
         closeModal()
@@ -779,6 +929,21 @@ export function useSpolubyt() {
     meters,
     latestMeters,
     addMeterReading,
+
+    // Cleaning & Shifts
+    cleaningShifts,
+    cleaningTaskDefs,
+    selectedCleaningWeek,
+    currentWeekNumber,
+    selectedWeekShifts,
+    currentWeekCleaningShifts,
+    myCurrentCleaningShift,
+    pendingCurrentWeekCleaningCount,
+    myCurrentCleaningPending,
+    canConfirmShift,
+    toggleShiftStatus,
+    sendCleaningReminder,
+    selectCleaningWeek,
 
     // Toasts & Reset
     toasts,

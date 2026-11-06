@@ -181,6 +181,50 @@
         </span>
       </button>
 
+      <!-- Cleaning Shifts / Úklidové směny -->
+      <button
+        @click="navigateTo('CLEANING')"
+        class="w-full flex items-center rounded-xl text-sm font-medium transition-colors relative group"
+        :class="[
+          isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
+          currentPage === 'CLEANING' ? 'bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/25' : 'text-slate-300 hover:bg-slate-800 hover:text-white border border-transparent'
+        ]"
+        :title="isSidebarCollapsed ? ('Úklidové směny' + (myCurrentCleaningPending ? ' (Máš směnu k úklidu)' : '')) : ''"
+      >
+        <div class="flex items-center gap-3 min-w-0" :class="{ 'justify-center': isSidebarCollapsed }">
+          <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+          <span v-if="!isSidebarCollapsed" class="truncate">Úklidové směny</span>
+        </div>
+
+        <!-- Badges -->
+        <span 
+          v-if="!isSidebarCollapsed && myCurrentCleaningPending"
+          class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap"
+        >
+          Moje směna
+        </span>
+        <span 
+          v-else-if="!isSidebarCollapsed && pendingCurrentWeekCleaningCount === 0"
+          class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap"
+        >
+          4/4 hotovo
+        </span>
+        <span 
+          v-else-if="!isSidebarCollapsed"
+          class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-semibold shrink-0 ml-2 whitespace-nowrap"
+        >
+          {{ 4 - pendingCurrentWeekCleaningCount }}/4
+        </span>
+
+        <!-- Collapsed dot indicator -->
+        <span 
+          v-if="isSidebarCollapsed && myCurrentCleaningPending"
+          class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-slate-900"
+        ></span>
+      </button>
+
       <!-- Settings -->
       <button
         @click="navigateTo('SETTINGS')"
@@ -254,6 +298,8 @@ const {
   isMasterTenant,
   isCurrentUserOverdue,
   currentUserDebt,
+  pendingCurrentWeekCleaningCount,
+  myCurrentCleaningPending,
   isSidebarCollapsed,
   toggleSidebar
 } = useSpolubyt()

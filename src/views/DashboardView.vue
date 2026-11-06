@@ -497,6 +497,82 @@
           </button>
         </div>
 
+        <!-- Weekly Cleaning Shift Widget -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              <span>Úklid tento týden</span>
+            </h2>
+            <button
+              @click="navigateTo('CLEANING')"
+              class="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+            >
+              Rozpis →
+            </button>
+          </div>
+
+          <!-- My Shift Card -->
+          <div 
+            v-if="myCurrentCleaningShift"
+            class="p-3.5 rounded-xl border space-y-2.5 transition-colors"
+            :class="myCurrentCleaningShift.isCompleted ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider" :class="myCurrentCleaningShift.isCompleted ? 'text-emerald-400' : 'text-amber-400'">
+                  {{ myCurrentCleaningShift.isCompleted ? '✓ Tvoje směna je splněna' : '⏳ Tvoje směna tento týden' }}
+                </span>
+                <h3 class="text-xs font-bold text-white mt-0.5">
+                  {{ myCurrentCleaningShift.taskTitle }}
+                </h3>
+              </div>
+              <span 
+                class="text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap"
+                :class="myCurrentCleaningShift.isCompleted ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
+              >
+                {{ myCurrentCleaningShift.isCompleted ? 'Splněno' : 'Do neděle' }}
+              </span>
+            </div>
+
+            <!-- Confirm button directly on dashboard -->
+            <button
+              v-if="!myCurrentCleaningShift.isCompleted"
+              @click="toggleShiftStatus(myCurrentCleaningShift.id)"
+              class="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Označit můj úklid jako hotový</span>
+            </button>
+          </div>
+
+          <!-- All 4 zones compact status -->
+          <div class="space-y-1.5 pt-1">
+            <div 
+              v-for="shift in currentWeekCleaningShifts" 
+              :key="shift.id"
+              class="flex items-center justify-between p-2 rounded-lg bg-slate-850 border border-slate-800 text-xs"
+            >
+              <div class="flex items-center gap-2 truncate min-w-0">
+                <span class="text-xs">
+                  {{ shift.taskKey === 'KITCHEN' ? '🍳' : shift.taskKey === 'BATHROOM' ? '🚿' : shift.taskKey === 'CORRIDOR' ? '🧹' : '♻️' }}
+                </span>
+                <span class="text-slate-300 truncate">{{ shift.taskTitle.split(' ')[0] }} ({{ shift.roommateName.split(' ')[0] }})</span>
+              </div>
+              <span 
+                class="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 font-mono"
+                :class="shift.isCompleted ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 bg-slate-800'"
+              >
+                {{ shift.isCompleted ? '✓ hotovo' : 'čeká' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <!-- Shared Cart Teaser -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
           <div class="flex items-center justify-between">
@@ -587,7 +663,10 @@ const {
   cartTotalPrice, 
   openModal, 
   navigateTo, 
-  sendReminder 
+  sendReminder,
+  myCurrentCleaningShift,
+  currentWeekCleaningShifts,
+  toggleShiftStatus 
 } = useSpolubyt()
 
 const recentExpenses = computed(() => {

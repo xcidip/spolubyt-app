@@ -1,4 +1,4 @@
-export type PageId = 'DASH' | 'EXPENSES' | 'SETTLEMENT' | 'ENERGY' | 'SETTINGS' | 'CART'
+export type PageId = 'DASH' | 'EXPENSES' | 'SETTLEMENT' | 'ENERGY' | 'SETTINGS' | 'CART' | 'CLEANING'
 
 export type ExpenseCategory = 
   | 'Bydlení'
@@ -129,3 +129,33 @@ export interface ToastNotification {
   timestamp: number
   duration?: number
 }
+
+export type CleaningTaskKey = 'KITCHEN' | 'BATHROOM' | 'CORRIDOR' | 'TRASH'
+
+export interface CleaningTaskDef {
+  key: CleaningTaskKey
+  title: string
+  shortTitle: string
+  description: string
+  subtasks: string[]
+  icon: string
+  color: string
+}
+
+export interface CleaningShift {
+  id: string
+  weekNumber: number
+  year: number
+  weekLabel: string
+  startDate: string
+  endDate: string
+  taskKey: CleaningTaskKey
+  taskTitle: string
+  roommateId: string
+  roommateName: string
+  isCompleted: boolean
+  completedAt?: string
+  completedBy?: string
+  notes?: string
+}
+
