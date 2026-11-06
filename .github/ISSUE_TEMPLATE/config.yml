@@ -1,0 +1,6 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Otázky a diskuze
+    url: https://github.com/xcidip/spolubyt-app/discussions
+    about: Pokud máte obecný dotaz k semestrálnímu projektu nebo nápad k diskuzi, využijte GitHub Discussions.
+

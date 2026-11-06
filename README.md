@@ -117,4 +117,12 @@ Prototyp v plném rozsahu pokrývá funkční požadavky, analytické use cases 
 
 ---
 
+## 📄 Licence a zapojení do vývoje
+
+- **Licence:** Tento projekt je licencován pod licencí MIT – podrobnosti naleznete v souboru [LICENSE](LICENSE).
+- **Kodex chování:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- **Jak přispět:** [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
 *Vytvořeno v rámci studia na Provozně ekonomické fakultě ČZU v Praze.*
