@@ -165,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import QRCode from 'qrcode'
 import { useSpolubyt } from '../composables/useSpolubyt'
 
@@ -175,23 +175,37 @@ const settlement = computed(() => selectedSettlement.value!)
 const qrCanvas = ref<HTMLCanvasElement | null>(null)
 
 const variableSymbol = '20261101'
-const paymentMessage = computed(() => `Spolubyt: Najem 11/2026 - ${settlement.value.roommateName}`)
+const paymentMessage = computed(() => `Spolubyt: Najem 11/2026 - ${settlement.value?.roommateName || ''}`)
+
+/**
+ * Strips Czech diacritics and non-ASCII characters to standard ASCII for SPAYD banking app compatibility.
+ */
+const stripDiacritics = (str: string): string => {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 -]/g, '')
+    .trim()
+}
 
 // Standard SPAYD string syntax:
 // SPD*1.0*ACC:CZ...*AM:...*CC:CZK*MSG:...*X-VS:...
 const spaydString = computed(() => {
+  if (!settlement.value) return ''
   const iban = settings.value.iban.replace(/\s+/g, '')
   const amount = settlement.value.totalDebt.toFixed(2)
-  const msg = encodeURIComponent(`Spolubyt Najem 11/2026 ${settlement.value.roommateName}`).slice(0, 60)
+  const cleanName = stripDiacritics(settlement.value.roommateName)
+  const rawMsg = `Spolubyt Najem 11/2026 ${cleanName}`
+  const msg = rawMsg.slice(0, 60)
   return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*MSG:${msg}*X-VS:${variableSymbol}`
 })
 
 const renderQrCode = async () => {
   await nextTick()
-  if (qrCanvas.value) {
+  if (qrCanvas.value && spaydString.value) {
     try {
       await QRCode.toCanvas(qrCanvas.value, spaydString.value, {
-        width: 176,
+        width: 352, // 2x high-DPI resolution for crisp retina rendering in 176px (w-44) box
         margin: 1,
         color: {
           dark: '#0f172a',
@@ -203,6 +217,8 @@ const renderQrCode = async () => {
     }
   }
 }
+
+watch(() => settlement.value, renderQrCode, { deep: true })
 
 onMounted(() => {
   renderQrCode()

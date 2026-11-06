@@ -71,22 +71,54 @@
                   v-for="item in cartItems" 
                   :key="item.id"
                   class="hover:bg-slate-800/50 transition-colors"
+                  :class="item.isPurchased ? 'bg-slate-900/60' : ''"
                 >
-                  <!-- Item name & who added -->
+                  <!-- Item name, toggle checkbox & who added / purchased -->
                   <td class="py-3 px-3.5">
-                    <div class="font-bold text-slate-100">{{ item.name }}</div>
-                    <div class="text-[10px] text-slate-400">Přidal(a): {{ item.addedBy }} • {{ item.addedAt }}</div>
+                    <div class="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        @click="toggleCartItemPurchased(item.id)"
+                        class="w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0"
+                        :class="item.isPurchased ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-950/40' : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700 hover:border-slate-600'"
+                        :title="item.isPurchased ? 'Zrušit označení koupeno' : 'Označit jako koupeno'"
+                        :aria-label="item.isPurchased ? 'Zrušit označení koupeno' : 'Označit jako koupeno'"
+                      >
+                        <svg v-if="item.isPurchased" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </button>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span :class="item.isPurchased ? 'line-through text-slate-400' : 'text-slate-100'" class="font-bold">
+                            {{ item.name }}
+                          </span>
+                          <span
+                            v-if="item.isPurchased"
+                            class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold"
+                          >
+                            Koupeno
+                          </span>
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">
+                          Přidal(a): {{ item.addedBy }} • {{ item.addedAt }}
+                          <span v-if="item.isPurchased && item.purchasedBy" class="text-emerald-400 font-medium">
+                            • Koupil(a): {{ item.purchasedBy }} ({{ item.purchasedAt || 'koupeno' }})
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </td>
 
                   <!-- Category -->
-                  <td class="py-3 px-3.5">
+                  <td class="py-3 px-3.5 whitespace-nowrap">
                     <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
                       {{ item.category }}
                     </span>
                   </td>
 
                   <!-- Quantity +/- buttons (Interactive state recalculation!) -->
-                  <td class="py-3 px-3.5 text-center">
+                  <td class="py-3 px-3.5 text-center whitespace-nowrap">
                     <div class="inline-flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-xl p-1">
                       <button
                         @click="updateCartItemQty(item.id, -1)"
@@ -111,27 +143,42 @@
                   </td>
 
                   <!-- Unit price -->
-                  <td class="py-3 px-3.5 text-right font-mono text-slate-300">
+                  <td class="py-3 px-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
                     {{ item.unitPrice }} CZK
                   </td>
 
                   <!-- Subtotal (qty * unitPrice) -->
-                  <td class="py-3 px-3.5 text-right font-mono font-bold text-emerald-400 text-sm">
+                  <td class="py-3 px-3.5 text-right font-mono font-bold text-emerald-400 text-sm whitespace-nowrap">
                     {{ (item.unitPrice * item.qty).toLocaleString('cs-CZ') }} CZK
                   </td>
 
-                  <!-- Remove action -->
-                  <td class="py-3 px-3.5 text-right">
-                    <button
-                      @click="removeCartItem(item.id)"
-                      class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                      title="Odebrat z košíku"
-                      aria-label="Odebrat z košíku"
-                    >
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                  <!-- Actions: Převést do výdajů and Remove -->
+                  <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button
+                        v-if="item.isPurchased"
+                        @click="convertCartItemToExpense(item)"
+                        type="button"
+                        class="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-102 flex items-center gap-1.5 shrink-0"
+                        title="Převést tuto položku přímo do výdajů bytu"
+                      >
+                        <span>Převést do výdajů</span>
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </button>
+
+                      <button
+                        @click="removeCartItem(item.id)"
+                        class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        title="Odebrat z košíku"
+                        aria-label="Odebrat z košíku"
+                      >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
 
@@ -291,7 +338,9 @@ const {
   updateCartItemQty, 
   removeCartItem, 
   clearCart, 
-  convertCartToExpense 
+  convertCartToExpense,
+  convertCartItemToExpense,
+  toggleCartItemPurchased
 } = useSpolubyt()
 
 const newItem = reactive({

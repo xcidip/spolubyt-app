@@ -104,6 +104,17 @@ export interface CartItem {
   qty: number
   addedBy: string
   addedAt: string
+  isPurchased?: boolean
+  purchasedBy?: string
+  purchasedAt?: string
+}
+
+export interface ExpensePrefillData {
+  title?: string
+  totalAmount?: number
+  category?: ExpenseCategory
+  cartItemId?: string
+  items?: Array<{ id: string; name: string; price: number; qty: number }>
 }
 
 export interface ApartmentSettings {
@@ -142,6 +153,17 @@ export interface CleaningTaskDef {
   color: string
 }
 
+export interface ShiftSwapRequest {
+  id: string
+  targetRoommateId: string
+  targetRoommateName: string
+  requestedByRoommateId: string
+  requestedByRoommateName: string
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
+  createdAt: string
+  note?: string
+}
+
 export interface CleaningShift {
   id: string
   weekNumber: number
@@ -157,5 +179,16 @@ export interface CleaningShift {
   completedAt?: string
   completedBy?: string
   notes?: string
+  swapRequest?: ShiftSwapRequest
+}
+
+export interface EnergyPrediction {
+  annualAdvances: number
+  projectedAnnualCost: number
+  netDelta: number // positive = surplus, negative = deficit
+  isSurplus: boolean
+  formattedDelta: string // e.g. "+1 450 CZK" or "-850 CZK"
+  drawdownPct: number
+  riskLevel: 'Nízké riziko' | 'Mírné překročení' | 'Vysoké riziko'
 }
 

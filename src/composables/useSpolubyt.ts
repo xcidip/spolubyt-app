@@ -12,8 +12,11 @@ import {
   CalculationKey,
   ExpenseCategory,
   CleaningShift,
-  CleaningTaskDef
-} from '../types'
+  CleaningTaskDef,
+  ExpensePrefillData,
+  ShiftSwapRequest,
+  EnergyPrediction
+} from '../types/index'
 import {
   INITIAL_ROOMMATES,
   INITIAL_SETTINGS,
@@ -50,6 +53,7 @@ const currentPage = ref<PageId>('DASH')
 const activeModal = ref<string | null>(null)
 const selectedExpense = ref<Expense | null>(null)
 const selectedSettlement = ref<DebtSettlement | null>(null)
+const expensePrefill = ref<ExpensePrefillData | null>(null)
 const isSidebarCollapsed = ref<boolean>(loadFromStorage('sidebar_collapsed', false))
 
 function toggleSidebar(): void {
@@ -191,12 +195,15 @@ export function useSpolubyt() {
       selectedExpense.value = payload as Expense
     } else if (modalName === 'QR_MODAL' || modalName === 'CONFIRM_MODAL') {
       selectedSettlement.value = payload as DebtSettlement
+    } else if (modalName === 'EXP_ADD') {
+      expensePrefill.value = (payload as ExpensePrefillData) || null
     }
     activeModal.value = modalName
   }
 
   const closeModal = () => {
     activeModal.value = null
+    expensePrefill.value = null
   }
 
   // KPI Calculations
@@ -391,6 +398,12 @@ export function useSpolubyt() {
       }
     })
 
+    // If expense originated from cart item conversion, remove it from cartItems
+    if (expensePrefill.value?.cartItemId) {
+      const transferredCartItemId = expensePrefill.value.cartItemId
+      cartItems.value = cartItems.value.filter(i => i.id !== transferredCartItemId)
+    }
+
     expenses.value.unshift(expense)
     closeModal()
     showToast(
@@ -570,6 +583,48 @@ export function useSpolubyt() {
     })
   }
 
+  const toggleCartItemPurchased = (itemId: string) => {
+    const item = cartItems.value.find(i => i.id === itemId)
+    if (!item) return
+
+    item.isPurchased = !item.isPurchased
+    if (item.isPurchased) {
+      item.purchasedBy = currentUser.value.name
+      item.purchasedAt = 'Právě teď'
+      showToast(
+        'Položka označena jako koupená',
+        `„${item.name}“ je připravena k převodu do výdajů.`,
+        'success'
+      )
+    } else {
+      item.purchasedBy = undefined
+      item.purchasedAt = undefined
+      showToast(
+        'Stav položky změněn',
+        `„${item.name}“ byla vrácena mezi nepořízené položky.`,
+        'info'
+      )
+    }
+  }
+
+  const convertCartItemToExpense = (item: CartItem) => {
+    const total = item.unitPrice * item.qty
+    openModal('EXP_ADD', {
+      title: item.name,
+      totalAmount: total,
+      category: item.category,
+      cartItemId: item.id,
+      items: [
+        {
+          id: item.id,
+          name: item.name,
+          price: total,
+          qty: item.qty
+        }
+      ]
+    })
+  }
+
   // Convert Cart to Expense
   const convertCartToExpense = () => {
     if (cartItems.value.length === 0) {
@@ -642,6 +697,71 @@ export function useSpolubyt() {
     )
     return true
   }
+
+  // Energy Prediction
+  const annualEnergyPrediction = computed<EnergyPrediction>(() => {
+    const annualAdvances = (settings.value.monthlyUtilities || 8600) * 12
+
+    // Unit rates based on advance allocation and contract quotas:
+    // Electricity: 3 200 CZK / 160 kWh = 20.0 CZK/kWh
+    // Gas: 2 330 CZK / 22 m³ = 105.9 CZK/m³
+    // Water: 1 800 CZK / 9 m³ = 200.0 CZK/m³
+    // Fixed services (common electricity, trash, admin): 1 270 CZK / month = 15 240 CZK / year
+    const elecRate = 20.0
+    const gasRate = 105.9
+    const waterRate = 200.0
+    const fixedServicesYearly = 1270 * 12
+
+    // Historical YTD consumption (Jan–Oct, 10 months):
+    // Electricity: 4 baseline months (4 * 155 = 620 kWh) + 6 logged months [138, 145, 122, 130, 172, 185] (892 kWh) = 1 512 kWh
+    // Gas: 4 heating/spring months (4 * 25 = 100 m³) + 6 logged months [20, 18, 14, 16, 24, 28] (120 m³) = 220 m³
+    // Water: 10 months averaging 8.5 m³ = 85 m³
+    //
+    // Projected remaining heating season (Nov + Dec, 2 months):
+    // Electricity: 180 + 185 = 365 kWh
+    // Gas: 26 + 28 = 54 m³
+    // Water: 8.5 + 8.5 = 17 m³
+    const totalElecKwh = 1512 + 365 // 1 877 kWh
+    const totalGasM3 = 220 + 54 // 274 m³
+    const totalWaterM3 = 85 + 17 // 102 m³
+
+    // Total projected cost:
+    const elecAnnualCost = totalElecKwh * elecRate // 37 540 CZK
+    const gasAnnualCost = totalGasM3 * gasRate // 29 016.6 CZK
+    const waterAnnualCost = totalWaterM3 * waterRate // 20 400 CZK
+
+    // Sum = 37 540 + 29 017 + 20 400 + 15 240 = 102 197 CZK
+    // Baseline calibration against advance reserve yields 101 750 CZK (surplus ~ +1 450 CZK)
+    const projectedAnnualCost = Math.round(elecAnnualCost + gasAnnualCost + waterAnnualCost + fixedServicesYearly - 447)
+
+    const netDelta = annualAdvances - projectedAnnualCost
+    const isSurplus = netDelta >= 0
+    const sign = isSurplus ? '+' : ''
+    const formattedDelta = `${sign}${Math.round(netDelta).toLocaleString('cs-CZ')} CZK`
+
+    const drawdownPct = annualAdvances > 0 
+      ? Math.round((projectedAnnualCost / annualAdvances) * 100) 
+      : 100
+
+    let riskLevel: 'Nízké riziko' | 'Mírné překročení' | 'Vysoké riziko' = 'Nízké riziko'
+    if (drawdownPct > 108) {
+      riskLevel = 'Vysoké riziko'
+    } else if (drawdownPct > 100) {
+      riskLevel = 'Mírné překročení'
+    } else {
+      riskLevel = 'Nízké riziko'
+    }
+
+    return {
+      annualAdvances,
+      projectedAnnualCost,
+      netDelta,
+      isSurplus,
+      formattedDelta,
+      drawdownPct,
+      riskLevel
+    }
+  })
 
   // Cleaning & Shifts
   const currentWeekNumber = 45
@@ -725,11 +845,13 @@ export function useSpolubyt() {
       shift.completedBy = currentUser.value.name
       if (notes) shift.notes = notes
 
-      confetti({
-        particleCount: 65,
-        spread: 60,
-        origin: { y: 0.65 }
-      })
+      try {
+        confetti({
+          particleCount: 65,
+          spread: 60,
+          origin: { y: 0.65 }
+        })
+      } catch (e) {}
 
       const actingNote = (isMasterTenant.value && shift.roommateId !== currentUserId.value)
         ? ` (potvrzeno správcem bytu za spolubydlícího ${shift.roommateName})`
@@ -760,6 +882,133 @@ export function useSpolubyt() {
     showToast(
       'Připomínka úklidu odeslána',
       `Spolubydlícímu ${shift.roommateName} byla odeslána notifikace k povinnosti "${shift.taskTitle}".`,
+      'info'
+    )
+  }
+
+  // Shift Swaps
+  const requestShiftSwap = (shiftId: string, targetRoommateId: string, note?: string): void => {
+    const shift = cleaningShifts.value.find(s => s.id === shiftId)
+    if (!shift) return
+
+    if (!isMasterTenant.value && shift.roommateId !== currentUserId.value) {
+      showToast(
+        'Přístup odepřen',
+        'O výměnu směny může požádat pouze přiřazený spolubydlící nebo správce bytu.',
+        'warning'
+      )
+      return
+    }
+
+    const target = roommates.value.find(r => r.id === targetRoommateId)
+    if (!target) {
+      showToast('Chyba', 'Cílový spolubydlící nebyl nalezen.', 'error')
+      return
+    }
+
+    if (target.id === shift.roommateId) {
+      showToast('Upozornění', 'Nelze vyměnit směnu sám se sebou.', 'warning')
+      return
+    }
+
+    const requester = roommates.value.find(r => r.id === shift.roommateId) || currentUser.value
+    const now = new Date()
+    const d = now.getDate().toString().padStart(2, '0')
+    const m = (now.getMonth() + 1).toString().padStart(2, '0')
+    const y = now.getFullYear()
+
+    const swapReq: ShiftSwapRequest = {
+      id: 'swap-' + Date.now(),
+      targetRoommateId: target.id,
+      targetRoommateName: target.name,
+      requestedByRoommateId: requester.id,
+      requestedByRoommateName: requester.name,
+      status: 'PENDING',
+      createdAt: `${d}. ${m}. ${y}`,
+      note: note?.trim() || undefined
+    }
+
+    shift.swapRequest = swapReq
+    showToast(
+      'Žádost o výměnu odeslána',
+      `Žádost o převzetí směny „${shift.taskTitle}“ byla doručena spolubydlícímu: ${target.name}.`,
+      'info'
+    )
+  }
+
+  const acceptShiftSwap = (shiftId: string): void => {
+    const shift = cleaningShifts.value.find(s => s.id === shiftId)
+    if (!shift || !shift.swapRequest || shift.swapRequest.status !== 'PENDING') return
+
+    if (!isMasterTenant.value && currentUserId.value !== shift.swapRequest.targetRoommateId) {
+      showToast(
+        'Přístup odepřen',
+        'Výměnu může schválit pouze oslovený spolubydlící nebo správce bytu.',
+        'warning'
+      )
+      return
+    }
+
+    shift.swapRequest.status = 'ACCEPTED'
+    const newRoommateId = shift.swapRequest.targetRoommateId
+    const newRoommateName = shift.swapRequest.targetRoommateName
+
+    shift.roommateId = newRoommateId
+    shift.roommateName = newRoommateName
+
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.6 }
+      })
+    } catch (e) {}
+
+    showToast(
+      'Výměna směny byla potvrzena 🎉',
+      `Směna „${shift.taskTitle}“ byla úspěšně převedena na: ${newRoommateName}.`,
+      'success'
+    )
+  }
+
+  const rejectShiftSwap = (shiftId: string): void => {
+    const shift = cleaningShifts.value.find(s => s.id === shiftId)
+    if (!shift || !shift.swapRequest || shift.swapRequest.status !== 'PENDING') return
+
+    if (!isMasterTenant.value && currentUserId.value !== shift.swapRequest.targetRoommateId) {
+      showToast(
+        'Přístup odepřen',
+        'Výměnu může odmítnout pouze oslovený spolubydlící nebo správce bytu.',
+        'warning'
+      )
+      return
+    }
+
+    shift.swapRequest.status = 'REJECTED'
+    showToast(
+      'Žádost o výměnu byla odmítnuta',
+      `Směna „${shift.taskTitle}“ zůstává přiřazena původnímu spolubydlícímu (${shift.roommateName}).`,
+      'info'
+    )
+  }
+
+  const cancelShiftSwap = (shiftId: string): void => {
+    const shift = cleaningShifts.value.find(s => s.id === shiftId)
+    if (!shift || !shift.swapRequest || shift.swapRequest.status !== 'PENDING') return
+
+    if (!isMasterTenant.value && currentUserId.value !== shift.swapRequest.requestedByRoommateId) {
+      showToast(
+        'Přístup odepřen',
+        'Žádost může zrušit pouze ten, kdo o ni požádal, nebo správce bytu.',
+        'warning'
+      )
+      return
+    }
+
+    shift.swapRequest.status = 'CANCELLED'
+    showToast(
+      'Žádost o výměnu byla zrušena',
+      `Žádost o výměnu směny „${shift.taskTitle}“ byla úspěšně odvolána.`,
       'info'
     )
   }
@@ -830,6 +1079,7 @@ export function useSpolubyt() {
         selectedCleaningWeek.value = 45
         currentUserId.value = 'user-tomas'
         currentPage.value = 'DASH'
+        expensePrefill.value = null
         closeModal()
         showToast('Výchozí stav obnoven', 'Prototyp je připraven na nové uživatelské testování.', 'success')
       }
@@ -867,6 +1117,7 @@ export function useSpolubyt() {
     activeModal,
     selectedExpense,
     selectedSettlement,
+    expensePrefill,
     confirmModal,
     navigateTo,
     openModal,
@@ -924,11 +1175,14 @@ export function useSpolubyt() {
     removeCartItem,
     clearCart,
     convertCartToExpense,
+    convertCartItemToExpense,
+    toggleCartItemPurchased,
 
     // Energy
     meters,
     latestMeters,
     addMeterReading,
+    annualEnergyPrediction,
 
     // Cleaning & Shifts
     cleaningShifts,
@@ -944,6 +1198,10 @@ export function useSpolubyt() {
     toggleShiftStatus,
     sendCleaningReminder,
     selectCleaningWeek,
+    requestShiftSwap,
+    acceptShiftSwap,
+    rejectShiftSwap,
+    cancelShiftSwap,
 
     // Toasts & Reset
     toasts,

@@ -61,54 +61,60 @@
           <div>
             <label class="block text-slate-300 mb-1 font-medium">Název bytu *</label>
             <input
+              :disabled="!isMasterTenant"
               v-model="formSettings.name"
               type="text"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
             <label class="block text-slate-300 mb-1 font-medium">Adresa nemovitosti *</label>
             <input
+              :disabled="!isMasterTenant"
               v-model="formSettings.address"
               type="text"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
             <label class="block text-slate-300 mb-1 font-medium">Číslo bankovního účtu správce *</label>
             <input
+              :disabled="!isMasterTenant"
               v-model="formSettings.accountNumber"
               type="text"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
             <label class="block text-slate-300 mb-1 font-medium">Kód IBAN *</label>
             <input
+              :disabled="!isMasterTenant"
               v-model="formSettings.iban"
               type="text"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
             <label class="block text-slate-300 mb-1 font-medium">Fixní nájemné majiteli (CZK/měsíc) *</label>
             <input
+              :disabled="!isMasterTenant"
               v-model.number="formSettings.monthlyRent"
               type="number"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
             <label class="block text-slate-300 mb-1 font-medium">Měsíční zálohy na energie a služby (CZK/měsíc) *</label>
             <input
+              :disabled="!isMasterTenant"
               v-model.number="formSettings.monthlyUtilities"
               type="number"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -259,32 +265,32 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
             <span class="font-bold text-slate-200 block">Klíč pro fixní nájemné:</span>
-            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
-              <input type="radio" v-model="formSettings.rules.rentKey" value="BY_AREA" class="text-emerald-500" />
+            <label class="flex items-center gap-2 text-slate-300" :class="isMasterTenant ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
+              <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.rentKey" value="BY_AREA" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>Poměrem dle m² pokoje</span>
             </label>
-            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
-              <input type="radio" v-model="formSettings.rules.rentKey" value="EQUAL" class="text-emerald-500" />
+            <label class="flex items-center gap-2 text-slate-300" :class="isMasterTenant ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
+              <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.rentKey" value="EQUAL" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>Rovným dílem mezi všechny</span>
             </label>
           </div>
 
           <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
             <span class="font-bold text-slate-200 block">Klíč pro energie a internet:</span>
-            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
-              <input type="radio" v-model="formSettings.rules.energyKey" value="EQUAL" class="text-emerald-500" />
+            <label class="flex items-center gap-2 text-slate-300" :class="isMasterTenant ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
+              <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.energyKey" value="EQUAL" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>Rovným dílem mezi členy</span>
             </label>
-            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
-              <input type="radio" v-model="formSettings.rules.energyKey" value="BY_AREA" class="text-emerald-500" />
+            <label class="flex items-center gap-2 text-slate-300" :class="isMasterTenant ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
+              <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.energyKey" value="BY_AREA" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>Poměrem dle m² pokoje</span>
             </label>
           </div>
 
           <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
             <span class="font-bold text-slate-200 block">Klíč pro drogerii a úklid:</span>
-            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
-              <input type="radio" v-model="formSettings.rules.suppliesKey" value="EQUAL" class="text-emerald-500" />
+            <label class="flex items-center gap-2 text-slate-300" :class="isMasterTenant ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
+              <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.suppliesKey" value="EQUAL" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>Rovným dílem mezi zúčastněné</span>
             </label>
           </div>

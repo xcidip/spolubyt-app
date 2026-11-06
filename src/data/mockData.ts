@@ -569,7 +569,10 @@ export const INITIAL_CART_ITEMS: CartItem[] = [
     unitPrice: 349,
     qty: 1,
     addedBy: 'Tomáš Beránek',
-    addedAt: 'Před 2 dny'
+    addedAt: 'Před 2 dny',
+    isPurchased: true,
+    purchasedBy: 'Jakub Kovář',
+    purchasedAt: 'Včera'
   },
   {
     id: 'cart-2',
@@ -578,7 +581,8 @@ export const INITIAL_CART_ITEMS: CartItem[] = [
     unitPrice: 189,
     qty: 2,
     addedBy: 'Eliška Malá',
-    addedAt: 'Včera'
+    addedAt: 'Včera',
+    isPurchased: false
   },
   {
     id: 'cart-3',

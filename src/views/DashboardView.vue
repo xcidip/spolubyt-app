@@ -4,7 +4,7 @@
     <!-- Top Hero / Welcome Banner -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
       <div>
-        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-1" :class="isMasterTenant ? 'text-emerald-400' : 'text-sky-400'">
+        <div class="flex items-center gap-2 text-xs font-semibold mb-1" :class="isMasterTenant ? 'text-emerald-400' : 'text-sky-400'">
           <span class="w-2 h-2 rounded-full animate-pulse" :class="isMasterTenant ? 'bg-emerald-500' : 'bg-sky-500'"></span>
           <span>{{ isMasterTenant ? 'Centrální přehled správce bytu' : `Osobní přehled spolubydlícího (${currentUser.role})` }}</span>
         </div>
@@ -17,21 +17,40 @@
         </p>
       </div>
 
-      <!-- Quick Action Buttons -->
-      <div class="flex items-center gap-2.5">
-        <button
-          @click="openModal('EXP_ADD')"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-102"
+      <!-- Contextual Info & Quick Actions -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <!-- Weekly Cleaning Status Card (Clickable to Cleaning) -->
+        <div
+          @click="navigateTo('CLEANING')"
+          class="cursor-pointer group flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all"
+          :class="myCurrentCleaningShift?.isCompleted 
+            ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20' 
+            : 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20'"
+          title="Přejít na rozpis úklidu"
         >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Zadat nový výdaj</span>
-        </button>
+          <div class="text-lg">
+            {{ myCurrentCleaningShift?.taskKey === 'KITCHEN' ? '🍳' : myCurrentCleaningShift?.taskKey === 'BATHROOM' ? '🚿' : myCurrentCleaningShift?.taskKey === 'CORRIDOR' ? '🧹' : (myCurrentCleaningShift?.taskKey === 'TRASH' ? '♻️' : '✨') }}
+          </div>
+          <div>
+            <div class="text-[10px] font-semibold text-slate-400 flex items-center gap-1.5">
+              <span>Úklid tento týden:</span>
+              <span 
+                class="font-bold text-[10px] px-1.5 py-0.5 rounded"
+                :class="myCurrentCleaningShift?.isCompleted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'"
+              >
+                {{ myCurrentCleaningShift?.isCompleted ? 'Splněno ✓' : 'Čeká na vás' }}
+              </span>
+            </div>
+            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">
+              {{ myCurrentCleaningShift ? myCurrentCleaningShift.taskTitle : 'Nemáte přiřazen úklid' }}
+            </div>
+          </div>
+        </div>
 
+        <!-- Quick Action: Zapsat odečet měřidla -->
         <button
           @click="openModal('METER_ADD')"
-          class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+          class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors shrink-0"
         >
           <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -47,9 +66,9 @@
       <!-- Card 1: Monthly Expenses -->
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-between">
         <div>
-          <div class="flex items-start justify-between gap-2.5 text-xs text-slate-400 mb-2">
-            <span class="font-bold uppercase tracking-wider min-w-0">
-              {{ isMasterTenant ? 'Měsíční náklady bytu (Listopad)' : 'Můj měsíční podíl nákladů (Listopad)' }}
+          <div class="flex items-start justify-between gap-2 flex-wrap text-xs text-slate-400 mb-2">
+            <span class="font-semibold text-xs text-slate-400 min-w-0">
+              {{ isMasterTenant ? 'Měsíční náklady bytu (listopad)' : 'Můj měsíční podíl nákladů (listopad)' }}
             </span>
             <span class="text-emerald-400 font-semibold text-[11px] bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0 whitespace-nowrap leading-tight">
               {{ isMasterTenant ? '+2,4 % m/m' : `Podíl ${currentUser.areaSharePct} %` }}
@@ -59,10 +78,10 @@
             {{ (isMasterTenant ? monthlyTotalExpenses : currentUserMonthlyExpenses).toLocaleString('cs-CZ') }} CZK
           </div>
         </div>
-        <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
+        <div class="text-xs text-slate-400 mt-2 flex items-center justify-between gap-2 flex-wrap">
           <span v-if="isMasterTenant">Předchozí měsíc: {{ previousMonthTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
           <span v-else>Celkem náklady bytu: {{ monthlyTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
-          <button @click="navigateTo('EXPENSES')" class="text-emerald-400 hover:underline font-medium text-[11px]">
+          <button @click="navigateTo('EXPENSES')" class="text-emerald-400 hover:underline font-medium text-[11px] shrink-0">
             Výpis →
           </button>
         </div>
@@ -71,9 +90,9 @@
       <!-- Card 2: Receivables / Personal Debt -->
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-between">
         <div>
-          <div class="flex items-start justify-between gap-2.5 text-xs text-slate-400 mb-2">
-            <span class="font-bold uppercase tracking-wider min-w-0">
-              {{ isMasterTenant ? 'Pohledávky správce (Dluží bytu)' : 'Můj aktuální nedoplatek (K úhradě)' }}
+          <div class="flex items-start justify-between gap-2 flex-wrap text-xs text-slate-400 mb-2">
+            <span class="font-semibold text-xs text-slate-400 min-w-0">
+              {{ isMasterTenant ? 'Pohledávky správce (dluží bytu)' : 'Můj aktuální nedoplatek (k úhradě)' }}
             </span>
             
             <!-- Badge -->
@@ -108,25 +127,25 @@
           </div>
         </div>
 
-        <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
-          <span v-if="isMasterTenant" :class="overdueDebtorsCount > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'">
+        <div class="text-xs text-slate-400 mt-2 flex items-center justify-between gap-2 flex-wrap">
+          <span v-if="isMasterTenant" class="min-w-0" :class="overdueDebtorsCount > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'">
             {{ overdueDebtorsSubtitle }}
           </span>
-          <span v-else :class="isCurrentUserOverdue ? 'text-rose-400 font-semibold' : (currentUserDebt > 0 ? 'text-amber-300' : 'text-emerald-400 font-medium')">
+          <span v-else class="min-w-0" :class="isCurrentUserOverdue ? 'text-rose-400 font-semibold' : (currentUserDebt > 0 ? 'text-amber-300' : 'text-emerald-400 font-medium')">
             {{ isCurrentUserOverdue ? '⚠️ Splatnost vypršela 01. 11. 2026!' : (currentUserDebt > 0 ? 'Termín splatnosti: 10. 11. 2026' : '✓ Všechny platby máte vyrovnány') }}
           </span>
 
           <button 
             v-if="!isMasterTenant && currentUserDebt > 0"
             @click="openModal('QR_MODAL', currentUserSettlement)"
-            class="text-emerald-400 hover:underline font-bold text-[11px] flex items-center gap-1"
+            class="text-emerald-400 hover:underline font-bold text-[11px] flex items-center gap-1 shrink-0"
           >
             Zaplatit QR →
           </button>
           <button 
             v-else
             @click="navigateTo('SETTLEMENT')" 
-            class="text-emerald-400 hover:underline font-medium text-[11px]"
+            class="text-emerald-400 hover:underline font-medium text-[11px] shrink-0"
           >
             Vyrovnání →
           </button>
@@ -136,9 +155,9 @@
       <!-- Card 3: Due date to Landlord or to Manager -->
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-between">
         <div>
-          <div class="flex items-start justify-between gap-2.5 text-xs text-slate-400 mb-2">
-            <span class="font-bold uppercase tracking-wider min-w-0">
-              {{ isMasterTenant ? 'Nájem majiteli (Splatnost)' : 'Termín mé úhrady správci' }}
+          <div class="flex items-start justify-between gap-2 flex-wrap text-xs text-slate-400 mb-2">
+            <span class="font-semibold text-xs text-slate-400 min-w-0">
+              {{ isMasterTenant ? 'Nájem majiteli (splatnost)' : 'Termín mé úhrady správci' }}
             </span>
             <span 
               class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap leading-tight"
@@ -153,7 +172,7 @@
           </div>
 
           <div 
-            class="text-2xl font-extrabold tracking-tight flex items-baseline gap-2"
+            class="text-2xl font-extrabold tracking-tight flex items-baseline gap-2 flex-wrap"
             :class="[
               isMasterTenant ? 'text-amber-300' :
               (isCurrentUserOverdue ? 'text-rose-400' : (currentUserDebt > 0 ? 'text-amber-300' : 'text-emerald-300'))
@@ -178,16 +197,16 @@
           </div>
         </div>
 
-        <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
-          <span v-if="isMasterTenant" class="text-amber-400/90 font-medium">Čeká na doplacení podílů</span>
-          <span v-else-if="currentUserDebt > 0" :class="isCurrentUserOverdue ? 'text-rose-400 font-medium' : 'text-amber-400/90 font-medium'">
+        <div class="text-xs text-slate-400 mt-2 flex items-center justify-between gap-2 flex-wrap">
+          <span v-if="isMasterTenant" class="text-amber-400/90 font-medium min-w-0">Čeká na doplacení podílů</span>
+          <span v-else-if="currentUserDebt > 0" class="min-w-0" :class="isCurrentUserOverdue ? 'text-rose-400 font-medium' : 'text-amber-400/90 font-medium'">
             Příjemce: {{ managerRoommate.name }}
           </span>
-          <span v-else class="text-emerald-400 font-medium">
+          <span v-else class="text-emerald-400 font-medium min-w-0">
             Platba za listopad zaúčtována
           </span>
 
-          <span class="text-[11px] text-slate-400 font-medium">
+          <span class="text-[11px] text-slate-400 font-medium shrink-0">
             Účet: {{ settings.accountNumber.split(' ')[0] }}
           </span>
         </div>
@@ -205,11 +224,11 @@
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
-                {{ isMasterTenant ? 'Aktuální bilance spolubydlících (Pohledávky správce)' : 'Bilance plateb v bytě (Můj stav & spolubydlící)' }}
+              <h2 class="text-base font-bold text-slate-100 tracking-tight">
+                {{ isMasterTenant ? 'Aktuální bilance spolubydlících (pohledávky správce)' : 'Bilance plateb v bytě (můj stav & spolubydlící)' }}
               </h2>
               <p class="text-xs text-slate-400">
-                {{ isMasterTenant ? 'Přehled dlužných pohledávek za nájem, energie a společné nákupy' : 'Stav vyrovnání za měsíc Listopad 2026' }}
+                {{ isMasterTenant ? 'Přehled dlužných pohledávek za nájem, energie a společné nákupy' : 'Stav vyrovnání za měsíc listopad 2026' }}
               </p>
             </div>
             <button
@@ -239,8 +258,8 @@
                 <div>
                   <div class="flex items-center gap-2">
                     <span class="text-sm font-bold text-white">{{ currentUser.name }}</span>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      Vy (Přihlášený profil)
+                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Vy (přihlášený profil)
                     </span>
                   </div>
                   <div class="text-[11px] text-slate-400">{{ currentUser.roomName }} • {{ currentUser.roomAreaM2 }} m² ({{ currentUser.areaSharePct }} %)</div>
@@ -283,7 +302,7 @@
           </div>
 
           <!-- Section label if member -->
-          <div v-if="!isMasterTenant" class="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">
+          <div v-if="!isMasterTenant" class="text-xs font-semibold text-slate-400 pt-1">
             Ostatní spolubydlící v bytě:
           </div>
 
@@ -319,7 +338,7 @@
                   </div>
                   <div class="text-[10px]">
                     <span 
-                      class="px-1.5 py-0.5 rounded font-bold uppercase"
+                      class="px-2 py-0.5 rounded font-semibold text-[10px]"
                       :class="[
                         s.status === 'VYROVNÁNO' ? 'bg-emerald-500/20 text-emerald-300' :
                         s.status === 'PO_SPLATNOSTI' ? 'bg-rose-500/20 text-rose-300 animate-pulse' :
@@ -374,7 +393,7 @@
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
+              <h2 class="text-base font-bold text-slate-100 tracking-tight">
                 Poslední výdaje a nákupy
               </h2>
               <p class="text-xs text-slate-400">Chronologický přehled nedávných transakcí</p>
@@ -442,7 +461,7 @@
         <!-- Energy Quick Widget -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div class="flex items-center justify-between">
-            <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+            <h2 class="text-base font-bold text-slate-100 tracking-tight flex items-center gap-1.5">
               <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -456,18 +475,28 @@
             </button>
           </div>
 
-          <!-- Teploměr záloh -->
+          <!-- Teploměr záloh (annualEnergyPrediction) -->
           <div class="space-y-1.5 p-3 rounded-xl bg-slate-850 border border-slate-800">
-            <div class="flex justify-between text-xs">
+            <div class="flex justify-between items-center text-xs">
               <span class="text-slate-400">Čerpání ročních záloh:</span>
-              <span class="font-bold text-emerald-400 font-mono">68 % (V normě)</span>
+              <span 
+                class="font-bold font-mono"
+                :class="annualEnergyPrediction.drawdownPct > 100 ? 'text-amber-400' : 'text-emerald-400'"
+              >
+                {{ annualEnergyPrediction.drawdownPct }} % ({{ annualEnergyPrediction.riskLevel }})
+              </span>
             </div>
             <!-- Progress bar -->
             <div class="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
-              <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style="width: 68%;"></div>
+              <div 
+                class="h-full rounded-full transition-all duration-300"
+                :class="annualEnergyPrediction.drawdownPct > 100 ? 'bg-gradient-to-r from-amber-500 to-rose-500' : 'bg-gradient-to-r from-emerald-500 to-teal-400'"
+                :style="{ width: `${Math.min(annualEnergyPrediction.drawdownPct, 100)}%` }"
+              ></div>
             </div>
-            <div class="text-[10px] text-slate-500 flex justify-between">
+            <div class="text-[10px] text-slate-500 flex justify-between gap-1">
               <span>0 %</span>
+              <span>Odhad {{ annualEnergyPrediction.isSurplus ? 'přeplatku' : 'nedoplatku' }}: <strong :class="annualEnergyPrediction.isSurplus ? 'text-emerald-400' : 'text-rose-400'">{{ annualEnergyPrediction.formattedDelta }}</strong></span>
               <span>100 % (Zálohová hranice)</span>
             </div>
           </div>
@@ -500,7 +529,7 @@
         <!-- Weekly Cleaning Shift Widget -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
           <div class="flex items-center justify-between">
-            <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+            <h2 class="text-base font-bold text-slate-100 tracking-tight flex items-center gap-1.5">
               <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
@@ -522,7 +551,7 @@
           >
             <div class="flex items-start justify-between gap-2">
               <div>
-                <span class="text-[10px] font-bold uppercase tracking-wider" :class="myCurrentCleaningShift.isCompleted ? 'text-emerald-400' : 'text-amber-400'">
+                <span class="text-[11px] font-bold" :class="myCurrentCleaningShift.isCompleted ? 'text-emerald-400' : 'text-amber-400'">
                   {{ myCurrentCleaningShift.isCompleted ? '✓ Tvoje směna je splněna' : '⏳ Tvoje směna tento týden' }}
                 </span>
                 <h3 class="text-xs font-bold text-white mt-0.5">
@@ -576,7 +605,7 @@
         <!-- Shared Cart Teaser -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
           <div class="flex items-center justify-between">
-            <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+            <h2 class="text-base font-bold text-slate-100 tracking-tight flex items-center gap-1.5">
               <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
@@ -612,7 +641,7 @@
 
         <!-- Household Announcements -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3 text-xs">
-          <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <h2 class="text-sm font-bold text-slate-300">
             Oznámení domácnosti
           </h2>
           <div class="space-y-2">
@@ -666,7 +695,8 @@ const {
   sendReminder,
   myCurrentCleaningShift,
   currentWeekCleaningShifts,
-  toggleShiftStatus 
+  toggleShiftStatus,
+  annualEnergyPrediction
 } = useSpolubyt()
 
 const recentExpenses = computed(() => {

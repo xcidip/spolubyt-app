@@ -290,18 +290,31 @@ import { reactive, ref, computed, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CalculationKey, ExpenseCategory, ExpenseShare } from '../types'
 
-const { roommates, currentUser, closeModal, addExpense } = useSpolubyt()
+const { roommates, currentUser, expensePrefill, closeModal, addExpense } = useSpolubyt()
 
 const todayStr = new Date().toISOString().slice(0, 10)
 
 const form = reactive({
-  title: '',
-  totalAmount: 1240,
+  title: expensePrefill.value?.title || '',
+  totalAmount: expensePrefill.value?.totalAmount ?? 100,
   date: todayStr,
-  category: 'Drogerie' as ExpenseCategory,
+  category: expensePrefill.value?.category || ('Drogerie' as ExpenseCategory),
   payerId: currentUser.value.id,
   calculationKey: 'EQUAL' as CalculationKey
 })
+
+// Reactively update form fields when expensePrefill changes
+watch(
+  () => expensePrefill.value,
+  (prefill) => {
+    if (prefill) {
+      form.title = prefill.title || ''
+      form.totalAmount = prefill.totalAmount ?? 100
+      form.category = prefill.category || ('Drogerie' as ExpenseCategory)
+    }
+  },
+  { immediate: true }
+)
 
 // Automatically keep payer in sync with active persona
 watch(() => currentUser.value.id, (newId) => {

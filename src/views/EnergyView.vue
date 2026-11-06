@@ -193,30 +193,66 @@
             <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
               Predikce ročního vyúčtování
             </h2>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-              Nízké riziko
+            <span 
+              class="text-xs px-2 py-0.5 rounded-full font-bold border"
+              :class="[
+                annualEnergyPrediction.riskLevel === 'Nízké riziko'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                  : annualEnergyPrediction.riskLevel === 'Mírné překročení'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+              ]"
+            >
+              {{ annualEnergyPrediction.riskLevel }}
             </span>
           </div>
 
           <p class="text-xs text-slate-400 leading-relaxed">
-            Na základě dosavadního vývoje spotřeby v roce 2026 kryjí nastavené měsíční zálohy (8 600 Kč/měsíc) reálnou spotřebu domácnosti.
+            {{ annualEnergyPrediction.isSurplus 
+                ? `Na základě dosavadního vývoje spotřeby v roce 2026 kryjí nastavené měsíční zálohy (${Math.round(annualEnergyPrediction.annualAdvances / 12).toLocaleString('cs-CZ')} CZK/měsíc) reálnou spotřebu domácnosti.`
+                : `Pozor: Aktuální predikce indikuje překročení záloh (${Math.round(annualEnergyPrediction.annualAdvances / 12).toLocaleString('cs-CZ')} CZK/měsíc). Zvažte navýšení záloh pro topnou sezónu.`
+            }}
           </p>
 
           <!-- Expected Outcome Card -->
           <div class="p-4 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
             <div class="text-[11px] text-slate-400">Očekávaný stav k 31. 12. 2026:</div>
-            <div class="text-xl font-mono font-extrabold text-emerald-400">
-              PŘEPLATEK cca +1 200 CZK
+            <div 
+              class="text-xl font-mono font-extrabold"
+              :class="annualEnergyPrediction.isSurplus ? 'text-emerald-400' : 'text-rose-400'"
+            >
+              {{ annualEnergyPrediction.isSurplus ? 'ODHADOVANÝ PŘEPLATEK' : 'ODHADOVANÝ NEDOPLATEK' }} {{ annualEnergyPrediction.formattedDelta }}
             </div>
             <div class="text-[11px] text-slate-400">
-              Předpokládaná vratka na účet správce bytu.
+              {{ annualEnergyPrediction.isSurplus ? 'Předpokládaná vratka na účet správce bytu.' : 'Předpokládaný nedoplatek k rozpočítání mezi spolubydlící.' }}
+            </div>
+          </div>
+
+          <!-- Drawdown Progress Bar -->
+          <div class="space-y-1.5 pt-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 font-medium">Čerpání rozpočtu záloh:</span>
+              <span class="font-mono font-bold" :class="annualEnergyPrediction.isSurplus ? 'text-emerald-400' : 'text-amber-400'">
+                {{ annualEnergyPrediction.drawdownPct }} %
+              </span>
+            </div>
+            <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700/60 p-0.5">
+              <div 
+                class="h-full rounded-full transition-all duration-500"
+                :class="annualEnergyPrediction.drawdownPct > 100 ? 'bg-gradient-to-r from-amber-500 to-rose-500' : 'bg-gradient-to-r from-emerald-500 to-teal-400'"
+                :style="{ width: `${Math.min(annualEnergyPrediction.drawdownPct, 100)}%` }"
+              ></div>
             </div>
           </div>
 
           <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1.5 text-slate-300">
             <div class="flex justify-between">
-              <span class="text-slate-400">Fixní měsíční zálohy:</span>
-              <span class="font-mono font-semibold">8 600 CZK</span>
+              <span class="text-slate-400">Fixní roční zálohy (12 měsíců):</span>
+              <span class="font-mono font-semibold">{{ annualEnergyPrediction.annualAdvances.toLocaleString('cs-CZ') }} CZK</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Projektované roční náklady:</span>
+              <span class="font-mono">{{ annualEnergyPrediction.projectedAnnualCost.toLocaleString('cs-CZ') }} CZK</span>
             </div>
             <div class="flex justify-between">
               <span class="text-slate-400">Zúčtovací perioda:</span>
@@ -294,7 +330,7 @@ import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { ENERGY_MONTHLY_HISTORY } from '../data/mockData'
 
-const { meters, latestMeters, openModal } = useSpolubyt()
+const { meters, latestMeters, openModal, annualEnergyPrediction } = useSpolubyt()
 
 const activeChartMedium = ref('Elektřina')
 
