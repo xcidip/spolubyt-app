@@ -155,45 +155,6 @@
       <!-- Right Column (4 cols): Add Item Form & Total Summary Card -->
       <div class="lg:col-span-4 space-y-6">
         
-        <!-- Summary Card -->
-        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
-          <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Rekapitulace košíku
-          </h2>
-
-          <div class="space-y-2.5 text-xs">
-            <div class="flex justify-between text-slate-300">
-              <span>Celkový počet kusů:</span>
-              <span class="font-mono font-bold text-slate-100">{{ cartTotalCount }} ks</span>
-            </div>
-            <div class="flex justify-between text-slate-300">
-              <span>Položek celkem:</span>
-              <span class="font-mono font-bold text-slate-100">{{ cartItems.length }} druhů</span>
-            </div>
-            <div class="flex justify-between text-slate-300">
-              <span>Odhadovaný podíl na 1 člena:</span>
-              <span class="font-mono font-bold text-emerald-400">
-                {{ Math.round(cartTotalPrice / 4).toLocaleString('cs-CZ') }} CZK
-              </span>
-            </div>
-            
-            <div class="pt-3 border-t border-slate-800 flex justify-between items-baseline">
-              <span class="text-sm font-bold text-white">Celková cena nákupu:</span>
-              <span class="text-xl font-mono font-extrabold text-emerald-400">
-                {{ cartTotalPrice.toLocaleString('cs-CZ') }} CZK
-              </span>
-            </div>
-          </div>
-
-          <button
-            @click="convertCartToExpense"
-            :disabled="cartItems.length === 0"
-            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
-          >
-            Vytvořit společný výdaj z košíku →
-          </button>
-        </div>
-
         <!-- Add Item Form -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div class="flex items-center gap-2">
@@ -269,6 +230,45 @@
               <span>Vložit do nákupního košíku</span>
             </button>
           </form>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
+          <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Rekapitulace košíku
+          </h2>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="flex justify-between text-slate-300">
+              <span>Celkový počet kusů:</span>
+              <span class="font-mono font-bold text-slate-100">{{ cartTotalCount }} ks</span>
+            </div>
+            <div class="flex justify-between text-slate-300">
+              <span>Položek celkem:</span>
+              <span class="font-mono font-bold text-slate-100">{{ cartItems.length }} druhů</span>
+            </div>
+            <div class="flex justify-between text-slate-300">
+              <span>Odhadovaný podíl na 1 člena:</span>
+              <span class="font-mono font-bold text-emerald-400">
+                {{ Math.round(cartTotalPrice / 4).toLocaleString('cs-CZ') }} CZK
+              </span>
+            </div>
+            
+            <div class="pt-3 border-t border-slate-800 flex justify-between items-baseline">
+              <span class="text-sm font-bold text-white">Celková cena nákupu:</span>
+              <span class="text-xl font-mono font-extrabold text-emerald-400">
+                {{ cartTotalPrice.toLocaleString('cs-CZ') }} CZK
+              </span>
+            </div>
+          </div>
+
+          <button
+            @click="convertCartToExpense"
+            :disabled="cartItems.length === 0"
+            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
+          >
+            Vytvořit společný výdaj z košíku →
+          </button>
         </div>
 
       </div>
