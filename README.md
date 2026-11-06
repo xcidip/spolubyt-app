@@ -36,14 +36,24 @@ npm run dev
 
 Aplikace se otevře na adrese: **[http://localhost:5173/](http://localhost:5173/)**
 
-### 2. Spuštění jako desktopová aplikace (přes Tauri)
+### 2. Spuštění a sestavení desktopové aplikace (přes Tauri)
 
-Pokud máte nainstalovaný Rust a Tauri CLI, můžete aplikaci spustit v samostatném okně:
+Pokud máte nainstalovaný Rust a Tauri CLI:
 
 ```bash
 cd spolubyt-app
+
+# Spuštění ve vývojovém režimu
 npm run tauri dev
+
+# Sestavení produkčního instalačního balíčku a binárky (.dmg, .app, binary)
+npm run tauri build
 ```
+
+Vygenerované instalační balíčky najdete v:
+- **macOS DMG:** `src-tauri/target/release/bundle/dmg/`
+- **macOS App:** `src-tauri/target/release/bundle/macos/`
+- **Binárka:** `src-tauri/target/release/spolubyt-app`
 
 ### 3. Spuštění testů
 
