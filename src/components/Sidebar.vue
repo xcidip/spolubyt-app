@@ -278,7 +278,7 @@
       <div v-if="!isSidebarCollapsed" class="text-xs text-slate-400 space-y-1">
         <div class="flex items-center justify-between">
           <span>{{ t('sidebar.version', 'Verze prototypu:') }}</span>
-          <span class="font-mono text-slate-400">2.0.0</span>
+          <span class="font-mono text-slate-400">2.0.1</span>
         </div>
         <div class="flex items-center justify-between">
           <span>{{ t('sidebar.subject', 'Předmět:') }}</span>

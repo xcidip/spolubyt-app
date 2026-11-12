@@ -226,24 +226,24 @@
             </div>
           </div>
 
-          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1.5 text-slate-300">
-            <div class="flex justify-between">
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-3 text-slate-300">
+            <div class="flex min-w-0 flex-col gap-1">
               <span class="text-slate-400">{{ t('energy.fixedAnnualAdvances', 'Fixní roční zálohy (12 měsíců):') }}</span>
-              <span class="font-mono font-semibold">{{ annualEnergyPrediction.annualAdvances.toLocaleString('cs-CZ') }} CZK</span>
+              <span class="font-mono font-semibold whitespace-nowrap">{{ annualEnergyPrediction.annualAdvances.toLocaleString('cs-CZ') }} CZK</span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex min-w-0 flex-col gap-1">
               <span class="text-slate-400">{{ t('energy.projectedAnnualCost', 'Projektované roční náklady:') }}</span>
-              <span class="font-mono">{{ annualEnergyPrediction.projectedAnnualCost.toLocaleString('cs-CZ') }} CZK</span>
+              <span class="font-mono whitespace-nowrap">{{ annualEnergyPrediction.projectedAnnualCost.toLocaleString('cs-CZ') }} CZK</span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex min-w-0 flex-col gap-1">
               <span class="text-slate-400">{{ t('energy.settlementPeriod', 'Zúčtovací perioda:') }}</span>
-              <span class="font-mono">01.01. – 31.12.2026</span>
+              <span class="font-mono whitespace-nowrap">01.01. – 31.12.2026</span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex min-w-0 flex-col gap-1">
               <span class="text-slate-400">{{ t('energy.electricitySupplier', 'Dodavatel elektřiny:') }}</span>
               <span>ČEZ Prodej a.s.</span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex min-w-0 flex-col gap-1">
               <span class="text-slate-400">{{ t('energy.gasSupplier', 'Dodavatel plynu:') }}</span>
               <span>innogy Energie</span>
             </div>
