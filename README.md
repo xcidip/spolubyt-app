@@ -17,6 +17,14 @@ Aplikace funguje jako webová SPA v prohlížeči a je připravená i pro spušt
 
 ---
 
+## 📸 Náhled aplikace
+
+![Náhled aplikace Spolubyt – nástěnka s přehledem výdajů a finanční bilancí domácnosti](Screenshot.png)
+
+*Ukázka hlavního dashboardu prototypu (Nástěnka).*
+
+---
+
 ## 🚀 Jak aplikaci spustit
 
 Ke spuštění stačí mít nainstalovaný **Node.js** (doporučeno v20 nebo novější).
