@@ -40,7 +40,6 @@ export async function runAllTests(): Promise<boolean> {
 
   // Helper to reset store state cleanly before each suite
   const resetStore = () => {
-    globalThis.localStorage.clear()
     store.resetDemoData()
     if (store.confirmModal.value.isOpen) {
       store.confirmModal.value.onConfirm()

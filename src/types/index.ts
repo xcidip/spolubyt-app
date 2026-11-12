@@ -25,12 +25,25 @@ export interface Roommate {
   iban?: string
 }
 
+export interface PaymentDetails {
+  date: string
+  method: 'BANK' | 'CASH'
+  note: string
+  notifyMember: boolean
+}
+
 export interface ExpenseShare {
   roommateId: string
   roommateName: string
   amount: number
   status: 'UHRAZENO' | 'DLUŽÍ' | 'PO_SPLATNOSTI' | 'PLÁTCE'
   settledDate?: string
+  payment?: {
+    method: 'BANK' | 'CASH'
+    note: string
+    recordedBy: string
+    notifyMember: boolean
+  }
 }
 
 export interface ReceiptItem {
@@ -106,10 +119,12 @@ export interface CartItem {
   addedAt: string
   isPurchased?: boolean
   purchasedBy?: string
+  purchasedByRoommateId?: string
   purchasedAt?: string
 }
 
 export interface ExpensePrefillData {
+  payerId?: string
   title?: string
   totalAmount?: number
   category?: ExpenseCategory

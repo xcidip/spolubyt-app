@@ -67,8 +67,8 @@
                   <input id="expenseaddmodal-field-2"
                     v-model.number="form.totalAmount"
                     type="number"
-                    min="1"
-                    step="1"
+                    min="0.01"
+                    step="0.01"
                     required
                     placeholder="0"
                     class="w-full pl-3.5 pr-12 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-sm font-semibold focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:outline-none transition-colors"
@@ -83,6 +83,7 @@
                 </label>
                 <input id="expenseaddmodal-field-3"
                   v-model="form.date"
+                  :max="todayStr"
                   type="date"
                   required
                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:outline-none transition-colors"
@@ -197,7 +198,7 @@
                     {{ participantMap[r.id] ? (computedShares[r.id] || 0).toLocaleString('cs-CZ') + ' CZK' : t('expenseAdd.excluded', 'Vyloučen') }}
                   </div>
                   <div v-if="participantMap[r.id]" class="text-xs text-slate-400">
-                    {{ form.calculationKey === 'BY_AREA' ? t('expenseAdd.areaShare', '{pct} % plochy', { pct: r.areaSharePct }) : t('expenseAdd.equalShare', 'Rovný podíl') }}
+                    {{ form.calculationKey === 'BY_AREA' ? t('expenseAdd.areaShare', '{pct} % plochy', { pct: selectedAreaTotal > 0 ? Math.round(r.roomAreaM2 / selectedAreaTotal * 10000) / 100 : 0 }) : t('expenseAdd.equalShare', 'Rovný podíl') }}
                   </div>
                 </div>
               </div>
@@ -218,6 +219,10 @@
               </div>
             </div>
           </div>
+
+          <p v-if="!isReceiptSumValid" role="alert" class="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-xs text-rose-300">
+            {{ t('expenseAdd.receiptMismatch', 'Položkový rozpis převedeného nákupu činí {amount} Kč. Celková částka musí odpovídat tomuto rozpisu.', { amount: receiptTotal?.toLocaleString('cs-CZ') }) }}
+          </p>
 
           <!-- Section 3: Receipt upload / Document -->
           <div class="space-y-3">
@@ -276,7 +281,7 @@
             </button>
             <button
               type="submit"
-              :disabled="!isShareSumValid || form.totalAmount <= 0"
+              :disabled="!isShareSumValid || !isReceiptSumValid || !form.title.trim() || form.totalAmount <= 0"
               class="px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl shadow-lg shadow-emerald-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:ring-2 focus:ring-emerald-400 focus:outline-none"
             >
               {{ t('expenseAdd.submit', 'Uložit a rozpočítat výdaj') }}
@@ -307,7 +312,7 @@ const form = reactive({
   totalAmount: expensePrefill.value?.totalAmount ?? 100,
   date: todayStr,
   category: expensePrefill.value?.category || ('Drogerie' as ExpenseCategory),
-  payerId: currentUser.value.id,
+  payerId: expensePrefill.value?.payerId ?? currentUser.value.id,
   calculationKey: 'EQUAL' as CalculationKey
 })
 
@@ -332,7 +337,7 @@ watch(
 // Automatically keep payer in sync with active persona
 watch(() => currentUser.value.id, (newId) => {
   if (newId) {
-    form.payerId = newId
+    form.payerId = expensePrefill.value?.payerId ?? newId
   }
 }, { immediate: true })
 
@@ -348,6 +353,8 @@ const toggleSimulatedReceipt = () => {
   hasUploadedReceipt.value = !hasUploadedReceipt.value
 }
 
+const selectedAreaTotal = computed(() => roommates.value.filter(roommate => participantMap[roommate.id]).reduce((sum, roommate) => sum + roommate.roomAreaM2, 0))
+
 const computedShares = computed(() => splitAmount(
   form.totalAmount,
   roommates.value.filter(r => participantMap[r.id]),
@@ -358,6 +365,9 @@ const totalAllocatedShares = computed(() => {
   return roundMoney(Object.values(computedShares.value).reduce((sum, val) => sum + val, 0))
 })
 
+const receiptTotal = computed(() => expensePrefill.value?.items?.reduce((sum, item) => sum + item.price * item.qty, 0))
+const isReceiptSumValid = computed(() => receiptTotal.value === undefined || roundMoney(receiptTotal.value) === roundMoney(form.totalAmount))
+
 const isShareSumValid = computed(() => {
   return Number.isFinite(form.totalAmount) && form.totalAmount > 0
     && Object.keys(computedShares.value).length > 0
@@ -365,7 +375,7 @@ const isShareSumValid = computed(() => {
 })
 
 const handleSubmit = () => {
-  if (!isShareSumValid.value || form.totalAmount <= 0) return
+  if (!isShareSumValid.value || !isReceiptSumValid.value || !form.title.trim() || form.totalAmount <= 0) return
 
   const payer = roommates.value.find(r => r.id === form.payerId)
   const shares: ExpenseShare[] = roommates.value.filter(r => participantMap[r.id]).map(r => {

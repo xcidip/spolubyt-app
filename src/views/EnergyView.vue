@@ -39,9 +39,9 @@
         <div class="text-2xl font-mono font-extrabold text-white">
           {{ latestMeters[meter.type]?.value.toLocaleString('cs-CZ') || '—' }} {{ meter.unit }}
         </div>
-        <div class="text-xs text-emerald-400 mt-2 flex items-center justify-between font-mono">
-          <span>{{ latestMeters[meter.type] ? t('energy.deltaPerMonth', '+{delta} {unit} za měsíc', { delta: latestMeters[meter.type].delta, unit: meter.unit }) : t('energy.noReading', 'Bez odečtu') }}</span>
-          <span class="text-xs text-slate-400 font-sans">{{ latestMeters[meter.type] ? formatDate(latestMeters[meter.type].date) : '—' }}</span>
+        <div class="text-xs text-emerald-400 mt-2 flex flex-col gap-1 font-mono">
+          <span>{{ latestMeters[meter.type] ? t('energy.deltaSincePrevious', '+{delta} {unit} od minulého odečtu', { delta: latestMeters[meter.type].delta, unit: meter.unit }) : t('energy.noReading', 'Bez odečtu') }}</span>
+          <span class="text-xs text-slate-400 font-sans">{{ readingPeriods[meter.type] || '—' }}</span>
         </div>
       </div>
     </div>
@@ -298,7 +298,7 @@
               </td>
               <td class="py-2.5 px-3 text-slate-300">{{ m.recordedBy }}</td>
               <td class="py-2.5 px-3 text-slate-400 text-xs">{{ m.note || '—' }}
-                <button v-if="latestMeters[m.type]?.id === m.id" type="button" @click="deleteLatestMeterReading(m.id)" class="ml-2 text-rose-400 underline focus:ring-2 focus:ring-emerald-500/40" :aria-label="'Smazat poslední odečet ' + METER_TYPE_LABELS[m.type]">Smazat poslední</button>
+                <button v-if="latestMeters[m.type]?.id === m.id" type="button" @click="deleteLatestMeterReading(m.id)" class="ml-2 text-rose-400 underline focus:ring-2 focus:ring-emerald-500/40" :aria-label="t('energy.deleteLatestAria', 'Smazat poslední odečet {type}', { type: t('meterTypes.' + m.type, METER_TYPE_LABELS[m.type]) })">{{ t('energy.deleteLatest', 'Smazat poslední') }}</button>
               </td>
             </tr>
             <tr v-if="meters.length === 0">
@@ -323,10 +323,20 @@ import type { MediumConfig } from '../types'
 import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { ENERGY_MONTHLY_HISTORY } from '../data/mockData'
+import type { MeterType } from '../types'
 import { METER_TYPE_LABELS } from '../utils/labels'
 import { t } from '../i18n'
 
 const { meters, latestMeters, openModal, annualEnergyPrediction, deleteLatestMeterReading } = useSpolubyt()
+
+const readingPeriods = computed(() => Object.fromEntries(
+  (['ELEKTŘINA', 'PLYN', 'STUDENÁ_VODA', 'TEPLÁ_VODA'] as MeterType[]).map(type => {
+    const readings = meters.value.filter(reading => reading.type === type).sort((a, b) => b.date.localeCompare(a.date))
+    const latest = readings[0]
+    const previous = readings[1]
+    return [type, latest ? (previous ? `${formatDateCz(previous.date, 'none')} – ${formatDateCz(latest.date)}` : formatDateCz(latest.date)) : '']
+  }),
+))
 
 const activeChartMedium = ref('Elektřina')
 

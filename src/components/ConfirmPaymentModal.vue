@@ -121,7 +121,7 @@
                 class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400 border-slate-700 bg-slate-900"
               />
               <span class="text-xs text-slate-300 leading-tight">
-                {{ t('confirmPayment.notifyPrefix', 'Odeslat uživateli') }} <strong>{{ settlement.roommateName }}</strong> {{ t('confirmPayment.notifySuffix', 'automatické potvrzení o zaúčtování platby (in-app notifikace a e-mail).') }}
+                {{ t('confirmPayment.notifyPrefix', 'Odeslat uživateli') }} <strong>{{ settlement.roommateName }}</strong> {{ t('confirmPayment.notifySimulatedSuffix', 'simulované potvrzení o zaúčtování platby.') }}
               </span>
             </label>
 

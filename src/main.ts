@@ -15,7 +15,7 @@ app.config.errorHandler = (error): void => {
   reset.className = 'p-4 rounded-xl bg-emerald-600 text-white'
   reset.onclick = (): void => {
     if (!window.confirm('Obnovit výchozí data? Vaše úpravy prototypu budou odstraněny.')) return
-    localStorage.removeItem('spolubyt_hifi_v2_state')
+    localStorage.removeItem('spolubyt_hifi_v3_state')
     window.location.reload()
   }
   root.replaceChildren(message, reset)

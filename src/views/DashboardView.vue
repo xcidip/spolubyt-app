@@ -46,7 +46,7 @@
               </span>
             </div>
             <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">
-              {{ myCurrentCleaningShift ? myCurrentCleaningShift.taskTitle : t('dashboard.noShiftAssigned', 'Nemáte přiřazen úklid') }}
+              {{ myCurrentCleaningShift ? t('cleaning.task.' + myCurrentCleaningShift.taskKey.toLowerCase(), myCurrentCleaningShift.taskTitle) : t('dashboard.noShiftAssigned', 'Nemáte přiřazen úklid') }}
             </div>
           </div>
         </div>
@@ -75,7 +75,7 @@
               {{ isMasterTenant ? t('dashboard.monthlyFlatCosts', 'Měsíční náklady bytu (listopad)') : t('dashboard.myMonthlyShare', 'Můj měsíční podíl nákladů (listopad)') }}
             </span>
             <span class="text-emerald-400 font-semibold text-xs bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0 whitespace-nowrap leading-tight">
-              {{ isMasterTenant ? t('dashboard.monthlyDelta', '+2,4 % m/m') : t('dashboard.shareOfTotal', 'Podíl {pct} %', { pct: currentUser.areaSharePct }) }}
+              {{ isMasterTenant ? monthlyChangeLabel : t('dashboard.shareOfTotal', 'Podíl {pct} %', { pct: monthlyTotalExpenses > 0 ? Math.round(currentUserMonthlyExpenses / monthlyTotalExpenses * 1000) / 10 : 0 }) }}
             </span>
           </div>
           <div class="text-2xl font-extrabold text-white tracking-tight">
@@ -562,31 +562,32 @@
 
           <!-- My Shift Card -->
           <div 
-            v-if="myCurrentCleaningShift"
+            v-for="myShift in myCurrentCleaningShifts"
+            :key="myShift.id"
             class="p-3.5 rounded-xl border space-y-2.5 transition-colors"
-            :class="myCurrentCleaningShift.isCompleted ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'"
+            :class="myShift.isCompleted ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'"
           >
             <div class="flex items-start justify-between gap-2">
               <div>
-                <span class="text-xs font-bold" :class="myCurrentCleaningShift.isCompleted ? 'text-emerald-400' : 'text-amber-400'">
-                  {{ myCurrentCleaningShift.isCompleted ? t('dashboard.myShiftDone', '✓ Tvoje směna je splněna') : t('dashboard.myShiftThisWeek', '⏳ Tvoje směna tento týden') }}
+                <span class="text-xs font-bold" :class="myShift.isCompleted ? 'text-emerald-400' : 'text-amber-400'">
+                  {{ myShift.isCompleted ? t('dashboard.myShiftDone', '✓ Tvoje směna je splněna') : t('dashboard.myShiftThisWeek', '⏳ Tvoje směna tento týden') }}
                 </span>
                 <h3 class="text-xs font-bold text-white mt-0.5">
-                  {{ t('cleaning.task.' + myCurrentCleaningShift.taskKey.toLowerCase(), myCurrentCleaningShift.taskTitle) }}
+                  {{ t('cleaning.task.' + myShift.taskKey.toLowerCase(), myShift.taskTitle) }}
                 </h3>
               </div>
               <span 
                 class="text-xs px-2 py-0.5 rounded-full font-bold whitespace-nowrap"
-                :class="myCurrentCleaningShift.isCompleted ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
+                :class="myShift.isCompleted ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
               >
-                {{ myCurrentCleaningShift.isCompleted ? t('dashboard.shiftDoneBadgeShort', 'Splněno') : t('dashboard.bySunday', 'Do neděle') }}
+                {{ myShift.isCompleted ? t('dashboard.shiftDoneBadgeShort', 'Splněno') : t('dashboard.bySunday', 'Do neděle') }}
               </span>
             </div>
 
             <!-- Confirm button directly on dashboard -->
             <button type="button"
-              v-if="!myCurrentCleaningShift.isCompleted"
-              @click="toggleShiftStatus(myCurrentCleaningShift.id)"
+              v-if="!myShift.isCompleted"
+              @click="toggleShiftStatus(myShift.id)"
               class="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow"
             >
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -607,7 +608,7 @@
                 <span class="text-xs">
                   {{ shift.taskKey === 'KITCHEN' ? '🍳' : shift.taskKey === 'BATHROOM' ? '🚿' : shift.taskKey === 'CORRIDOR' ? '🧹' : '♻️' }}
                 </span>
-                <span class="text-slate-300 truncate">{{ shift.taskTitle.split(' ')[0] }} ({{ shift.roommateName.split(' ')[0] }})</span>
+                <span class="text-slate-300 truncate">{{ t('cleaning.taskShort.' + shift.taskKey.toLowerCase(), shift.taskTitle) }} ({{ shift.roommateName.split(' ')[0] }})</span>
               </div>
               <span 
                 class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0 font-mono"
@@ -720,7 +721,8 @@ const {
   debtorsCount, 
   overdueDebtorsCount, 
   settlements, 
-  expenses, 
+  recentExpenses,
+  monthlyExpenseChangePct,
   cartTotalPrice, 
   cartRemainingCount,
   cartRemainingPrice,
@@ -730,13 +732,16 @@ const {
   navigateTo, 
   sendReminder,
   myCurrentCleaningShift,
+  myCurrentCleaningShifts,
   currentWeekCleaningShifts,
   toggleShiftStatus,
   annualEnergyPrediction
 } = useSpolubyt()
 
-const recentExpenses = computed(() => {
-  return expenses.value.slice(0, 4)
+const monthlyChangeLabel = computed(() => {
+  const change = monthlyExpenseChangePct.value
+  if (change === null) return t('dashboard.noPreviousMonth', 'Bez srovnání s minulým měsícem')
+  return t('dashboard.monthlyChange', '{change} % m/m', { change: `${change > 0 ? '+' : ''}${change.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })}` })
 })
 
 const debtorsBadgeText = computed(() => {

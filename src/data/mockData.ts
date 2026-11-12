@@ -209,7 +209,7 @@ export const INITIAL_EXPENSES: Expense[] = [
       createdBy: 'Tomáš Beránek',
       createdAt: '01. 11. 2026 08:30'
     },
-    status: 'ČÁSTEČNĚ'
+    status: 'PO_SPLATNOSTI'
   },
   {
     id: 'exp-4',
@@ -484,7 +484,7 @@ export const INITIAL_EXPENSES: Expense[] = [
       { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 2150, status: 'UHRAZENO', settledDate: '01. 11. 2026' },
     ],
     audit: { createdBy: 'Tomáš Beránek', createdAt: '01. 11. 2026 08:31' },
-    status: 'ČÁSTEČNĚ',
+    status: 'PO_SPLATNOSTI',
   },
   {
     id: 'exp-16',

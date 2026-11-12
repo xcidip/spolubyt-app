@@ -66,7 +66,7 @@
             <span>{{ shift.swapRequest?.requestedByRoommateName }}</span>
             <span class="text-xs text-purple-300 font-normal">{{ t('cleaning.swapAsksYou', 'tě žádá o převzetí směny:') }}</span>
             <span class="text-xs font-semibold text-white px-2 py-0.5 rounded bg-purple-500/20 border border-purple-500/30">
-              {{ t('cleaning.task.' + shift.taskKey.toLowerCase(), shift.taskTitle) }} ({{ shift.weekLabel }})
+              {{ t('cleaning.task.' + shift.taskKey.toLowerCase(), shift.taskTitle) }} ({{ formatCleaningWeek(shift) }})
             </span>
           </div>
           <div v-if="shift.swapRequest?.note" class="text-xs text-slate-300 italic">
@@ -367,7 +367,7 @@
                 >
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span :class="getShiftForTask(taskDef.key)?.isCompleted ? 'line-through text-slate-400' : 'text-slate-300'">{{ subtask }}</span>
+                <span :class="getShiftForTask(taskDef.key)?.isCompleted ? 'line-through text-slate-400' : 'text-slate-300'">{{ t('cleaning.subtasks.' + taskDef.key.toLowerCase() + idx, subtask) }}</span>
               </li>
             </ul>
           </div>
@@ -657,7 +657,7 @@
           <div class="text-slate-400">{{ t('cleaning.transferringShift', 'Převáděná směna:') }}</div>
           <div class="text-sm font-bold text-white flex items-center gap-2">
             <span>{{ t('cleaning.task.' + shiftToSwap.taskKey.toLowerCase(), shiftToSwap.taskTitle) }}</span>
-            <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">{{ shiftToSwap.weekLabel }}</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">{{ formatCleaningWeek(shiftToSwap) }}</span>
           </div>
           <div class="text-slate-400 text-xs pt-1">
             {{ t('cleaning.currentAssignee', 'Současný řešitel:') }} <strong class="text-slate-200">{{ shiftToSwap.roommateName }}</strong>
@@ -719,6 +719,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { formatCleaningWeek } from '../utils/localeDisplay'
+import { formatDateCz } from '../utils/format'
 import { useDialog } from '../composables/useDialog'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CleaningShift, CleaningTaskKey } from '../types'
@@ -809,8 +811,8 @@ const progressPct = computed(() => {
 
 const currentWeekLabel = computed(() => {
   const first = activeShifts.value[0]
-  if (first) return first.weekLabel
-  return `Týden ${selectedCleaningWeek.value}`
+  if (first) return formatCleaningWeek(first)
+  return t('cleaning.weekNumber', 'Týden {week}', { week: selectedCleaningWeek.value })
 })
 
 const getShiftForTask = (key: CleaningTaskKey): CleaningShift | undefined => {
@@ -857,8 +859,11 @@ const getIconBg = (key: CleaningTaskKey) => {
 // 4-Week Rotation Matrix Data
 const rotationWeeks = computed(() => [45, 46, 47, 48].map(number => ({
   number,
-  label: `Týden ${number}`,
-  dates: cleaningShifts.value.find(s => s.weekNumber === number)?.weekLabel.replace(/^.*?\(/, '').replace(/\)$/, '') || '',
+  label: t('cleaning.weekNumber', 'Týden {week}', { week: number }),
+  dates: (() => {
+    const shift = cleaningShifts.value.find(s => s.weekNumber === number)
+    return shift ? `${formatDateCz(shift.startDate, 'none')} – ${formatDateCz(shift.endDate)}` : ''
+  })(),
 })))
 
 const assignedRoommate = (taskKey: CleaningTaskKey, weekNum: number) => {

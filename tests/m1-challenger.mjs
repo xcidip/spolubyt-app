@@ -97,7 +97,6 @@ async function runM1ChallengerTests(viteServer) {
   const store = useSpolubyt()
 
   function resetState() {
-    globalThis.localStorage.clear()
     store.resetDemoData()
     if (store.confirmModal.value?.onConfirm) {
       store.confirmModal.value.onConfirm()
@@ -106,6 +105,7 @@ async function runM1ChallengerTests(viteServer) {
 
   // Helper to create a valid dummy Expense object
   function makeDummyExpense(overrides = {}) {
+    const cents = Math.round((overrides.totalAmount ?? 300) * 100)
     return {
       title: 'Zkušební nákup',
       totalAmount: 300,
@@ -114,12 +114,12 @@ async function runM1ChallengerTests(viteServer) {
       payerName: 'Tomáš Beránek',
       date: '2026-11-06',
       calculationKey: 'EQUAL',
-      shares: [
-        { roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: 75, status: 'PLÁTCE' },
-        { roommateId: 'user-jakub', roommateName: 'Jakub Kovář', amount: 75, status: 'DLUŽÍ' },
-        { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 75, status: 'DLUŽÍ' },
-        { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 75, status: 'DLUŽÍ' }
-      ],
+      shares: store.roommates.value.map((person, index) => ({
+        roommateId: person.id,
+        roommateName: person.name,
+        amount: (Math.floor(cents / 4) + (index < cents % 4 ? 1 : 0)) / 100,
+        status: person.id === (overrides.payerId ?? 'user-tomas') ? 'PLÁTCE' : 'DLUŽÍ',
+      })),
       status: 'ČÁSTEČNĚ',
       ...overrides
     }
@@ -148,7 +148,8 @@ async function runM1ChallengerTests(viteServer) {
     store.toggleCartItemPurchased('cart-2')
     assertEqual(cart2.isPurchased, true, 'isPurchased should be true')
     assertEqual(cart2.purchasedBy, 'Eliška Malá', 'purchasedBy must be current user')
-    assertEqual(cart2.purchasedAt, 'Právě teď', 'purchasedAt must be timestamp')
+    assertEqual(cart2.purchasedAt, '2026-11-12', 'Purchase date is stored without locale-dependent prose')
+    assertEqual(cart2.purchasedByRoommateId, 'user-eliska')
   })
 
   await runTest('1.3 toggleCartItemPurchased toggles purchased -> unpurchased and clears attribution', async () => {

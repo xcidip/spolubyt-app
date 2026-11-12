@@ -21,7 +21,10 @@
     "name": "Name",
     "category": "Category",
     "note": "Note",
-    "optional": "optional"
+    "optional": "optional",
+    "yesterday": "Yesterday",
+    "twoDaysAgo": "2 days ago",
+    "threeDaysAgo": "3 days ago"
   },
   "nav": {
     "main": "Main navigation",
@@ -53,7 +56,10 @@
     "reset": "Restore default test data",
     "newExpense": "New expense",
     "backToDashboard": "Back to Dashboard",
-    "language": "Switch language"
+    "language": "Switch language",
+    "syncConflict": "Saving: conflict",
+    "syncFailed": "Saving: failed",
+    "syncRecovered": "Data restored"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -103,6 +109,14 @@
       "title": "Reset all data",
       "message": "Do you really want to restore the prototype's default state? All changes, newly entered expenses and readings will be overwritten with the default data.",
       "confirm": "Restore default data"
+    },
+    "memberPayment": {
+      "title": "Confirm receipt of payment",
+      "message": "Confirm payment of {amount} CZK from {debtor} to {payer} for “{title}”?"
+    },
+    "deleteMeter": {
+      "title": "Delete latest reading",
+      "message": "Delete the reading of {value} {unit} dated {date}?"
     }
   },
   "toast": {
@@ -128,7 +142,7 @@
     },
     "paymentConfirmed": {
       "title": "Payment matched and posted",
-      "message": "Payment of {amount} CZK from {name} was confirmed. The apartment balance is settled."
+      "message": "Payment of {amount} CZK from {name} was confirmed. This member’s debt to the manager is settled."
     },
     "reminderSent": {
       "at": "at {hh}:{mm} via email and push notification",
@@ -206,7 +220,9 @@
     },
     "warning": {
       "title": "Warning",
-      "selfSwap": "You cannot swap a shift with yourself."
+      "selfSwap": "You cannot swap a shift with yourself.",
+      "shiftTransferBlocked": "A completed shift or a shift with a pending request cannot be transferred.",
+      "shiftCompleted": "A completed shift cannot be taken over."
     },
     "accessDenied": {
       "title": "Access denied",
@@ -216,7 +232,10 @@
       "rejectSwap": "Only the addressed roommate or the apartment manager can reject the swap.",
       "cancelSwap": "Only the requester or the apartment manager can cancel the request.",
       "saveSettings": "Only the apartment manager can edit the apartment details and bank connection.",
-      "updateArea": "Only the apartment manager can edit the room floor area."
+      "updateArea": "Only the apartment manager can edit the room floor area.",
+      "managerOnly": "Only the apartment manager can perform this action.",
+      "deleteExpense": "Only the payer or apartment manager can delete this expense.",
+      "confirmMemberPayment": "Only the person who paid the expense or the apartment manager can confirm receipt."
     },
     "settingsSaved": {
       "title": "Settings saved",
@@ -233,6 +252,44 @@
     "exportDone": {
       "title": "Export completed",
       "message": "The CSV file has been downloaded to your device."
+    },
+    "invalidExpense": {
+      "title": "Invalid expense",
+      "message": "Enter a title, a valid payment date no later than 12 November 2026, and shares and itemized amounts that match the total."
+    },
+    "invalidPayment": {
+      "title": "Invalid payment date",
+      "message": "The payment date must fall between the expense date and 12 November 2026."
+    },
+    "invalidPaymentDate": {
+      "message": "Enter a date no later than 12 November 2026 and a valid payment method."
+    },
+    "paymentNotification": {
+      "title": "Confirmation for the member",
+      "message": "A simulated payment confirmation has been prepared for {name}."
+    },
+    "memberPayment": {
+      "title": "Share payment confirmed",
+      "message": "{debtor} paid {amount} CZK for “{title}” directly to {payer}."
+    },
+    "invalidReading": {
+      "title": "Invalid reading",
+      "message": "Enter a finite, nonnegative meter value and a date between the previous reading and 12 November 2026."
+    },
+    "meterDeleted": {
+      "title": "Reading deleted",
+      "message": "The reading of {value} {unit} was deleted."
+    },
+    "invalidSettings": {
+      "title": "Invalid settings",
+      "message": "Enter the apartment details, matching Czech account number and IBAN, positive amounts, and a due day from 1 to 28."
+    },
+    "invalidArea": {
+      "title": "Invalid room area",
+      "message": "Enter a room area of at least 5 m²."
+    },
+    "invalidCartQty": {
+      "message": "Quantity must be a whole number within the supported range."
     }
   },
   "cart": {
@@ -393,6 +450,25 @@
       "bathroom": "Thorough disinfection of the toilet, cleaning of the shower/bathtub, sink and polishing of mirrors.",
       "corridor": "Vacuuming all shared areas of the flat, mopping the floor and tidying the entrance hall with shoe rack.",
       "trash": "Taking out mixed and sorted waste to the outdoor containers and replacing the bags."
+    },
+    "weekNumber": "Week {week}",
+    "subtasks": {
+      "kitchen0": "Put away clean dishes and run a full dishwasher",
+      "kitchen1": "Wipe and degrease the hob and kitchen counter",
+      "kitchen2": "Clean the sink, tap and drain strainer",
+      "kitchen3": "Wipe the dining table and take out food waste",
+      "bathroom0": "Disinfect and clean the toilet bowl and seat",
+      "bathroom1": "Clean the shower / bath and remove limescale",
+      "bathroom2": "Clean the washbasin and polish the mirror",
+      "bathroom3": "Restock toilet paper and replace towels",
+      "corridor0": "Vacuum carpets and floors in shared areas",
+      "corridor1": "Mop the entrance hall and hallway floor",
+      "corridor2": "Tidy the shoe rack and shake out the doormat",
+      "corridor3": "Dust shared cabinets and windowsills",
+      "trash0": "Take mixed household waste to the black bin",
+      "trash1": "Sort and take out plastic, paper, cans and glass",
+      "trash2": "Wipe and disinfect waste bins",
+      "trash3": "Put new sturdy bags into all bins"
     }
   },
   "csv": {
@@ -559,7 +635,10 @@
     "overdueMembersMany": "{count} members late with payment",
     "overdueDaysOne": "1 day overdue",
     "overdueDaysFew": "{days} days overdue",
-    "overdueDaysMany": "{days} days overdue"
+    "overdueDaysMany": "{days} days overdue",
+    "breakdownOther": "Other:",
+    "noPreviousMonth": "No previous month for comparison",
+    "monthlyChange": "{change} % m/m"
   },
   "expenses": {
     "title": "Expense and payment statement",
@@ -684,7 +763,15 @@
     "exportMessage": "The monthly settlement report has been generated and is ready to print.",
     "overdueDayOne": "1 day overdue",
     "overdueDayFew": "{days} days overdue",
-    "overdueDayMany": "{days} days overdue"
+    "overdueDayMany": "{days} days overdue",
+    "printPdf": "Print / save PDF",
+    "managerMemberDebts": "Outstanding shares from purchases paid by members",
+    "memberPurchases": "Payments for purchases paid by members",
+    "memberPurchasesHint": "Pay these shares directly to the person who paid for the purchase, separately from the manager’s account. The payer or manager confirms receipt in the expense details.",
+    "myMemberDebts": "My debts to members: {amount} CZK",
+    "purchasePayer": "Paid by: {name}",
+    "openPurchase": "View shares and confirm payment →",
+    "breakdownOther": "Other:"
   },
   "energy": {
     "title": "Energy and meter readings",
@@ -737,7 +824,10 @@
       "electricity": "Electricity",
       "gas": "Gas",
       "water": "Water"
-    }
+    },
+    "deltaSincePrevious": "+{delta} {unit} since the previous reading",
+    "deleteLatestAria": "Delete latest {type} reading",
+    "deleteLatest": "Delete latest"
   },
   "settings": {
     "title": "Apartment, rooms and member settings",
@@ -822,7 +912,8 @@
     "browse": "browse from disk",
     "formats": "Supported formats: PDF, JPG, PNG (max. 10 MB)",
     "cancel": "Cancel / Close",
-    "submit": "Save and split expense"
+    "submit": "Save and split expense",
+    "receiptMismatch": "The transferred itemized purchase totals {amount} CZK. The expense total must match this amount."
   },
   "expenseDetail": {
     "close": "Close",
@@ -873,7 +964,15 @@
     "totalCzk": "TOTAL CZK:",
     "closePreview": "Close preview",
     "downloadTitle": "Downloading document",
-    "downloadMessage": "File {file} has been prepared for download."
+    "downloadMessage": "File {file} has been prepared for download.",
+    "calcCustom": "Custom allocation",
+    "notifySharePayment": "Prepare a simulated confirmation for the member",
+    "confirmSharePayment": "Confirm payment",
+    "noReceiptAttached": "No receipt is attached to this expense.",
+    "receiptAlt": "Attached expense receipt",
+    "simulatedReceipt": "Simulated attachment; the file is not included in the prototype.",
+    "noItems": "No itemized breakdown is available.",
+    "paymentRecorder": "Confirmed by: {name}"
   },
   "qr": {
     "title": "Payment order & SPAYD QR payment",
@@ -904,7 +1003,12 @@
     "copyAllVs": "VS:",
     "copyAllMessageLabel": "Message:",
     "copyAllTitle": "All details copied",
-    "copyAllMessage": "All payment instructions have been copied to the clipboard."
+    "copyAllMessage": "All payment instructions have been copied to the clipboard.",
+    "copiedResult": "{label}: copied to the clipboard.",
+    "copyFailedTitle": "Copy failed",
+    "copyFailedMessage": "Select and copy the payment details manually.",
+    "allPaymentDetails": "Account: {account}\nIBAN: {iban}\nAmount: {amount} CZK\nVS: {symbol}\nMessage: {message}",
+    "paymentDetails": "Payment details"
   },
   "confirmPayment": {
     "title": "Confirm payment receipt",
@@ -923,12 +1027,13 @@
     "noteLabel": "Additional note (optional)",
     "notePlaceholder": "e.g. Instant payment from an Air Bank account without a fee...",
     "notifyPrefix": "Send",
-    "notifySuffix": "an automatic confirmation of the payment posting (in-app notification and email).",
+    "notifySuffix": "a simulated confirmation that the payment was recorded.",
     "warningLabel": "Warning:",
     "warningText": "By confirming, the outstanding debt will be marked as settled and the amount will immediately affect the apartment's total liquidity.",
     "cancel": "Cancel / Revert",
     "confirmButton": "Confirm receipt of {amount} CZK",
-    "noteDefault": "Instant payment via QR code"
+    "noteDefault": "Instant payment via QR code",
+    "notifySimulatedSuffix": "a simulated confirmation that the payment was recorded."
   },
   "meterAdd": {
     "title": "Add a new energy meter reading",
@@ -947,5 +1052,10 @@
     "cancel": "Cancel / Revert",
     "submit": "Save new reading",
     "noteDefault": "Regular reading at the end of the month"
+  },
+  "storage": {
+    "conflict": "Another tab changed the data. Reload this page before making further changes.",
+    "writeFailed": "Changes could not be saved. They will only remain until this page is closed.",
+    "recovered": "Stored data was damaged. The default prototype data has been restored."
   }
 }

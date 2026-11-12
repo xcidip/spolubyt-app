@@ -18,6 +18,7 @@ import {
   ModalPayloads,
   ConfirmModalState,
   ExpenseFilters,
+  PaymentDetails,
 } from '../types/index'
 import {
   INITIAL_ROOMMATES,
@@ -33,9 +34,10 @@ import {
 import { t } from '../i18n'
 import { roundMoney } from '../utils/money'
 import { deepClone, createId, csvCell, isIsoDate } from '../utils/format'
-import { validStoredSlice } from '../utils/storage'
+import { validStoredSnapshot } from '../utils/storage'
+import { bankAccountsMatch } from '../utils/bank'
 
-const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v2_'
+const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v3_'
 const STORAGE_KEY = STORAGE_KEY_PREFIX + 'state'
 const storageWriteFailed = ref(false)
 const storageRecovered = ref(false)
@@ -61,7 +63,7 @@ function readSnapshot(): Record<string, unknown> {
     const parsed: unknown = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Neplatný uložený stav')
     const snapshot = parsed as Record<string, unknown>
-    if (!Object.keys(defaults).every(key => validStoredSlice(key, snapshot[key]))) throw new Error('Neplatná uložená data')
+    if (!validStoredSnapshot(snapshot)) throw new Error('Neplatná uložená data')
     const people = snapshot.roommates as Roommate[]
     if (!people.some(r => r.id === snapshot.currentUserId)) snapshot.currentUserId = people[0].id
     return snapshot
@@ -81,7 +83,7 @@ function saveToStorage<T>(_key: string, value: T): void {
   try {
     // A different tab must be reloaded before it can overwrite newer edits.
     const existing = localStorage.getItem(STORAGE_KEY)
-    if (existing !== lastSavedSnapshot && existing !== null) {
+    if (existing !== lastSavedSnapshot) {
       storageConflict.value = true
       return
     }
@@ -125,7 +127,12 @@ const roommates = ref<Roommate[]>(loadFromStorage('roommates', INITIAL_ROOMMATES
 const currentUserId = ref<string>(loadFromStorage('currentUserId', 'user-tomas'))
 const settings = ref<ApartmentSettings>(loadFromStorage('settings', INITIAL_SETTINGS))
 const settlements = ref<DebtSettlement[]>(loadFromStorage('settlements', INITIAL_SETTLEMENTS))
+function reconcileExpenseStatus(expense: Expense): void {
+  expense.status = expense.shares.some(share => share.status === 'PO_SPLATNOSTI') ? 'PO_SPLATNOSTI'
+    : expense.shares.some(share => share.status === 'DLUŽÍ') ? 'ČÁSTEČNĚ' : 'UHRAZENO'
+}
 const expenses = ref<Expense[]>(loadFromStorage('expenses', INITIAL_EXPENSES))
+expenses.value.forEach(reconcileExpenseStatus)
 const meters = ref<MeterReading[]>(loadFromStorage('meters', INITIAL_METERS))
 const cartItems = ref<CartItem[]>(loadFromStorage('cartItems', INITIAL_CART_ITEMS))
 const cleaningShifts = ref<CleaningShift[]>(loadFromStorage('cleaning_shifts', INITIAL_CLEANING_SHIFTS))
@@ -282,6 +289,10 @@ function createStore() {
     return settlements.value.filter(s => s.status === 'PO_SPLATNOSTI').length
   })
 
+  const monthlyExpenseChangePct = computed(() => previousMonthTotalExpenses.value > 0
+    ? (monthlyTotalExpenses.value / previousMonthTotalExpenses.value - 1) * 100 : null)
+  const recentExpenses = computed(() => [...expenses.value].sort((a, b) => b.date.localeCompare(a.date) || b.code.localeCompare(a.code)).slice(0, 4))
+
   // Perspective of the current logged-in user
   const managerRoommate = computed(() => {
     return roommates.value.find(r => r.role === 'Správce') || roommates.value[0]
@@ -332,6 +343,11 @@ function createStore() {
     }, 0)
   })
 
+  const currentUserMemberDebt = computed(() => roundMoney(expenses.value.reduce((sum, expense) => {
+    if (expense.payerId === managerRoommate.value.id || expense.payerId === currentUserId.value) return sum
+    return sum + expense.shares.filter(share => share.roommateId === currentUserId.value && (share.status === 'DLUŽÍ' || share.status === 'PO_SPLATNOSTI')).reduce((total, share) => total + share.amount, 0)
+  }, 0)))
+
   const currentUserMonthlyExpenses = computed(() => {
     return expenses.value
       .filter(e => e.date.startsWith('2026-11'))
@@ -356,7 +372,7 @@ function createStore() {
 
     // Text search
     if (expenseFilters.value.search.trim()) {
-      const q = expenseFilters.value.search.toLowerCase()
+      const q = expenseFilters.value.search.trim().toLowerCase()
       result = result.filter(e => 
         e.title.toLowerCase().includes(q) ||
         e.code.toLowerCase().includes(q) ||
@@ -415,7 +431,7 @@ function createStore() {
     return filteredExpenses.value.reduce((sum, e) => sum + e.totalAmount, 0)
   })
 
-  const resetExpenseFilters = () => {
+  const clearExpenseFilters = () => {
     expenseFilters.value = {
       search: '',
       period: 'ALL',
@@ -425,6 +441,9 @@ function createStore() {
       sortBy: 'date',
       sortOrder: 'desc'
     }
+  }
+  const resetExpenseFilters = (): void => {
+    clearExpenseFilters()
     showToast(t('toasts.filtersReset.title', 'Filtry vyresetovány'), t('toasts.filtersReset.message', 'Zobrazen kompletní chronologický seznam výdajů.'), 'info')
   }
 
@@ -439,15 +458,39 @@ function createStore() {
         || (share.status !== 'DLUŽÍ' && share.status !== 'PO_SPLATNOSTI')) return
       const settlement = settlements.value.find(s => s.roommateId === share.roommateId)
       if (!settlement) return
+      const reopening = settlement.totalDebt === 0 && direction === 1
+      if (reopening) settlement.daysOverdue = Math.max(0, Math.floor((Date.parse(DEMO_TODAY) - Date.parse(settlement.dueDate)) / 86400000))
       settlement.totalDebt = Math.max(0, roundMoney(settlement.totalDebt + direction * share.amount))
       settlement.breakdown[bucket] = Math.max(0, roundMoney((settlement.breakdown[bucket] || 0) + direction * share.amount))
+      if (settlement.totalDebt === 0) settlement.daysOverdue = 0
       settlement.status = settlement.totalDebt === 0 ? 'VYROVNÁNO'
         : settlement.daysOverdue > 0 ? 'PO_SPLATNOSTI' : 'PŘED_SPLATNOSTÍ'
+      if (direction === 1) share.status = settlement.daysOverdue > 0 ? 'PO_SPLATNOSTI' : 'DLUŽÍ'
     })
+    reconcileExpenseStatus(expense)
   }
 
   // Add Expense
   const addExpense = (newExpense: Omit<Expense, 'id' | 'code' | 'audit'>, options: { cartItemIds?: string[] } = {}): boolean => {
+    const participantIds = new Set(newExpense.shares.map(share => share.roommateId))
+    const validMoney = (amount: number): boolean => Number.isFinite(amount) && amount >= 0 && Number.isSafeInteger(Math.round(amount * 100)) && Math.abs(roundMoney(amount) - amount) < 0.000001
+    const payer = roommates.value.find(person => person.id === newExpense.payerId)
+    const receiptTotal = newExpense.receiptItems?.reduce((sum, item) => sum + item.price * item.qty, 0)
+    if (!newExpense.title.trim() || !isIsoDate(newExpense.date) || newExpense.date > DEMO_TODAY
+      || !validMoney(newExpense.totalAmount) || newExpense.totalAmount <= 0 || !payer
+      || !['Bydlení', 'Energie', 'Drogerie', 'Služby', 'Údržba', 'Jídlo'].includes(newExpense.category)
+      || !['EQUAL', 'BY_AREA', 'CUSTOM'].includes(newExpense.calculationKey)
+      || newExpense.shares.length === 0 || participantIds.size !== newExpense.shares.length
+      || newExpense.shares.some(share => !roommates.value.some(person => person.id === share.roommateId)
+        || !validMoney(share.amount) || !['PLÁTCE', 'DLUŽÍ', 'PO_SPLATNOSTI', 'UHRAZENO'].includes(share.status)
+        || (share.status === 'PLÁTCE' && share.roommateId !== newExpense.payerId))
+      || roundMoney(newExpense.shares.reduce((sum, share) => sum + share.amount, 0)) !== newExpense.totalAmount
+      || (receiptTotal !== undefined && (roundMoney(receiptTotal) !== newExpense.totalAmount
+        || new Set(newExpense.receiptItems?.map(item => item.id)).size !== newExpense.receiptItems?.length
+        || newExpense.receiptItems?.some(item => !item.id.trim() || !item.name.trim() || !validMoney(item.price) || !Number.isInteger(item.qty) || item.qty <= 0)))) {
+      showToast(t('toasts.invalidExpense.title', 'Neplatný výdaj'), t('toasts.invalidExpense.message', 'Zadejte název, platné datum nejvýše 12. 11. 2026 a částky, jejichž podíly i položkový rozpis souhlasí s celkem.'), 'error')
+      return false
+    }
     const today = new Date()
     const prefix = `VYD-${DEMO_TODAY.slice(0, 7)}-`
     const sequence = Math.max(0, ...expenses.value.filter(e => e.code.startsWith(prefix)).map(e => Number(e.code.slice(prefix.length)) || 0)) + 1
@@ -455,7 +498,9 @@ function createStore() {
     const id = createId('exp')
     
     const expense: Expense = {
-      ...newExpense,
+      ...deepClone(newExpense),
+      title: newExpense.title.trim(),
+      payerName: payer.name,
       id,
       code,
       audit: {
@@ -464,7 +509,12 @@ function createStore() {
       }
     }
 
+    expense.shares.forEach(share => {
+      share.roommateName = roommates.value.find(person => person.id === share.roommateId)!.name
+      if (share.roommateId === expense.payerId) share.status = 'PLÁTCE'
+    })
     applyExpenseDebt(expense, 1)
+    reconcileExpenseStatus(expense)
 
     // If the expense originated from a cart conversion, remove the transferred items
     const transferredCartItemIds = options.cartItemIds ?? []
@@ -484,7 +534,7 @@ function createStore() {
   const canDeleteExpense = (expense: Expense): boolean => isMasterTenant.value || expense.payerId === currentUserId.value
   const requireManager = (): boolean => {
     if (isMasterTenant.value) return true
-    showToast('Přístup odepřen', 'Tuto akci může provést pouze správce bytu.', 'warning')
+    showToast(t('toasts.accessDenied.title', 'Přístup odepřen'), t('toasts.accessDenied.managerOnly', 'Tuto akci může provést pouze správce bytu.'), 'warning')
     return false
   }
 
@@ -493,7 +543,7 @@ function createStore() {
     const exp = expenses.value.find(e => e.id === expenseId)
     if (!exp) return
     if (!canDeleteExpense(exp)) {
-      showToast('Přístup odepřen', 'Výdaj může smazat pouze plátce nebo správce bytu.', 'warning')
+      showToast(t('toasts.accessDenied.title', 'Přístup odepřen'), t('toasts.accessDenied.deleteExpense', 'Výdaj může smazat pouze plátce nebo správce bytu.'), 'warning')
       return
     }
 
@@ -517,15 +567,10 @@ function createStore() {
   }
 
   // Settle Debt / Confirm Payment
-  const confirmPayment = (roommateId: string, paymentDetails: {
-    date: string
-    method: string
-    note: string
-    notifyMember: boolean
-  }): boolean => {
+  const confirmPayment = (roommateId: string, paymentDetails: PaymentDetails): boolean => {
     if (!requireManager()) return false
-    if (!isIsoDate(paymentDetails.date) || paymentDetails.date > DEMO_TODAY) {
-      showToast('Neplatné datum platby', 'Zadejte datum nejvýše 12. 11. 2026.', 'error')
+    if (!isIsoDate(paymentDetails.date) || paymentDetails.date > DEMO_TODAY || !['BANK', 'CASH'].includes(paymentDetails.method)) {
+      showToast(t('toasts.invalidPayment.title', 'Neplatné datum platby'), t('toasts.invalidPaymentDate.message', 'Zadejte datum nejvýše 12. 11. 2026 a platný způsob úhrady.'), 'error')
       return false
     }
     const s = settlements.value.find(set => set.roommateId === roommateId)
@@ -544,11 +589,11 @@ function createStore() {
         if (share.roommateId === roommateId && (share.status === 'DLUŽÍ' || share.status === 'PO_SPLATNOSTI')) {
           share.status = 'UHRAZENO'
           share.settledDate = paymentDetails.date
+          share.payment = { method: paymentDetails.method, note: paymentDetails.note.trim(), recordedBy: currentUser.value.id, notifyMember: paymentDetails.notifyMember }
         }
       })
       // Update expense status if all are paid
-      const allPaid = exp.shares.every(sh => sh.status === 'UHRAZENO' || sh.status === 'PLÁTCE')
-      if (allPaid) exp.status = 'UHRAZENO'
+      reconcileExpenseStatus(exp)
     })
 
     // Celebration confetti!
@@ -563,10 +608,43 @@ function createStore() {
     closeModal()
     showToast(
       t('toasts.paymentConfirmed.title', 'Platba byla spárována a zaúčtována'),
-      t('toasts.paymentConfirmed.message', 'Úhrada {amount} Kč od {name} byla potvrzena. Bilance bytu je vyrovnaná.', { amount: paidAmount.toLocaleString('cs-CZ'), name: s.roommateName }),
+      t('toasts.paymentConfirmed.message', 'Úhrada {amount} Kč od {name} byla potvrzena. Dluh tohoto člena správci je vyrovnaný.', { amount: paidAmount.toLocaleString('cs-CZ'), name: s.roommateName }),
       'success',
       4500
     )
+    if (paymentDetails.notifyMember) showToast(t('toasts.paymentNotification.title', 'Potvrzení pro člena'), t('toasts.paymentNotification.message', 'Simulované potvrzení úhrady bylo připraveno pro {name}.', { name: s.roommateName }), 'info')
+    return true
+  }
+
+  const confirmExpenseSharePayment = (expenseId: string, roommateId: string, paymentDetails: PaymentDetails): boolean => {
+    const expense = expenses.value.find(item => item.id === expenseId)
+    const share = expense?.shares.find(item => item.roommateId === roommateId)
+    if (!expense || !share || expense.payerId === managerRoommate.value.id
+      || (share.status !== 'DLUŽÍ' && share.status !== 'PO_SPLATNOSTI')) return false
+    if (!isMasterTenant.value && expense.payerId !== currentUserId.value) {
+      showToast(t('toasts.accessDenied.title', 'Přístup odepřen'), t('toasts.accessDenied.confirmMemberPayment', 'Přijetí úhrady může potvrdit pouze plátce výdaje nebo správce.'), 'warning')
+      return false
+    }
+    if (!isIsoDate(paymentDetails.date) || paymentDetails.date > DEMO_TODAY || paymentDetails.date < expense.date
+      || !['BANK', 'CASH'].includes(paymentDetails.method)) {
+      showToast(t('toasts.invalidPayment.title', 'Neplatné datum platby'), t('toasts.invalidPayment.message', 'Datum úhrady musí být od data výdaje do 12. 11. 2026.'), 'error')
+      return false
+    }
+    const details = { ...paymentDetails }
+    requestConfirmation({
+      title: t('confirm.memberPayment.title', 'Potvrdit přijetí úhrady'),
+      message: t('confirm.memberPayment.message', 'Potvrdit úhradu {amount} Kč od {debtor} pro {payer} za výdaj „{title}“?', { amount: share.amount.toLocaleString('cs-CZ'), debtor: share.roommateName, payer: expense.payerName, title: expense.title }),
+      onConfirm: () => {
+        if (!expenses.value.includes(expense) || (!isMasterTenant.value && expense.payerId !== currentUserId.value)
+          || (share.status !== 'DLUŽÍ' && share.status !== 'PO_SPLATNOSTI')) return
+        share.status = 'UHRAZENO'
+        share.settledDate = details.date
+        share.payment = { method: details.method, note: details.note.trim(), recordedBy: currentUserId.value, notifyMember: details.notifyMember }
+        reconcileExpenseStatus(expense)
+        showToast(t('toasts.memberPayment.title', 'Úhrada podílu potvrzena'), t('toasts.memberPayment.message', '{debtor} uhradil(a) {amount} Kč za „{title}“ přímo uživateli {payer}.', { debtor: share.roommateName, amount: share.amount.toLocaleString('cs-CZ'), title: expense.title, payer: expense.payerName }), 'success')
+        if (details.notifyMember) showToast(t('toasts.paymentNotification.title', 'Potvrzení pro člena'), t('toasts.paymentNotification.message', 'Simulované potvrzení úhrady bylo připraveno pro {name}.', { name: share.roommateName }), 'info')
+      },
+    })
     return true
   }
 
@@ -576,9 +654,7 @@ function createStore() {
     const s = settlements.value.find(set => set.roommateId === roommateId)
     if (!s) return
 
-    const now = new Date()
-    const dateStr = `${String(now.getDate()).padStart(2, '0')}. ${String(now.getMonth() + 1).padStart(2, '0')}. ${t('toasts.reminderSent.at', 'v {hh}:{mm} e-mailem a push notifikací', { hh: String(now.getHours()).padStart(2, '0'), mm: String(now.getMinutes()).padStart(2, '0') })}`
-    s.lastReminderSent = dateStr
+    s.lastReminderSent = new Date().toISOString()
 
     showToast(
       t('toasts.reminderSent.title', 'Upomínka odeslána'),
@@ -621,7 +697,7 @@ function createStore() {
   })
 
   const addCartItem = (item: { name: string; category: ExpenseCategory; unitPrice: number; qty: number }) => {
-    if (!item.name.trim() || !Number.isFinite(item.unitPrice) || !Number.isFinite(item.qty) || item.unitPrice <= 0 || item.qty <= 0) {
+    if (!item.name.trim() || !Number.isFinite(item.unitPrice) || !Number.isFinite(item.qty) || roundMoney(item.unitPrice) <= 0 || item.qty <= 0 || !Number.isInteger(item.qty) || !Number.isSafeInteger(Math.round(item.unitPrice * item.qty * 100))) {
       showToast(t('toasts.invalidData.title', 'Neplatné údaje'), t('toasts.invalidData.message', 'Vyplňte prosím název položky a kladnou cenu.'), 'warning')
       return
     }
@@ -630,10 +706,10 @@ function createStore() {
       id: createId('cart'),
       name: item.name.trim(),
       category: item.category,
-      unitPrice: Math.round(item.unitPrice),
+      unitPrice: roundMoney(item.unitPrice),
       qty: Math.max(1, Math.round(item.qty)),
       addedBy: currentUser.value.name,
-      addedAt: t('common.now', 'Právě teď')
+      addedAt: DEMO_TODAY
     }
 
     cartItems.value.push(newItem)
@@ -649,6 +725,11 @@ function createStore() {
     if (!item) return
 
     const newQty = item.qty + delta
+    if (!Number.isSafeInteger(delta) || !Number.isSafeInteger(newQty)
+      || !Number.isSafeInteger(Math.round(item.unitPrice * 100) * newQty)) {
+      showToast(t('toasts.invalidData.title', 'Neplatné údaje'), t('toasts.invalidCartQty.message', 'Počet kusů musí být celé číslo v podporovaném rozsahu.'), 'warning')
+      return
+    }
     if (newQty <= 0) {
       removeCartItem(itemId)
     } else {
@@ -693,7 +774,8 @@ function createStore() {
     item.isPurchased = !item.isPurchased
     if (item.isPurchased) {
       item.purchasedBy = currentUser.value.name
-      item.purchasedAt = t('common.now', 'Právě teď')
+      item.purchasedByRoommateId = currentUser.value.id
+      item.purchasedAt = DEMO_TODAY
       showToast(
         t('toasts.cartItemPurchased.title', 'Položka označena jako koupená'),
         t('toasts.cartItemPurchased.message', '„{name}“ je připravena k převodu do výdajů.', { name: item.name }),
@@ -701,6 +783,7 @@ function createStore() {
       )
     } else {
       item.purchasedBy = undefined
+      item.purchasedByRoommateId = undefined
       item.purchasedAt = undefined
       showToast(
         t('toasts.cartItemUnpurchased.title', 'Stav položky změněn'),
@@ -714,6 +797,7 @@ function createStore() {
     const total = item.unitPrice * item.qty
     openModal('EXP_ADD', {
       title: item.name,
+      payerId: item.purchasedByRoommateId ?? roommates.value.find(person => person.name === item.purchasedBy)?.id,
       totalAmount: total,
       category: item.category,
       cartItemId: item.id,
@@ -738,6 +822,8 @@ function createStore() {
     const total = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0)
     openModal('EXP_ADD', {
       title,
+      payerId: items.every(item => item.purchasedBy === items[0].purchasedBy)
+        ? items[0].purchasedByRoommateId ?? roommates.value.find(person => person.name === items[0].purchasedBy)?.id : undefined,
       totalAmount: total,
       category: items.every(i => i.category === items[0].category) ? items[0].category : 'Služby',
       cartItemIds: items.map(i => i.id),
@@ -784,7 +870,7 @@ function createStore() {
   }) => {
     const prev = latestMeters.value[data.type]
     if (!isIsoDate(data.date) || data.date > DEMO_TODAY || (prev && data.date < prev.date) || !Number.isFinite(data.value) || data.value < 0) {
-      showToast('Neplatný odečet', 'Zadejte nezáporný konečný stav a datum od posledního odečtu do 12. 11. 2026.', 'error')
+      showToast(t('toasts.invalidReading.title', 'Neplatný odečet'), t('toasts.invalidReading.message', 'Zadejte nezáporný konečný stav a datum od posledního odečtu do 12. 11. 2026.'), 'error')
       return false
     }
     if (prev && data.value < prev.value) {
@@ -822,13 +908,13 @@ function createStore() {
     const reading = meters.value.find(m => m.id === readingId)
     if (!reading || latestMeters.value[reading.type]?.id !== readingId) return
     requestConfirmation({
-      title: 'Smazat poslední odečet',
-      message: `Odstranit odečet ${reading.value.toLocaleString('cs-CZ')} ${reading.unit} ze dne ${reading.date}?`,
+      title: t('confirm.deleteMeter.title', 'Smazat poslední odečet'),
+      message: t('confirm.deleteMeter.message', 'Odstranit odečet {value} {unit} ze dne {date}?', { value: reading.value.toLocaleString('cs-CZ'), unit: reading.unit, date: reading.date }),
       isDestructive: true,
       onConfirm: () => {
         if (latestMeters.value[reading.type]?.id !== readingId) return
         meters.value = meters.value.filter(m => m.id !== readingId)
-        showToast('Odečet odstraněn', `Odečet ${reading.value.toLocaleString('cs-CZ')} ${reading.unit} byl odstraněn.`, 'info')
+        showToast(t('toasts.meterDeleted.title', 'Odečet odstraněn'), t('toasts.meterDeleted.message', 'Odečet {value} {unit} byl odstraněn.', { value: reading.value.toLocaleString('cs-CZ'), unit: reading.unit }), 'info')
       },
     })
   }
@@ -915,13 +1001,13 @@ function createStore() {
 
     const fmtDayMonth = (d: Date) => `${d.getDate()}. ${d.getMonth() + 1}.`
     const fmtIso = (d: Date) => `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`
-    const weekLabel = t('cleaning.weekLabel', 'Týden {week} ({start} – {end} {year})', { week: targetWeek, start: fmtDayMonth(startDateObj), end: fmtDayMonth(endDateObj), year: endDateObj.getFullYear() })
+    const weekLabel = `Týden ${targetWeek} (${fmtDayMonth(startDateObj)} – ${fmtDayMonth(endDateObj)} ${endDateObj.getFullYear()})`
 
     const tasksOrder: { key: import('../types').CleaningTaskKey; title: string }[] = [
-      { key: 'KITCHEN', title: t('cleaning.task.kitchen', 'Uklízení kuchyně a myčky') },
-      { key: 'BATHROOM', title: t('cleaning.task.bathroom', 'Koupelna a toaleta') },
-      { key: 'CORRIDOR', title: t('cleaning.task.corridor', 'Chodba a vysávání') },
-      { key: 'TRASH', title: t('cleaning.task.trash', 'Odpadky a třídění') }
+      { key: 'KITCHEN', title: 'Uklízení kuchyně a myčky' },
+      { key: 'BATHROOM', title: 'Koupelna a toaleta' },
+      { key: 'CORRIDOR', title: 'Chodba a vysávání' },
+      { key: 'TRASH', title: 'Odpadky a třídění' }
     ]
 
     tasksOrder.forEach((task, taskIdx) => {
@@ -1039,7 +1125,7 @@ function createStore() {
     }
 
     if (shift.isCompleted || shift.swapRequest?.status === 'PENDING') {
-      showToast('Upozornění', 'Splněnou směnu nebo směnu s čekající žádostí nelze převést.', 'warning')
+      showToast(t('toasts.warning.title', 'Upozornění'), t('toasts.warning.shiftTransferBlocked', 'Splněnou směnu nebo směnu s čekající žádostí nelze převést.'), 'warning')
       return
     }
     const target = roommates.value.find(r => r.id === targetRoommateId)
@@ -1092,7 +1178,7 @@ function createStore() {
     }
 
     if (shift.isCompleted) {
-      showToast('Upozornění', 'Splněnou směnu nelze převzít.', 'warning')
+      showToast(t('toasts.warning.title', 'Upozornění'), t('toasts.warning.shiftCompleted', 'Splněnou směnu nelze převzít.'), 'warning')
       return
     }
     shift.swapRequest.status = 'ACCEPTED'
@@ -1167,16 +1253,15 @@ function createStore() {
     return cleaningShifts.value.filter(s => s.weekNumber === currentWeekNumber)
   })
 
-  const myCurrentCleaningShift = computed(() => {
-    return currentWeekCleaningShifts.value.find(s => s.roommateId === currentUserId.value)
-  })
+  const myCurrentCleaningShifts = computed(() => currentWeekCleaningShifts.value.filter(s => s.roommateId === currentUserId.value))
+  const myCurrentCleaningShift = computed(() => myCurrentCleaningShifts.value.find(shift => !shift.isCompleted) ?? myCurrentCleaningShifts.value[0])
 
   const pendingCurrentWeekCleaningCount = computed(() => {
     return currentWeekCleaningShifts.value.filter(s => !s.isCompleted).length
   })
 
   const myCurrentCleaningPending = computed(() => {
-    return myCurrentCleaningShift.value ? !myCurrentCleaningShift.value.isCompleted : false
+    return myCurrentCleaningShifts.value.some(shift => !shift.isCompleted)
   })
 
   // Settings & Apartment configuration
@@ -1192,13 +1277,15 @@ function createStore() {
 
     const iban = newSettings.iban.trim().replace(/\s/g, '').toUpperCase()
     if (!newSettings.name.trim() || !newSettings.address.trim() || !newSettings.accountNumber.trim()
-      || !/^CZ\d{22}$/.test(iban)
+      || !/^CZ\d{22}$/.test(iban) || !bankAccountsMatch(newSettings.accountNumber, iban)
       || !Number.isFinite(newSettings.monthlyRent) || newSettings.monthlyRent <= 0
+      || !Number.isSafeInteger(Math.round(newSettings.monthlyRent * 100)) || Math.abs(roundMoney(newSettings.monthlyRent) - newSettings.monthlyRent) > 0.000001
       || !Number.isFinite(newSettings.monthlyUtilities) || newSettings.monthlyUtilities <= 0
+      || !Number.isSafeInteger(Math.round(newSettings.monthlyUtilities * 100)) || Math.abs(roundMoney(newSettings.monthlyUtilities) - newSettings.monthlyUtilities) > 0.000001
       || !Number.isInteger(newSettings.dueDayOfMonth) || newSettings.dueDayOfMonth < 1 || newSettings.dueDayOfMonth > 28
       || !['BY_AREA', 'EQUAL'].includes(newSettings.rules.rentKey)
       || !['BY_AREA', 'EQUAL'].includes(newSettings.rules.energyKey) || newSettings.rules.suppliesKey !== 'EQUAL') {
-      showToast('Neplatné nastavení', 'Vyplňte údaje bytu, český IBAN, kladné částky a den splatnosti 1–28.', 'error')
+      showToast(t('toasts.invalidSettings.title', 'Neplatné nastavení'), t('toasts.invalidSettings.message', 'Vyplňte údaje bytu, shodné české bankovní spojení a IBAN, kladné částky a den splatnosti 1–28.'), 'error')
       return false
     }
     const dueChanged = settings.value.dueDayOfMonth !== newSettings.dueDayOfMonth
@@ -1239,7 +1326,7 @@ function createStore() {
     const target = roommates.value.find(r => r.id === roomId)
     if (!target) return false
     if (!Number.isFinite(newArea) || newArea < 5) {
-      showToast('Neplatná výměra pokoje', 'Zadejte plochu pokoje alespoň 5 m².', 'error')
+      showToast(t('toasts.invalidArea.title', 'Neplatná výměra pokoje'), t('toasts.invalidArea.message', 'Zadejte plochu pokoje alespoň 5 m².'), 'error')
       return false
     }
 
@@ -1272,6 +1359,9 @@ function createStore() {
         settings.value = deepClone(INITIAL_SETTINGS)
         settlements.value = deepClone(INITIAL_SETTLEMENTS)
         expenses.value = deepClone(INITIAL_EXPENSES)
+        expenses.value.forEach(reconcileExpenseStatus)
+        clearExpenseFilters()
+        toasts.value = []
         meters.value = deepClone(INITIAL_METERS)
         cartItems.value = deepClone(INITIAL_CART_ITEMS)
         cleaningShifts.value = deepClone(INITIAL_CLEANING_SHIFTS)
@@ -1346,6 +1436,7 @@ function createStore() {
     currentUserStatus,
     isCurrentUserOverdue,
     currentUserReceivables,
+    currentUserMemberDebt,
     currentUserMonthlyExpenses,
     currentUserPreviousMonthExpenses,
 
@@ -1357,6 +1448,8 @@ function createStore() {
     // KPI & Dashboard
     monthlyTotalExpenses,
     previousMonthTotalExpenses,
+    monthlyExpenseChangePct,
+    recentExpenses,
     totalReceivables,
     debtorsCount,
     overdueDebtorsCount,
@@ -1375,6 +1468,7 @@ function createStore() {
     // Settlements
     settlements,
     confirmPayment,
+    confirmExpenseSharePayment,
     sendReminder,
 
     // Cart
@@ -1410,6 +1504,7 @@ function createStore() {
     selectedWeekShifts,
     currentWeekCleaningShifts,
     myCurrentCleaningShift,
+    myCurrentCleaningShifts,
     pendingCurrentWeekCleaningCount,
     myCurrentCleaningPending,
     canConfirmShift,

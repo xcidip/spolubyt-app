@@ -56,7 +56,7 @@ npm install          # deps (install dependencies on a clean checkout)
 npm run dev          # vite dev server → http://localhost:5173
 npm run build        # vue-tsc (type check) && vite build
 npm run preview      # serve dist
-npm test             # node tests/e2e-suite.mjs — 161 E2E cases
+npm test             # node tests/e2e-suite.mjs — 174 E2E cases
 npm run tauri dev    # desktop dev (needs Rust toolchain)
 npm run tauri build  # bundles into src-tauri/target/release/bundle/
 ```
@@ -82,7 +82,7 @@ npm test && npm run build
 | `src-tauri/tauri.conf.json` | `"version"` — this is what the release workflow turns into the `v<version>` tag |
 | `src-tauri/Cargo.toml` | `[package] version` |
 | `src-tauri/Cargo.lock` | `version` in the `name = "spolubyt-app"` package entry |
-| `src/components/Sidebar.vue` | the `Verze prototypu:` literal (currently `2.0.0`) — the only user-visible version |
+| `src/components/Sidebar.vue` | the `Verze prototypu:` literal (currently `3.0.0`) — the only user-visible version |
 
 Rules:
 
@@ -107,7 +107,7 @@ src/data/mockData.ts            ★ all initial demo data
 src/types/index.ts              ★ all domain types
 src/views/*.vue                 7 page-level components (no props; they pull from the composable)
 src/components/*.vue            Header, Sidebar, 5 modals, ConfirmDialog, ToastContainer
-tests/e2e-suite.mjs             ★ the only wired test suite (161 cases, 4 tiers)
+tests/e2e-suite.mjs             ★ the only wired test suite (174 cases, 4 tiers)
 tests/m1-challenger.mjs         auxiliary harness — NOT in package.json scripts
 tests/m1-stress-harness.ts      auxiliary harness — NOT in package.json scripts
 src-tauri/                      Tauri 2 shell, stock main.rs, icons, tauri.conf.json
@@ -132,10 +132,10 @@ All state lives as **module-level `ref`s**. `createStore()` initializes computed
 ### 5.2 Persistence
 
 ```ts
-const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v2_'
+const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v3_'
 ```
 
-One validated household snapshot is saved atomically at `spolubyt_hifi_v2_state`. Its fields are:
+One validated household snapshot is saved atomically at `spolubyt_hifi_v3_state`. Its fields are:
 
 | Key | Slice |
 |---|---|
@@ -151,7 +151,8 @@ One validated household snapshot is saved atomically at `spolubyt_hifi_v2_state`
 
 - `loadFromStorage<T>(key, fallback)` / `saveToStorage<T>(key, value)` keep fallbacks non-throwing. Invalid snapshots restore the whole demo; write failures and stale-tab conflicts expose reactive flags rendered by App.vue. Writes compare against the last saved snapshot to avoid overwriting another tab.
 - **Not persisted** (intentional): `toasts`, `confirmModal`, `activeModal`, `selectedExpense`, `selectedSettlement`, `expensePrefill`, `expenseFilters`, `selectedCleaningWeek`, `currentPage`.
-- **Changing any persisted shape ⇒ increment the `spolubyt_hifi_v2_` prefix.** Otherwise stale `localStorage` from a previous run will hydrate mismatched objects and crash the UI.
+- **Changing any persisted shape ⇒ increment the `spolubyt_hifi_v3_` prefix.** Otherwise stale `localStorage` from a previous run will hydrate mismatched objects and crash the UI.
+- Stored `ExpenseShare.payment` preserves method (`BANK`/`CASH`), note, recorder persona ID and simulated-notification preference; cart purchases may carry `purchasedByRoommateId`. v1/v2 snapshots remain untouched and are not hydrated by v3.
 - `resetDemoData()` deep-clones (`JSON.parse(JSON.stringify(...))`) from `mockData`, resets persona to `'user-tomas'`, page to `'DASH'`, week to `45`, and is always wrapped in `requestConfirmation`.
 
 ### 5.3 Navigation
@@ -230,10 +231,11 @@ Never invent new literals without also handling them in every comparison/switch 
 
 There is **no derived ledger** — settlement debts are mutated by hand:
 
-- `addExpense(expense, { cartItemIds }?)`: for each non-payer share that is not `UHRAZENO`, find the roommate's settlement, `totalDebt += share.amount`, add to the matching `breakdown` bucket by category (`Bydlení → rent`, `Energie → energy`, `Drogerie → drogerie`, otherwise `other`), and set status by `daysOverdue > 0`.
+- `addExpense(expense, { cartItemIds }?)`: validates dates, haléře, share totals and receipt totals before mutation. For manager-paid expenses only, for each non-payer share that is not `UHRAZENO`, find the roommate's settlement, `totalDebt += share.amount`, add to the matching `breakdown` bucket by category (`Bydlení → rent`, `Energie → energy`, `Drogerie → drogerie`, otherwise `other`), and set status by `daysOverdue > 0`.
 - `deleteExpense(id)`: reverse exactly the same amounts with `Math.max(0, totalDebt - share.amount)`; force `VYROVNÁNO` at zero. Then filter the array. Always via `requestConfirmation` (destructive).
-- `confirmPayment(roommateId, { date, method, note, notifyMember })`: zeroes the settlement (`daysOverdue = 0`, `breakdown` reset), flips **all** that roommate's shares to `UHRAZENO` + `settledDate`, promotes fully-paid expenses to `UHRAZENO`, fires `confetti(...)`, closes modal, toasts.
-- `sendReminder(roommateId)`: stamps `lastReminderSent` (Czech date string) + toast. No network call — that is correct for a prototype.
+- `confirmPayment(roommateId, { date, method, note, notifyMember })`: zeroes the settlement (`daysOverdue = 0`, `breakdown` reset), flips that roommate's open shares in **manager-paid expenses** to `UHRAZENO` + `settledDate` and `payment` audit metadata, promotes fully-paid expenses to `UHRAZENO`, fires `confetti(...)`, closes modal, toasts.
+- `confirmExpenseSharePayment(expenseId, roommateId, details)`: payer or manager confirms one member-paid share through `requestConfirmation`; records method/note/recorder/notification preference without changing flat-account settlements. `currentUserMemberDebt` tracks obligations to member payers.
+- `sendReminder(roommateId)`: stamps `lastReminderSent` (ISO audit timestamp, localized at render) + toast. No network call — that is correct for a prototype.
 
 **If you add a path that changes who owes what, you must update all of: debt, `breakdown`, `status`, and the affected `shares`.** Asymmetry here is the most likely bug class in this codebase.
 
@@ -319,8 +321,8 @@ Diacritics are stripped (`normalize('NFD')` + remove combining marks + keep `[a-
 
 ## 8. Testing — the real constraint
 
-`npm test` runs `tests/e2e-suite.mjs`: **161 cases in 4 tiers**
-(56 feature coverage · 55 boundary/corner · 44 cross-feature · 6 real-world tenant scenarios).
+`npm test` runs `tests/e2e-suite.mjs`: **174 cases in 4 tiers**
+(56 feature coverage · 55 boundary/corner · 57 cross-feature · 6 real-world tenant scenarios).
 
 ### How it works
 
@@ -426,6 +428,13 @@ Governance files: `LICENSE` (MIT), `CODE_OF_CONDUCT.md` (Contributor Covenant), 
 
 
 ## 14. Local agent tooling and auxiliary checks
+
+Project development skills are available in `.agents/skills/`:
+
+- [`spolubyt-domain`](.agents/skills/spolubyt-domain/SKILL.md): store behavior, financial coupling, cleaning, meters, and persistence.
+- [`spolubyt-ui`](.agents/skills/spolubyt-ui/SKILL.md): Vue pages, navigation, dialogs, responsive layout, and Czech copy.
+- [`spolubyt-testing`](.agents/skills/spolubyt-testing/SKILL.md): existing regression suite, targeted coverage, and auxiliary checks.
+- [`spolubyt-release`](.agents/skills/spolubyt-release/SKILL.md): synchronized version bumps and release preparation.
 
 `.agents/skills/lm-studio-qwen` and `.agents/skills/run-workflow` are optional developer tools, not prototype dependencies. Qwen prompts must be supplied through a file or stdin, never interpolated into shell commands; remote URLs require explicit `--allow-remote`.
 

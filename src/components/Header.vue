@@ -8,13 +8,14 @@
           @click="navigateTo('DASH')"
           class="flex items-center gap-3 text-left group focus:outline-none"
           :title="t('header.backToDashboard', 'Zpět na Nástěnku')"
+          :aria-label="t('header.backToDashboard', 'Zpět na Nástěnku')"
         >
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+          <div class="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             </svg>
           </div>
-          <div>
+          <div class="hidden sm:block">
             <div class="flex items-center gap-1.5">
               <span class="font-extrabold text-base tracking-tight text-white">Spolubyt</span>
               <span class="text-xs px-1.5 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">.cz</span>
@@ -45,13 +46,14 @@
         <!-- LocalStorage Sync Status -->
         <div 
           class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300"
-          :title="t('header.syncTitle', 'Všechna data se automaticky ukládají do LocalStorage')"
+          :title="syncStatus.title"
+          role="status"
         >
           <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            <span v-if="!storageWriteFailed && !storageConflict && !storageRecovered" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2" :class="storageWriteFailed || storageConflict || storageRecovered ? 'bg-amber-400' : 'bg-emerald-500'"></span>
           </span>
-          <span class="text-xs font-mono">{{ t('header.sync', 'Sync: OK') }}</span>
+          <span class="text-xs font-mono">{{ syncStatus.label }}</span>
         </div>
 
         <!-- Language switcher -->
@@ -77,11 +79,13 @@
         </div>
 
         <!-- User Persona Switcher -->
-        <div class="relative" ref="dropdownRef">
+        <div class="relative" ref="dropdownRef" @keydown.esc.stop.prevent="closePersonaMenu">
           <button type="button"
+            ref="personaTrigger"
             @click="isUserMenuOpen = !isUserMenuOpen"
             class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 transition-colors focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
-            aria-haspopup="listbox"
+            aria-controls="persona-menu"
+            :aria-label="t('header.switchUser', 'Přepnout aktivního uživatele / personu')"
             :aria-expanded="isUserMenuOpen"
             :title="t('header.switchUser', 'Přepnout aktivního uživatele / personu')"
           >
@@ -110,7 +114,9 @@
           <div
             v-if="isUserMenuOpen"
             class="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-40"
-            role="listbox"
+            id="persona-menu"
+            role="group"
+            :aria-label="t('header.testAs', 'Testovat jako persona:')"
           >
             <div class="px-2.5 py-1.5 text-xs font-semibold text-slate-400">
               {{ t('header.testAs', 'Testovat jako persona:') }}
@@ -120,6 +126,7 @@
                 v-for="r in roommates"
                 :key="r.id"
                 @click="selectPersona(r.id)"
+                :aria-pressed="r.id === currentUser.id"
                 class="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left text-xs transition-colors"
                 :class="r.id === currentUser.id ? 'bg-emerald-500/10 text-emerald-300 font-semibold border border-emerald-500/20' : 'text-slate-300 hover:bg-slate-800'"
               >
@@ -173,11 +180,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { t, locale, setLocale } from '../i18n'
 
 const { 
+  storageWriteFailed,
+  storageRecovered,
+  storageConflict,
   currentPage, 
   settings, 
   roommates, 
@@ -190,6 +200,20 @@ const {
 
 const isUserMenuOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
+const personaTrigger = ref<HTMLButtonElement | null>(null)
+
+const syncStatus = computed(() => {
+  if (storageConflict.value) return { label: t('header.syncConflict', 'Ukládání: konflikt'), title: t('storage.conflict', 'Data změnila jiná záložka. Před dalšími úpravami obnovte tuto stránku.') }
+  if (storageWriteFailed.value) return { label: t('header.syncFailed', 'Ukládání: chyba'), title: t('storage.writeFailed', 'Změny se nepodařilo uložit. Zůstanou pouze do zavření stránky.') }
+  if (storageRecovered.value) return { label: t('header.syncRecovered', 'Data obnovena'), title: t('storage.recovered', 'Uložená data byla poškozená. Byl obnoven výchozí stav prototypu.') }
+  return { label: t('header.sync', 'Sync: OK'), title: t('header.syncTitle', 'Všechna data se automaticky ukládají do LocalStorage') }
+})
+
+const closePersonaMenu = (): void => {
+  if (!isUserMenuOpen.value) return
+  isUserMenuOpen.value = false
+  personaTrigger.value?.focus()
+}
 
 const pageLabels: Record<string, string> = {
   DASH: 'Nástěnka bytu',
@@ -211,9 +235,9 @@ const pageLabelKeys: Record<string, string> = {
   SETTINGS: 'page.settings'
 }
 
-const selectPersona = (id: string) => {
+const selectPersona = (id: string): void => {
   setCurrentUser(id)
-  isUserMenuOpen.value = false
+  closePersonaMenu()
 }
 
 const handleClickOutside = (e: MouseEvent) => {

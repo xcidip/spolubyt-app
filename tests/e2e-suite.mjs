@@ -136,8 +136,10 @@ function dashboardCardBottom(titleKey) {
 }
 
 async function renderView(relativePath) {
-  const { default: component } = await viteServer.ssrLoadModule(relativePath)
-  return renderToString(createSSRApp(component))
+  const { default: component } = await viteServer.ssrLoadModule('/' + relativePath.replace(/^\.?\//, ''))
+  const context = {}
+  const html = await renderToString(createSSRApp(component), context)
+  return html + Object.values(context.teleports || {}).join('')
 }
 
 // Helper to create valid Expense payload
@@ -176,12 +178,12 @@ let mockDataModule = null
 export async function setupEnvironment() {
   viteServer = await createServer({
     root: APP_ROOT,
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false, ws: false },
     appType: 'custom'
   })
 
-  storeModule = await viteServer.ssrLoadModule('./src/composables/useSpolubyt.ts')
-  mockDataModule = await viteServer.ssrLoadModule('./src/data/mockData.ts')
+  storeModule = await viteServer.ssrLoadModule('/src/composables/useSpolubyt.ts')
+  mockDataModule = await viteServer.ssrLoadModule('/src/data/mockData.ts')
 }
 
 export async function teardownEnvironment() {
@@ -191,7 +193,6 @@ export async function teardownEnvironment() {
 }
 
 export function getFreshStore() {
-  globalThis.localStorage.clear()
   const store = storeModule.useSpolubyt()
   // Pristine reset
   store.resetDemoData()
@@ -231,9 +232,10 @@ function defaultSnapshot() {
 }
 
 async function reloadStore() {
-  viteServer.moduleGraph.invalidateAll()
-  storeModule = await viteServer.ssrLoadModule('./src/composables/useSpolubyt.ts')
-  mockDataModule = await viteServer.ssrLoadModule('./src/data/mockData.ts')
+  // A fresh loader also clears extensionless import aliases used by Vue SFCs.
+  // Invalidating the graph alone can leave components bound to the old store.
+  await viteServer.close()
+  await setupEnvironment()
   return storeModule.useSpolubyt()
 }
 
@@ -263,7 +265,7 @@ test('T3.M1', 'First-session mutations reset to pristine demo data', 3, 'Money_R
 })
 
 test('T3.M2', 'Expense splits preserve every haléř for equal and area allocation', 3, 'Money_Regressions', async () => {
-  const { splitAmount } = await viteServer.ssrLoadModule('./src/utils/money.ts')
+  const { splitAmount } = await viteServer.ssrLoadModule('/src/utils/money.ts')
   const store = getFreshStore()
   for (const key of ['EQUAL', 'BY_AREA']) {
     for (const total of [0.01, 100, 110, 850.75]) {
@@ -312,7 +314,7 @@ test('T3.M4', 'Member-paid expenses never change debts to the flat account', 3, 
   store.addExpense(createExpensePayload({ payerId: 'user-jakub' }))
   const added = store.expenses.value[0]
   assertEqual(debtSnapshot(store), before)
-  store.confirmPayment('user-eliska', { date: '2026-11-06', method: 'bank', note: '', notifyMember: false })
+  store.confirmPayment('user-eliska', { date: '2026-11-06', method: 'BANK', note: '', notifyMember: false })
   assertEqual(added.shares.find(s => s.roommateId === 'user-eliska').status, 'DLUŽÍ')
   const afterPayment = debtSnapshot(store)
   store.deleteExpense(added.id)
@@ -326,7 +328,7 @@ test('T3.M5', 'Payment settles outstanding manager shares and preserves paid his
   const oldDate = oldShare.settledDate
   store.addExpense(createExpensePayload({ category: 'Jídlo' }))
   const added = store.expenses.value[0]
-  store.confirmPayment('user-jakub', { date: '2026-11-06', method: 'bank', note: '', notifyMember: false })
+  store.confirmPayment('user-jakub', { date: '2026-11-06', method: 'BANK', note: '', notifyMember: false })
   assertEqual(oldShare.settledDate, oldDate)
   assertEqual(added.shares.find(s => s.roommateId === 'user-jakub').status, 'UHRAZENO')
   assertEqual(added.shares.find(s => s.roommateId === 'user-jakub').settledDate, '2026-11-06')
@@ -334,7 +336,7 @@ test('T3.M5', 'Payment settles outstanding manager shares and preserves paid his
   assertEqual(settlement.totalDebt, 0)
   assert(Object.values(settlement.breakdown).every(amount => amount === 0))
   for (const id of ['user-eliska', 'user-martin']) {
-    store.confirmPayment(id, { date: '2026-11-06', method: 'bank', note: '', notifyMember: false })
+    store.confirmPayment(id, { date: '2026-11-06', method: 'BANK', note: '', notifyMember: false })
   }
   assertEqual(added.status, 'UHRAZENO')
 })
@@ -342,11 +344,11 @@ test('T3.M5', 'Payment settles outstanding manager shares and preserves paid his
 test('T3.M6', 'Zero shares do not create debt and decimal add/delete leaves no residue', 3, 'Money_Regressions', () => {
   const store = getFreshStore()
   const before = debtSnapshot(store)
-  store.addExpense(createExpensePayload({ shares: [{ roommateId: 'user-martin', roommateName: 'Martin', amount: 0, status: 'DLUŽÍ' }] }))
+  assertEqual(store.addExpense(createExpensePayload({ shares: [{ roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: 1200, status: 'PLÁTCE' }, { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 0, status: 'UHRAZENO' }] })), true)
   assertEqual(debtSnapshot(store), before)
   const ids = []
   for (const amount of [0.1, 0.2]) {
-    store.addExpense(createExpensePayload({ shares: [{ roommateId: 'user-martin', roommateName: 'Martin', amount, status: 'DLUŽÍ' }] }))
+    assertEqual(store.addExpense(createExpensePayload({ totalAmount: amount, shares: [{ roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount, status: 'DLUŽÍ' }] })), true)
     // Distinct IDs keep this regression focused on rounding rather than clock resolution.
     store.expenses.value[0].id = 'decimal-' + amount
     ids.push(store.expenses.value[0].id)
@@ -725,24 +727,24 @@ test('T1.F8.5', 'drawdownPct accurately calculates projected advance utilization
 
 // F9: QR Code Generation & Display
 test('T1.F9.1', 'SPAYD helper builds exact payment fields used by QR component', 1, 'F9_QR_Code_Generation', async () => {
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   assertEqual(buildSpayd('CZ6508000000000123456789', 9850, 'Jakub Kovář'),
     'SPD*1.0*ACC:CZ6508000000000123456789*AM:9850.00*CC:CZK*MSG:Spolubyt Najem 11/2026 Jakub Kovar*X-VS:20261101')
   assertContains(loadSource('src/components/QrPaymentModal.vue'), 'buildSpayd(')
 })
 
 test('T1.F9.2', 'SPAYD helper formats haléře and CZK currency', 1, 'F9_QR_Code_Generation', async () => {
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   assertContains(buildSpayd('CZ6508000000000123456789', 4200.5678, 'Tomáš'), '*AM:4200.57*CC:CZK*')
 })
 
 test('T1.F9.3', 'SPAYD helper strips whitespace from IBAN', 1, 'F9_QR_Code_Generation', async () => {
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   assertContains(buildSpayd('CZ65 0800 0000 0001 2345 6789', 1, 'Tomáš'), '*ACC:CZ6508000000000123456789*')
 })
 
 test('T1.F9.4', 'SPAYD helper sanitizes payment message field delimiters', 1, 'F9_QR_Code_Generation', async () => {
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   const result = buildSpayd('CZ6508000000000123456789', 1, 'Eliška*AM:999*')
   assertContains(result, '*MSG:Spolubyt Najem 11/2026 EliskaAM999*X-VS:20261101')
   assertEqual(result.split('*AM:').length, 2)
@@ -1218,17 +1220,17 @@ test('T2.B8.5', 'Risk level transitions precisely at 100/101/108/109 percent', 2
 
 // B9: QR Code Generation Boundaries
 test('T2.B9.1', 'SPAYD sanitizes heavy Czech diacritics while preserving hyphens', 2, 'B9_QR_Boundaries', async () => {
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   assertContains(buildSpayd('CZ6508000000000123456789', 1, 'František Čermák-Dvořák'), '*MSG:Spolubyt Najem 11/2026 Frantisek Cermak-Dvorak*')
 })
 
 test('T2.B9.2', 'SPAYD rounds fractional debt accurately to 2 places', 2, 'B9_QR_Boundaries', async () => {
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   assertContains(buildSpayd('CZ6508000000000123456789', 0.01, 'Tomáš'), '*AM:0.01*CC:CZK*')
 })
 
 test('T2.B9.3', 'SPAYD message is truncated to exactly 60 ASCII characters', 2, 'B9_QR_Boundaries', async () => {
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   const result = buildSpayd('CZ6508000000000123456789', 1, 'Ž'.repeat(100))
   const message = result.split('*MSG:')[1].split('*')[0]
   assertEqual(message, ('Spolubyt Najem 11/2026 ' + 'Z'.repeat(100)).slice(0, 60))
@@ -1236,7 +1238,7 @@ test('T2.B9.3', 'SPAYD message is truncated to exactly 60 ASCII characters', 2, 
 })
 
 test('T2.B9.4', 'SPAYD helper uses frozen November variable symbol', 2, 'B9_QR_Boundaries', async () => {
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   assert(buildSpayd('CZ6508000000000123456789', 1, 'Tomáš').endsWith('*X-VS:20261101'))
 })
 
@@ -1495,7 +1497,7 @@ test('T3.C12', 'QR Code Generation + Settlement Payment: Settling payment resets
   assertDefined(settlement)
   store.confirmPayment(settlement.roommateId, {
     date: '2026-11-06',
-    method: 'QR platba',
+    method: 'BANK',
     note: 'Vyrovnání',
     notifyMember: true
   })
@@ -1606,7 +1608,7 @@ test('T4.S4', 'Scenario 4: Monthly Rent & Utility Settlement via SPAYD QR', 4, '
   assertDefined(settlement)
   assert(settlement.totalDebt > 0)
   // 2. Construct SPAYD string
-  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const { buildSpayd } = await viteServer.ssrLoadModule('/src/utils/spayd.ts')
   const spayd = buildSpayd(store.settings.value.iban, settlement.totalDebt, settlement.roommateName)
   // 3. Generate QR Canvas
   const qrSvg = await QRCode.toString(spayd, { type: 'svg' })
@@ -1615,7 +1617,7 @@ test('T4.S4', 'Scenario 4: Monthly Rent & Utility Settlement via SPAYD QR', 4, '
   store.setCurrentUser('user-tomas')
   store.confirmPayment(settlement.roommateId, {
     date: '2026-11-06',
-    method: 'QR platba',
+    method: 'BANK',
     note: 'QR platba bankou',
     notifyMember: true
   })
@@ -1905,7 +1907,7 @@ test('T3.R14', 'Malformed JSON shapes recover before any UI reads the persona', 
 })
 
 test('T3.R15', 'CSV cells quote delimiters and neutralize spreadsheet formulas', 3, 'TODO1_Regressions', async () => {
-  const { csvCell } = await viteServer.ssrLoadModule('./src/utils/format.ts')
+  const { csvCell } = await viteServer.ssrLoadModule('/src/utils/format.ts')
   assertEqual(csvCell('Jan "Tester"; Novák'), '"Jan ""Tester""; Novák"')
   for (const value of ['=HYPERLINK("x")', '+1', '-1', '@SUM(A1)', ' =1']) {
     const cell = csvCell(value)
@@ -2036,6 +2038,239 @@ test('T3.R21', 'Due-day changes synchronize open share and expense statuses with
       assertEqual(JSON.stringify(expense.shares.find(row => row.roommateId === history.roommateId)), history.snapshot)
     }
   }
+})
+
+test('T3.A1', 'Member-paid shares settle only for the creditor or manager, with audit and paired receivables', 3, 'TODO_Audit', () => {
+  const store = getFreshStore()
+  store.setCurrentUser('user-jakub')
+  assertEqual(store.addExpense(createExpensePayload({ payerId: 'user-jakub', totalAmount: 400 })), true)
+  const expense = store.expenses.value[0]
+  assertEqual(store.currentUserReceivables.value, 300)
+  const managerDebt = debtSnapshot(store)
+  const payment = { date: '2026-11-12', method: 'CASH', note: 'Osobní úhrada', notifyMember: false }
+  store.setCurrentUser('user-martin')
+  const before = JSON.stringify(expense)
+  assertEqual(store.confirmExpenseSharePayment(expense.id, 'user-tomas', payment), false)
+  assertEqual(JSON.stringify(expense), before)
+  assertEqual(store.confirmModal.value.isOpen, false)
+  store.setCurrentUser('user-tomas')
+  assertEqual(store.currentUserMemberDebt.value, 100)
+  assertEqual(store.confirmExpenseSharePayment(expense.id, 'user-tomas', payment), true)
+  assertEqual(JSON.stringify(expense), before, 'Confirmation must precede mutation')
+  store.confirmModal.value.onConfirm()
+  assertEqual(store.currentUserMemberDebt.value, 0)
+  assertEqual(debtSnapshot(store), managerDebt, 'Member payment must not alter flat-account debt')
+  const share = expense.shares.find(row => row.roommateId === 'user-tomas')
+  assertEqual(share.status, 'UHRAZENO')
+  assertEqual(share.payment.method, 'CASH')
+  assertEqual(share.payment.note, 'Osobní úhrada')
+  store.setCurrentUser('user-jakub')
+  assertEqual(store.currentUserReceivables.value, 200)
+  store.confirmExpenseSharePayment(expense.id, 'user-martin', payment)
+  store.confirmModal.value.onConfirm()
+  store.confirmExpenseSharePayment(expense.id, 'user-eliska', payment)
+  store.confirmModal.value.onConfirm()
+  assertEqual(store.currentUserReceivables.value, 0)
+  assertEqual(expense.status, 'UHRAZENO')
+  store.deleteExpense(expense.id)
+  store.confirmModal.value.onConfirm()
+  assertEqual(debtSnapshot(store), managerDebt, 'Deleting paid member expense preserves flat-account debts')
+})
+
+test('T3.A2', 'New debt and remaining expense statuses stay consistent after an overdue payment', 3, 'TODO_Audit', () => {
+  const store = getFreshStore()
+  const payment = { date: '2026-11-12', method: 'BANK', note: '', notifyMember: false }
+  assertEqual(store.confirmPayment('user-eliska', payment), true)
+  assertEqual(store.addExpense(createExpensePayload({ totalAmount: 400 })), true)
+  const settlement = store.settlements.value.find(row => row.roommateId === 'user-eliska')
+  const expense = store.expenses.value[0]
+  assertEqual(settlement.totalDebt, 100)
+  assertEqual(settlement.status, 'PO_SPLATNOSTI')
+  assert(settlement.daysOverdue > 0)
+  assertEqual(expense.shares.find(row => row.roommateId === 'user-eliska').status, 'PO_SPLATNOSTI')
+  assertEqual(expense.status, 'PO_SPLATNOSTI')
+  store.confirmPayment('user-eliska', payment)
+  store.confirmPayment('user-martin', payment)
+  assertEqual(expense.status, 'ČÁSTEČNĚ', 'Only non-overdue unpaid shares remain')
+  assert(expense.shares.some(row => row.status === 'DLUŽÍ'))
+})
+
+test('T3.A3', 'Payment metadata round-trips and simulated notification respects the checkbox', 3, 'TODO_Audit', async () => {
+  const store = getFreshStore()
+  const payment = { date: '2026-11-12', method: 'CASH', note: '  Hotově u dveří  ', notifyMember: false }
+  store.toasts.value = []
+  assertEqual(store.confirmPayment('user-eliska', payment), true)
+  assertEqual(store.toasts.value.length, 1)
+  assertNotContains(store.toasts.value[0].message, 'Bilance bytu je vyrovnaná')
+  assertEqual(store.totalReceivables.value, 9850)
+  const paid = store.expenses.value.flatMap(expense => expense.shares).filter(share => share.payment)
+  assert(paid.length > 0)
+  assert(paid.every(share => share.payment.note === 'Hotově u dveří' && share.payment.method === 'CASH'))
+  await new Promise(resolve => setTimeout(resolve))
+  const hydrated = await reloadStore()
+  const loaded = hydrated.expenses.value.flatMap(expense => expense.shares).filter(share => share.payment)
+  assertEqual(JSON.stringify(loaded), JSON.stringify(paid))
+  hydrated.toasts.value = []
+  assertEqual(hydrated.confirmPayment('user-jakub', { ...payment, notifyMember: true }), true)
+  assertEqual(hydrated.toasts.value.length, 2, 'Requested simulated receipt is separate feedback')
+})
+
+test('T3.A4', 'Settings reject inconsistent bank destinations and accept matching domestic/IBAN edits', 3, 'TODO_Audit', () => {
+  const store = getFreshStore()
+  const original = JSON.stringify(store.settings.value)
+  assertEqual(store.saveApartmentSettings({ ...store.settings.value, accountNumber: '987654321/0800' }), false)
+  assertEqual(JSON.stringify(store.settings.value), original)
+  assertEqual(store.saveApartmentSettings({ ...store.settings.value, accountNumber: '987654321/0800', iban: 'CZ6508000000000987654321' }), true)
+  assertEqual(store.settings.value.iban, 'CZ6508000000000987654321')
+})
+
+test('T3.A5', 'Invalid expense input and mismatched converted receipt totals leave debt and cart untouched', 3, 'TODO_Audit', () => {
+  const store = getFreshStore()
+  const before = JSON.stringify({ expenses: store.expenses.value, cart: store.cartItems.value, debt: debtSnapshot(store) })
+  for (const patch of [
+    { title: '  ' }, { date: '2026-12-01' }, { date: '2026-02-30' },
+    { totalAmount: -1 }, { totalAmount: Infinity }, { payerId: 'unknown' },
+    { receiptItems: [{ id: 'receipt', name: 'Položka', price: 349, qty: 1 }] },
+  ]) {
+    assertEqual(store.addExpense({ ...createExpensePayload({ totalAmount: 400 }), ...patch }, { cartItemIds: [store.cartItems.value[0].id] }), false)
+    assertEqual(JSON.stringify({ expenses: store.expenses.value, cart: store.cartItems.value, debt: debtSnapshot(store) }), before)
+  }
+  assertEqual(store.addExpense(createExpensePayload({ title: '  Platný výdaj  ', totalAmount: 19.90 })), true)
+  assertEqual(store.expenses.value[0].title, 'Platný výdaj')
+  assertEqual(store.expenses.value[0].totalAmount, 19.90)
+})
+
+test('T3.A6', 'Cart conversion carries purchaser identity and preserves haléře', 3, 'TODO_Audit', () => {
+  const store = getFreshStore()
+  store.addCartItem({ name: 'Cena s haléři', category: 'Jídlo', unitPrice: 19.90, qty: 2 })
+  const item = store.cartItems.value.at(-1)
+  assertEqual(item.unitPrice, 19.90)
+  store.setCurrentUser('user-jakub')
+  store.toggleCartItemPurchased(item.id)
+  store.setCurrentUser('user-tomas')
+  store.convertCartItemToExpense(item)
+  assertEqual(store.expensePrefill.value.payerId, 'user-jakub')
+  assertEqual(store.expensePrefill.value.totalAmount, 39.80)
+  assertEqual(item.purchasedByRoommateId, 'user-jakub')
+})
+
+test('T3.A7', 'Dashboard accounts for every assigned shift and displays all pending duties', 3, 'TODO_Audit', async () => {
+  const store = getFreshStore()
+  store.requestShiftSwap('shift-w45-bathroom', 'user-tomas')
+  store.acceptShiftSwap('shift-w45-bathroom')
+  assertEqual(store.myCurrentCleaningShifts.value.length, 2)
+  assertEqual(store.myCurrentCleaningPending.value, true)
+  assertEqual(store.myCurrentCleaningShift.value.taskKey, 'BATHROOM')
+  const html = await renderView('./src/views/DashboardView.vue')
+  assertContains(html, 'Koupelna')
+  assertContains(html, 'Označit můj úklid jako hotový')
+  store.toggleShiftStatus('shift-w45-bathroom')
+  assertEqual(store.myCurrentCleaningPending.value, false)
+})
+
+test('T3.A8', 'Reset restores transient filters and search ignores surrounding spaces', 3, 'TODO_Audit', () => {
+  const store = getFreshStore()
+  store.expenseFilters.value.search = 'Velký'
+  const ids = store.filteredExpenses.value.map(expense => expense.id).join(',')
+  store.expenseFilters.value.search = ' Velký '
+  assertEqual(store.filteredExpenses.value.map(expense => expense.id).join(','), ids)
+  store.expenseFilters.value.category = 'Jídlo'
+  store.expenseFilters.value.sortBy = 'amount'
+  store.showToast('Stará zpráva', 'Před resetem', 'info')
+  store.resetDemoData()
+  store.confirmModal.value.onConfirm()
+  assertEqual(store.expenseFilters.value.search, '')
+  assertEqual(store.expenseFilters.value.category, 'ALL')
+  assertEqual(store.expenseFilters.value.sortBy, 'date')
+  assertEqual(store.filteredExpenses.value.length, store.expenses.value.length)
+  assertEqual(store.toasts.value.length, 1)
+  assertNotContains(store.toasts.value[0].title, 'Stará')
+})
+
+test('T3.A9', 'Dashboard growth and recent expense ordering derive from actual month totals and dates', 3, 'TODO_Audit', () => {
+  const store = getFreshStore()
+  assert(Math.abs(store.monthlyExpenseChangePct.value - ((38340 / 39370 - 1) * 100)) < 0.0001)
+  store.addExpense(createExpensePayload({ date: '2026-09-01', title: 'Starší výdaj' }))
+  assert(store.recentExpenses.value.every(expense => expense.date >= '2026-11-01'))
+  const before = store.monthlyExpenseChangePct.value
+  store.addExpense(createExpensePayload({ totalAmount: 10000 }))
+  assert(store.monthlyExpenseChangePct.value > before)
+  store.expenses.value = store.expenses.value.filter(expense => !expense.date.startsWith('2026-10'))
+  assertEqual(store.monthlyExpenseChangePct.value, null, 'No misleading percentage with zero denominator')
+})
+
+test('T3.A10', 'CUSTOM expenses and English system labels render without the audited misleading copy', 3, 'TODO_Audit', async () => {
+  const store = getFreshStore()
+  const expense = store.expenses.value.find(row => row.id === 'exp-3')
+  store.openModal('EXP_DETAIL', expense)
+  const detail = await renderView('./src/components/ExpenseDetailModal.vue')
+  assertContains(detail, 'Vlastní rozdělení')
+  assertNotContains(detail, '>Rovným dílem<')
+  const { locale } = await viteServer.ssrLoadModule('/src/i18n/index.ts')
+  try {
+    locale.value = 'en'
+    store.selectCleaningWeek(49)
+    const cleaning = await renderView('./src/views/CleaningView.vue')
+    const energy = await renderView('./src/views/EnergyView.vue')
+    assertNotContains(cleaning, 'Vyčistit')
+    assertNotContains(energy, 'Smazat poslední')
+    assertNotContains(energy, 'za měsíc')
+    locale.value = 'cs'
+    const czech = await renderView('./src/views/CleaningView.vue')
+    assertNotContains(czech, 'Week 49')
+  } finally { locale.value = 'cs' }
+})
+
+test('T3.A11', 'Strict snapshot validation rejects invalid enums, orphan references and broken financial totals', 3, 'TODO_Audit', async () => {
+  const { validStoredSnapshot } = await viteServer.ssrLoadModule('/src/utils/storage.ts')
+  const seed = defaultSnapshot()
+  assertEqual(validStoredSnapshot(seed), true)
+  for (const mutate of [
+    snapshot => { snapshot.settlements[0].status = 'BROKEN' },
+    snapshot => { snapshot.cartItems[0].category = 'BROKEN' },
+    snapshot => { snapshot.expenses[0].payerId = 'missing' },
+    snapshot => { snapshot.expenses[0].shares[0].roommateId = 'missing' },
+    snapshot => { snapshot.expenses[0].totalAmount += 1 },
+    snapshot => { snapshot.expenses.push(snapshot.expenses[0]) },
+    snapshot => { snapshot.settlements[0].totalDebt += 1 },
+    snapshot => { snapshot.settlements[0].breakdown.rent += 1 },
+    snapshot => { snapshot.cleaning_shifts[0].roommateId = 'missing' },
+  ]) {
+    const snapshot = JSON.parse(JSON.stringify(seed))
+    mutate(snapshot)
+    assertEqual(validStoredSnapshot(snapshot), false, mutate.toString())
+  }
+})
+
+test('T3.A13', 'Equal same-day meter readings and decimal cart actions retain a valid persisted snapshot', 3, 'TODO_Audit', async () => {
+  const store = getFreshStore()
+  const previous = store.latestMeters.value['ELEKTŘINA']
+  assertEqual(store.addMeterReading({ type: 'ELEKTŘINA', date: previous.date, value: previous.value }), true)
+  const cartBefore = JSON.stringify(store.cartItems.value)
+  for (const delta of [0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER]) {
+    store.updateCartItemQty(store.cartItems.value[0].id, delta)
+    assertEqual(JSON.stringify(store.cartItems.value), cartBefore)
+  }
+  await new Promise(resolve => setTimeout(resolve))
+  const hydrated = await reloadStore()
+  assertEqual(hydrated.storageRecovered.value, false)
+  assertEqual(hydrated.meters.value.length, mockDataModule.INITIAL_METERS.length + 1)
+  assertEqual(hydrated.latestMeters.value['ELEKTŘINA'].delta, 0)
+})
+
+test('T3.A12', 'Snapshot deletion by another tab blocks stale resurrection and header reports conflict', 3, 'TODO_Audit', async () => {
+  const store = getFreshStore()
+  await new Promise(resolve => setTimeout(resolve))
+  const key = storagePrefix() + 'state'
+  assertDefined(globalThis.localStorage.getItem(key))
+  globalThis.localStorage.removeItem(key)
+  store.toggleSidebar()
+  await new Promise(resolve => setTimeout(resolve))
+  assertEqual(store.storageConflict.value, true)
+  assertEqual(globalThis.localStorage.getItem(key), null)
+  const header = await renderView('./src/components/Header.vue')
+  assertNotContains(header, 'Sync: OK')
+  await reloadStore()
 })
 
 // =========================================================================

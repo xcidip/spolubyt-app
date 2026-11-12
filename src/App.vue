@@ -1,23 +1,23 @@
 <template>
-  <div class="h-screen h-dvh bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300 overflow-hidden">
+  <div class="h-screen h-dvh bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300 overflow-hidden print:h-auto print:overflow-visible">
     
-    <div v-if="storageWriteFailed || storageRecovered || storageConflict" role="alert" class="p-3 bg-amber-950 text-amber-200 text-sm">
-      {{ storageConflict ? 'Data změnila jiná záložka. Před dalšími úpravami obnovte tuto stránku.' : storageWriteFailed ? 'Změny se nepodařilo uložit. Zůstanou pouze do zavření stránky.' : 'Uložená data byla poškozená. Byl obnoven výchozí stav prototypu.' }}
+    <div v-if="storageWriteFailed || storageRecovered || storageConflict" role="alert" class="print:hidden p-3 bg-amber-950 text-amber-200 text-sm">
+      {{ storageConflict ? t('storage.conflict', 'Data změnila jiná záložka. Před dalšími úpravami obnovte tuto stránku.') : storageWriteFailed ? t('storage.writeFailed', 'Změny se nepodařilo uložit. Zůstanou pouze do zavření stránky.') : t('storage.recovered', 'Uložená data byla poškozená. Byl obnoven výchozí stav prototypu.') }}
     </div>
     <!-- Top System Bar -->
-    <Header class="shrink-0" />
+    <Header class="shrink-0 print:hidden" />
 
     <!-- Main Layout: Left Sidebar + Central Work Area -->
-    <div class="flex-1 flex overflow-hidden min-h-0">
+    <div class="flex-1 flex overflow-hidden min-h-0 print:block print:overflow-visible">
       
       <!-- Permanent Left Navigation -->
-      <Sidebar class="hidden md:flex shrink-0 h-full" />
+      <Sidebar class="hidden md:flex shrink-0 h-full print:hidden" />
 
       <!-- Central Content Area -->
-      <main ref="mainRef" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0">
+      <main ref="mainRef" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0 print:overflow-visible print:max-w-none print:p-0 print:bg-white print:text-black print:[&_*]:!text-black print:[&_*]:!bg-white print:[&_*]:!bg-none print:[&_*]:!shadow-none print:[&_*]:!ring-0 print:[&_*]:!border-slate-300 print:[&_button]:hidden print:[&_table]:!min-w-0 print:[&_table]:!table-fixed print:[&_th]:!p-1 print:[&_td]:!p-1 print:[&_th]:!whitespace-normal print:[&_td]:!whitespace-normal print:[&_th]:!break-words print:[&_td]:!break-words">
         
         <!-- Mobile Bottom Nav -->
-        <nav class="md:hidden flex items-center gap-1 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" :aria-label="t('nav.main', 'Hlavní navigace')">
+        <nav class="md:hidden print:hidden flex items-center gap-1 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" :aria-label="t('nav.main', 'Hlavní navigace')">
           <button
             v-for="item in mobileNavItems"
             :key="item.id"
@@ -58,7 +58,7 @@
 
     <!-- Global Feedback Dialogs -->
     <ConfirmDialog />
-    <ToastContainer />
+    <div class="print:hidden"><ToastContainer /></div>
 
   </div>
 </template>

@@ -72,7 +72,7 @@
               <div>
                 <span class="text-slate-400 block text-xs">{{ t('expenseDetail.calcKeyLabel', 'Kalkulační klíč:') }}</span>
                 <span class="font-medium text-slate-300">
-                  {{ expense.calculationKey === 'BY_AREA' ? t('expenseDetail.calcByArea', 'Podle m² plochy') : t('expenseDetail.calcEqual', 'Rovným dílem') }}
+                  {{ expense.calculationKey === 'BY_AREA' ? t('expenseDetail.calcByArea', 'Podle m² plochy') : expense.calculationKey === 'CUSTOM' ? t('expenseDetail.calcCustom', 'Vlastní rozdělení') : t('expenseDetail.calcEqual', 'Rovným dílem') }}
                 </span>
               </div>
               <div>
@@ -86,6 +86,13 @@
               <h3 class="text-xs font-bold text-slate-400">
                 {{ t('expenseDetail.breakdownTitle', 'Rozpad podílů na jednotlivé členy bytu:') }}
               </h3>
+
+              <div v-if="canConfirmMemberPayment && expense.status !== 'UHRAZENO'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-850 border border-slate-800 text-xs">
+                <label class="space-y-1">{{ t('confirmPayment.dateLabel', 'Reálné datum připsání na účet *') }}<input v-model="memberPaymentDate" type="date" :min="expense.date" :max="DEMO_TODAY" class="block w-full rounded-lg bg-slate-800 border border-slate-700 p-2" /></label>
+                <label class="space-y-1">{{ t('confirmPayment.methodLabel', 'Forma úhrady *') }}<select v-model="memberPaymentMethod" class="block w-full rounded-lg bg-slate-800 border border-slate-700 p-2"><option value="BANK">{{ t('confirmPayment.bankTransfer', 'Bankovní převod') }}</option><option value="CASH">{{ t('confirmPayment.cash', 'Hotovost') }}</option></select></label>
+                <label class="space-y-1 sm:col-span-2">{{ t('confirmPayment.noteLabel', 'Doplňující poznámka (volitelné)') }}<input v-model="memberPaymentNote" type="text" class="block w-full rounded-lg bg-slate-800 border border-slate-700 p-2" /></label>
+                <label class="flex items-center gap-2 sm:col-span-2"><input v-model="memberPaymentNotify" type="checkbox" />{{ t('expenseDetail.notifySharePayment', 'Připravit simulované potvrzení pro člena') }}</label>
+              </div>
 
               <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-850">
                 <table class="w-full text-left text-xs">
@@ -123,8 +130,12 @@
                           {{ t('expenseDetail.payerZero', 'Plátce – 0 Kč k doplacení') }}
                         </span>
                         <span v-else-if="share.status === 'UHRAZENO'" class="text-xs text-emerald-400">
-                          {{ share.settledDate || t('expenseDetail.settled', 'Uhrazeno') }}
+                          {{ share.settledDate ? formatDate(share.settledDate) : t('expenseDetail.settled', 'Uhrazeno') }}
+                          <span v-if="share.payment" class="block">{{ share.payment.method === 'CASH' ? t('confirmPayment.cash', 'Hotovost') : t('confirmPayment.bankTransfer', 'Bankovní převod') }}<span v-if="share.payment.note"> · {{ share.payment.note }}</span><span class="block">{{ t('expenseDetail.paymentRecorder', 'Potvrdil(a): {name}', { name: roommates.find(person => person.id === share.payment?.recordedBy)?.name || '—' }) }}</span></span>
                         </span>
+                        <button v-else-if="canConfirmMemberPayment" type="button" @click="confirmMemberShare(share.roommateId)" class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 focus:ring-2 focus:ring-emerald-500/40">
+                          {{ t('expenseDetail.confirmSharePayment', 'Potvrdit úhradu') }}
+                        </button>
                         <span v-else-if="share.roommateId === currentUser.id" class="text-xs text-amber-400 font-semibold">
                           {{ t('expenseDetail.yourDebt', 'Váš dluh k úhradě') }}
                         </span>
@@ -191,11 +202,11 @@
             <!-- Tab 1: Simulated Receipt visual -->
             <div v-if="activeTab === 'receipt'" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
               <div class="text-sm text-slate-300 space-y-3">
-                <p class="font-semibold">{{ expense.receiptName || 'K výdaji není přiložen doklad.' }}</p>
+                <p class="font-semibold">{{ expense.receiptName || t('expenseDetail.noReceiptAttached', 'K výdaji není přiložen doklad.') }}</p>
                 <p>{{ expense.title }} · {{ formatDate(expense.date) }}</p>
                 <p>{{ expense.totalAmount.toLocaleString('cs-CZ') }} Kč</p>
-                <img v-if="expense.receiptUrl && expense.receiptType !== 'PDF'" :src="expense.receiptUrl" alt="Přiložený doklad výdaje" class="max-w-full rounded-lg" />
-                <p v-else-if="expense.receiptName" class="text-xs text-slate-400">Simulovaná příloha; soubor není součástí prototypu.</p>
+                <img v-if="expense.receiptUrl && expense.receiptType !== 'PDF'" :src="expense.receiptUrl" :alt="t('expenseDetail.receiptAlt', 'Přiložený doklad výdaje')" class="max-w-full rounded-lg" />
+                <p v-else-if="expense.receiptName" class="text-xs text-slate-400">{{ t('expenseDetail.simulatedReceipt', 'Simulovaná příloha; soubor není součástí prototypu.') }}</p>
               </div>
             </div>
 
@@ -205,7 +216,7 @@
                 {{ t('expenseDetail.itemsHint', 'Položkový seznam z dokladu:') }}
               </div>
               <div class="space-y-2">
-                <p v-if="!expense.receiptItems?.length" class="text-slate-400">Položkový rozpis není k dispozici.</p>
+                <p v-if="!expense.receiptItems?.length" class="text-slate-400">{{ t('expenseDetail.noItems', 'Položkový rozpis není k dispozici.') }}</p>
                 <div 
                   v-for="(item, idx) in (expense.receiptItems || [])"
                   :key="item.id || idx"
@@ -289,19 +300,31 @@ import { useDialog } from '../composables/useDialog'
 import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { t } from '../i18n'
+import { DEMO_TODAY } from '../data/mockData'
 
 const { 
   selectedExpense, 
   currentUser,
+  roommates,
   managerRoommate,
-    isMasterTenant,
+  isMasterTenant,
   closeModal, 
   deleteExpense, 
   canDeleteExpense,
-  sendReminder, 
+  sendReminder,
+  confirmExpenseSharePayment,
 } = useSpolubyt()
 
 const expense = computed(() => selectedExpense.value!)
+
+const canConfirmMemberPayment = computed(() => expense.value.payerId !== managerRoommate.value.id && (isMasterTenant.value || expense.value.payerId === currentUser.value.id))
+const memberPaymentDate = ref(DEMO_TODAY)
+const memberPaymentMethod = ref<'BANK' | 'CASH'>('BANK')
+const memberPaymentNote = ref('')
+const memberPaymentNotify = ref(true)
+const confirmMemberShare = (roommateId: string): void => {
+  confirmExpenseSharePayment(expense.value.id, roommateId, { date: memberPaymentDate.value, method: memberPaymentMethod.value, note: memberPaymentNote.value, notifyMember: memberPaymentNotify.value })
+}
 
 const activeTab = ref<'receipt' | 'items' | 'audit'>('receipt')
 

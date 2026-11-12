@@ -84,10 +84,10 @@
             <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
               <div>
                 <span class="text-slate-400 text-xs block">{{ t('qr.accountNumber', 'Číslo účtu příjemce:') }}</span>
-                <span class="font-mono font-bold text-slate-200">{{ settings.accountNumber.split(' ')[0] }}</span>
+                <span class="font-mono font-bold text-slate-200">{{ settings.accountNumber }}</span>
               </div>
               <button type="button"
-                @click="copyText(settings.accountNumber.split(' ')[0], t('qr.accountNumberCopy', 'Číslo účtu'))"
+                @click="copyText(settings.accountNumber, t('qr.accountNumberCopy', 'Číslo účtu'))"
                 class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs"
               >
                 {{ t('qr.copy', 'Kopírovat') }}
@@ -244,14 +244,14 @@ onUnmounted(() => {
 const copyText = async (text: string, label: string): Promise<void> => {
   try {
     await navigator.clipboard.writeText(text)
-    showToast('Zkopírováno', `${label} byl zkopírován do schránky.`, 'info', 2500)
+    showToast(t('qr.copiedTitle', 'Zkopírováno'), t('qr.copiedResult', '{label}: zkopírováno do schránky.', { label }), 'info', 2500)
   } catch {
-    showToast('Kopírování se nezdařilo', 'Vyberte a zkopírujte platební údaje ručně.', 'error')
+    showToast(t('qr.copyFailedTitle', 'Kopírování se nezdařilo'), t('qr.copyFailedMessage', 'Vyberte a zkopírujte platební údaje ručně.'), 'error')
   }
 }
 
 const copyAll = (): void => {
-  void copyText(`Účet: ${settings.value.accountNumber}\nIBAN: ${settings.value.iban}\nČástka: ${settlement.value.totalDebt.toLocaleString('cs-CZ')} Kč\nVS: ${variableSymbol}\nZpráva: ${paymentMessage.value}`, 'Platební údaje')
+  void copyText(t('qr.allPaymentDetails', 'Účet: {account}\nIBAN: {iban}\nČástka: {amount} Kč\nVS: {symbol}\nZpráva: {message}', { account: settings.value.accountNumber, iban: settings.value.iban, amount: settlement.value.totalDebt.toLocaleString('cs-CZ'), symbol: variableSymbol, message: paymentMessage.value }), t('qr.paymentDetails', 'Platební údaje'))
 }
 const dialogPanel = ref<HTMLElement | null>(null)
 useDialog(dialogPanel, closeModal)

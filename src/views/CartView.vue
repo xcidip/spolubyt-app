@@ -103,12 +103,12 @@
                         </div>
                         <div class="text-xs text-slate-400 mt-0.5 leading-relaxed">
                           <span class="whitespace-nowrap">{{ t('cart.addedBy', 'Přidal(a): {name}', { name: item.addedBy }) }}</span>
-                          <span class="whitespace-nowrap"> • {{ item.addedAt }}</span>
+                          <span class="whitespace-nowrap"> • {{ formatStoredTime(item.addedAt) }}</span>
                           <span
                             v-if="item.isPurchased && item.purchasedBy"
                             class="text-emerald-400 font-medium whitespace-nowrap"
                           >
-                            • {{ t('cart.purchasedBy', 'Koupil(a): {name} ({date})', { name: item.purchasedBy, date: item.purchasedAt || t('cart.purchasedUnknown', 'koupeno') }) }}
+                            • {{ t('cart.purchasedBy', 'Koupil(a): {name} ({date})', { name: item.purchasedBy, date: item.purchasedAt ? formatStoredTime(item.purchasedAt) : t('cart.purchasedUnknown', 'koupeno') }) }}
                           </span>
                         </div>
                       </div>
@@ -237,8 +237,8 @@
                   <input id="cartview-field-2"
                     v-model.number="newItem.unitPrice"
                     type="number"
-                    min="1"
-                    step="1"
+                    min="0.01"
+                    step="0.01"
                     required
                     placeholder="0"
                     class="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
@@ -344,6 +344,7 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue'
+import { formatStoredTime } from '../utils/localeDisplay'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { ExpenseCategory } from '../types'
 import { t } from '../i18n'

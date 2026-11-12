@@ -149,6 +149,8 @@ Prototyp v plném rozsahu pokrývá funkční požadavky, analytické use cases 
 *Vytvořeno v rámci studia na Provozně ekonomické fakultě ČZU v Praze.*
 
 
-Verze 2.0.0 používá nový atomický formát `spolubyt_hifi_v2_state` v localStorage. Data staršího prototypu se nenačítají; první spuštění otevře opravený demo scénář. Fonty i ikony jsou součástí aplikace a za běhu nevyžadují síť. Datum formulářů je zmrazené na 12. 11. 2026.
+Verze 3.0.0 používá atomický formát `spolubyt_hifi_v3_state` v localStorage, včetně auditních údajů plateb a identity kupujícího. Data starších verzí se nenačítají ani nemažou; první spuštění otevře opravený demo scénář. Fonty i ikony jsou součástí aplikace a za běhu nevyžadují síť. Datum formulářů je zmrazené na 12. 11. 2026.
+
+Výdaje zaplacené členem se hradí přímo tomuto plátci, odděleně od dluhu na účet správce. V detailu výdaje může plátce nebo správce potvrdit přijetí jednotlivého podílu; datum, způsob platby, poznámka a potvrzující persona zůstávají v auditních údajích. Volitelné potvrzení pro člena je simulované. Přehled vyrovnání lze vytisknout nebo uložit do PDF přes prohlížeč.
 
 Release workflow kontroluje shodu tagu s verzemi, spouští testy a build a vytváří koncept vydání. Přikládá frontendové/fontové notices a výstup cargo-about pro Rust závislosti. Instalační balíčky se zde nepodepisují.

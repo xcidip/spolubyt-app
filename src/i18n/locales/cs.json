@@ -21,7 +21,10 @@
     "name": "Název",
     "category": "Kategorie",
     "note": "Poznámka",
-    "optional": "nepovinné"
+    "optional": "nepovinné",
+    "yesterday": "Včera",
+    "twoDaysAgo": "Před 2 dny",
+    "threeDaysAgo": "Před 3 dny"
   },
   "nav": {
     "main": "Hlavní navigace",
@@ -53,7 +56,10 @@
     "reset": "Obnovit výchozí testovací data",
     "newExpense": "Nový výdaj",
     "backToDashboard": "Zpět na Nástěnku",
-    "language": "Přepnout jazyk"
+    "language": "Přepnout jazyk",
+    "syncConflict": "Ukládání: konflikt",
+    "syncFailed": "Ukládání: chyba",
+    "syncRecovered": "Data obnovena"
   },
   "sidebar": {
     "dashboard": "Nástěnka",
@@ -103,6 +109,14 @@
       "title": "Resetovat všechna data",
       "message": "Opravdu chcete obnovit výchozí stav prototypu? Veškeré úpravy, nově zadané výdaje a odečty budou přepsány výchozími daty.",
       "confirm": "Obnovit výchozí data"
+    },
+    "memberPayment": {
+      "title": "Potvrdit přijetí úhrady",
+      "message": "Potvrdit úhradu {amount} Kč od {debtor} pro {payer} za výdaj „{title}“?"
+    },
+    "deleteMeter": {
+      "title": "Smazat poslední odečet",
+      "message": "Odstranit odečet {value} {unit} ze dne {date}?"
     }
   },
   "toast": {
@@ -128,7 +142,7 @@
     },
     "paymentConfirmed": {
       "title": "Platba byla spárována a zaúčtována",
-      "message": "Úhrada {amount} Kč od {name} byla potvrzena. Bilance bytu je vyrovnaná."
+      "message": "Úhrada {amount} Kč od {name} byla potvrzena. Dluh tohoto člena správci je vyrovnaný."
     },
     "reminderSent": {
       "at": "v {hh}:{mm} e-mailem a push notifikací",
@@ -206,7 +220,9 @@
     },
     "warning": {
       "title": "Upozornění",
-      "selfSwap": "Nelze požádat sám sebe o převzetí směny."
+      "selfSwap": "Nelze požádat sám sebe o převzetí směny.",
+      "shiftTransferBlocked": "Splněnou směnu nebo směnu s čekající žádostí nelze převést.",
+      "shiftCompleted": "Splněnou směnu nelze převzít."
     },
     "accessDenied": {
       "title": "Přístup odepřen",
@@ -216,7 +232,10 @@
       "rejectSwap": "Převzetí může odmítnout pouze oslovený spolubydlící nebo správce bytu.",
       "cancelSwap": "Žádost může zrušit pouze ten, kdo o ni požádal, nebo správce bytu.",
       "saveSettings": "Kmenové údaje bytu a bankovní spojení může upravit pouze správce bytu.",
-      "updateArea": "Podlahovou výměru pokojů může upravit pouze správce bytu."
+      "updateArea": "Podlahovou výměru pokojů může upravit pouze správce bytu.",
+      "managerOnly": "Tuto akci může provést pouze správce bytu.",
+      "deleteExpense": "Výdaj může smazat pouze plátce nebo správce bytu.",
+      "confirmMemberPayment": "Přijetí úhrady může potvrdit pouze plátce výdaje nebo správce."
     },
     "settingsSaved": {
       "title": "Nastavení uloženo",
@@ -233,6 +252,44 @@
     "exportDone": {
       "title": "Export dokončen",
       "message": "Soubor CSV byl stažen do vašeho zařízení."
+    },
+    "invalidExpense": {
+      "title": "Neplatný výdaj",
+      "message": "Zadejte název, platné datum nejvýše 12. 11. 2026 a částky, jejichž podíly i položkový rozpis souhlasí s celkem."
+    },
+    "invalidPayment": {
+      "title": "Neplatné datum platby",
+      "message": "Datum úhrady musí být od data výdaje do 12. 11. 2026."
+    },
+    "invalidPaymentDate": {
+      "message": "Zadejte datum nejvýše 12. 11. 2026 a platný způsob úhrady."
+    },
+    "paymentNotification": {
+      "title": "Potvrzení pro člena",
+      "message": "Simulované potvrzení úhrady bylo připraveno pro {name}."
+    },
+    "memberPayment": {
+      "title": "Úhrada podílu potvrzena",
+      "message": "{debtor} uhradil(a) {amount} Kč za „{title}“ přímo uživateli {payer}."
+    },
+    "invalidReading": {
+      "title": "Neplatný odečet",
+      "message": "Zadejte nezáporný konečný stav a datum od posledního odečtu do 12. 11. 2026."
+    },
+    "meterDeleted": {
+      "title": "Odečet odstraněn",
+      "message": "Odečet {value} {unit} byl odstraněn."
+    },
+    "invalidSettings": {
+      "title": "Neplatné nastavení",
+      "message": "Vyplňte údaje bytu, shodné české bankovní spojení a IBAN, kladné částky a den splatnosti 1–28."
+    },
+    "invalidArea": {
+      "title": "Neplatná výměra pokoje",
+      "message": "Zadejte plochu pokoje alespoň 5 m²."
+    },
+    "invalidCartQty": {
+      "message": "Počet kusů musí být celé číslo v podporovaném rozsahu."
     }
   },
   "cart": {
@@ -393,6 +450,25 @@
       "bathroom": "Důkladná dezinfekce toalety, vyčištění sprchy/vany, umyvadla a vyleštění zrcadel.",
       "corridor": "Vyluxování všech společných prostor bytu, vytření podlahy a úklid předsíně s botníkem.",
       "trash": "Vynesení směsného i tříděného odpadu do venkovních kontejnerů a výměna sáčků."
+    },
+    "weekNumber": "Týden {week}",
+    "subtasks": {
+      "kitchen0": "Vyklidit čisté nádobí a zapnout plnou myčku",
+      "kitchen1": "Setřít a odmastit varnou desku a linku",
+      "kitchen2": "Umýt dřez, baterii a vyčistit odtokové sítko",
+      "kitchen3": "Utřít jídelní stůl a vynést bioodpad",
+      "bathroom0": "Dezinfikovat a umýt toaletní mísu i prkénko",
+      "bathroom1": "Vyčistit sprchový kout / vanu a odstranit vodní kámen",
+      "bathroom2": "Umýt umyvadlo a vyleštit zrcadlo",
+      "bathroom3": "Doplnit toaletní papír a vyměnit ručníky",
+      "corridor0": "Vyluxovat koberce a podlahy ve společných prostorách",
+      "corridor1": "Vytřít podlahu v předsíni a chodbě namokro",
+      "corridor2": "Srovnat botník a vyklepat vstupní rohožku",
+      "corridor3": "Otřít prach ze společných komod a parapetů",
+      "trash0": "Vynést směsný komunální odpad do černé popelnice",
+      "trash1": "Vytřídit a vynést plast, papír, plechovky a sklo",
+      "trash2": "Otřít a vydezinfikovat odpadkové koše",
+      "trash3": "Založit nové pevné pytle do všech košů"
     }
   },
   "csv": {
@@ -559,7 +635,10 @@
     "overdueMembersMany": "{count} členů v prodlení se splátkou",
     "overdueDaysOne": "1 den po splatnosti",
     "overdueDaysFew": "{days} dny po splatnosti",
-    "overdueDaysMany": "{days} dní po splatnosti"
+    "overdueDaysMany": "{days} dní po splatnosti",
+    "breakdownOther": "Ostatní:",
+    "noPreviousMonth": "Bez srovnání s minulým měsícem",
+    "monthlyChange": "{change} % m/m"
   },
   "expenses": {
     "title": "Výpis výdajů a plateb",
@@ -684,7 +763,15 @@
     "exportMessage": "Měsíční protokol vyrovnání byl vygenerován a připraven k tisku.",
     "overdueDayOne": "1 den po splatnosti",
     "overdueDayFew": "{days} dny po splatnosti",
-    "overdueDayMany": "{days} dní po splatnosti"
+    "overdueDayMany": "{days} dní po splatnosti",
+    "printPdf": "Tisk / uložit PDF",
+    "managerMemberDebts": "Dlužné podíly ze společných nákupů zaplacených členy",
+    "memberPurchases": "Úhrady nákupů zaplacených členy",
+    "memberPurchasesHint": "Tyto podíly se hradí přímo plátci nákupu, odděleně od účtu správce. Přijetí potvrdí plátce nebo správce v detailu výdaje.",
+    "myMemberDebts": "Moje závazky vůči členům: {amount} Kč",
+    "purchasePayer": "Plátce: {name}",
+    "openPurchase": "Zobrazit podíly a potvrdit úhradu →",
+    "breakdownOther": "Ostatní:"
   },
   "energy": {
     "title": "Energie a odečty měřidel",
@@ -737,7 +824,10 @@
       "electricity": "Elektřina",
       "gas": "Plyn",
       "water": "Voda"
-    }
+    },
+    "deltaSincePrevious": "+{delta} {unit} od minulého odečtu",
+    "deleteLatestAria": "Smazat poslední odečet {type}",
+    "deleteLatest": "Smazat poslední"
   },
   "settings": {
     "title": "Nastavení bytu, pokojů a správa členů",
@@ -822,7 +912,8 @@
     "browse": "vyberte z disku",
     "formats": "Podporované formáty: PDF, JPG, PNG (max. 10 MB)",
     "cancel": "Zrušit / Zavřít",
-    "submit": "Uložit a rozpočítat výdaj"
+    "submit": "Uložit a rozpočítat výdaj",
+    "receiptMismatch": "Položkový rozpis převedeného nákupu činí {amount} Kč. Celková částka musí odpovídat tomuto rozpisu."
   },
   "expenseDetail": {
     "close": "Zavřít",
@@ -873,7 +964,15 @@
     "totalCzk": "CELKEM CZK:",
     "closePreview": "Zavřít náhled",
     "downloadTitle": "Stahování dokladu",
-    "downloadMessage": "Soubor {file} byl připraven ke stažení."
+    "downloadMessage": "Soubor {file} byl připraven ke stažení.",
+    "calcCustom": "Vlastní rozdělení",
+    "notifySharePayment": "Připravit simulované potvrzení pro člena",
+    "confirmSharePayment": "Potvrdit úhradu",
+    "noReceiptAttached": "K výdaji není přiložen doklad.",
+    "receiptAlt": "Přiložený doklad výdaje",
+    "simulatedReceipt": "Simulovaná příloha; soubor není součástí prototypu.",
+    "noItems": "Položkový rozpis není k dispozici.",
+    "paymentRecorder": "Potvrdil(a): {name}"
   },
   "qr": {
     "title": "Platební předpis & SPAYD QR platba",
@@ -904,7 +1003,12 @@
     "copyAllVs": "VS:",
     "copyAllMessageLabel": "Zpráva:",
     "copyAllTitle": "Kompletní údaje zkopírovány",
-    "copyAllMessage": "Veškeré platební instrukce byly vloženy do schránky."
+    "copyAllMessage": "Veškeré platební instrukce byly vloženy do schránky.",
+    "copiedResult": "{label}: zkopírováno do schránky.",
+    "copyFailedTitle": "Kopírování se nezdařilo",
+    "copyFailedMessage": "Vyberte a zkopírujte platební údaje ručně.",
+    "allPaymentDetails": "Účet: {account}\nIBAN: {iban}\nČástka: {amount} Kč\nVS: {symbol}\nZpráva: {message}",
+    "paymentDetails": "Platební údaje"
   },
   "confirmPayment": {
     "title": "Potvrdit přijetí finanční úhrady",
@@ -923,12 +1027,13 @@
     "noteLabel": "Doplňující poznámka (volitelné)",
     "notePlaceholder": "např. Okamžitá platba z účtu Air Bank bez poplatku...",
     "notifyPrefix": "Odeslat uživateli",
-    "notifySuffix": "automatické potvrzení o zaúčtování platby (in-app notifikace a e-mail).",
+    "notifySuffix": "simulované potvrzení o zaúčtování platby.",
     "warningLabel": "Upozornění:",
     "warningText": "Potvrzením bude otevřený dluh označen jako vyrovnaný a částka se okamžitě promítne do celkové likvidity bytu.",
     "cancel": "Zrušit / Storno",
     "confirmButton": "Potvrdit přijetí {amount} CZK",
-    "noteDefault": "Okamžitá platba přes QR kód"
+    "noteDefault": "Okamžitá platba přes QR kód",
+    "notifySimulatedSuffix": "simulované potvrzení o zaúčtování platby."
   },
   "meterAdd": {
     "title": "Zadat nový odečet měřidla energií",
@@ -947,5 +1052,10 @@
     "cancel": "Zrušit / Storno",
     "submit": "Uložit nový odečet",
     "noteDefault": "Pravidelný odečet na konci měsíce"
+  },
+  "storage": {
+    "conflict": "Data změnila jiná záložka. Před dalšími úpravami obnovte tuto stránku.",
+    "writeFailed": "Změny se nepodařilo uložit. Zůstanou pouze do zavření stránky.",
+    "recovered": "Uložená data byla poškozená. Byl obnoven výchozí stav prototypu."
   }
 }

@@ -30,7 +30,7 @@
           <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
           </svg>
-          <span>{{ t('settlement.exportPdf', 'Export přehledu (PDF)') }}</span>
+          <span>{{ t('settlement.printPdf', 'Tisk / uložit PDF') }}</span>
         </button>
       </div>
     </div>
@@ -74,11 +74,11 @@
           {{ isMasterTenant ? t('settlement.card2TitleManager', 'Moje závazky vůči bytu') : t('settlement.card2TitleMember', 'Moje pohledávky vůči ostatním') }}
         </div>
         <div class="text-2xl font-mono font-extrabold text-white">
-          {{ (isMasterTenant ? 0 : currentUserReceivables).toLocaleString('cs-CZ') }} CZK
+          {{ (isMasterTenant ? currentUserMemberDebt : currentUserReceivables).toLocaleString('cs-CZ') }} CZK
         </div>
         <div class="text-xs text-emerald-400 mt-2 font-medium">
           <template v-if="isMasterTenant">
-            ✓ {{ t('settlement.managerNoDebts', 'Správce nemá otevřené závazky vůči členům bytu') }}
+            <span v-if="currentUserMemberDebt > 0">{{ t('settlement.managerMemberDebts', 'Dlužné podíly ze společných nákupů zaplacených členy') }}</span><span v-else>✓ {{ t('settlement.managerNoDebts', 'Správce nemá otevřené závazky vůči členům bytu') }}</span>
           </template>
           <template v-else-if="currentUserReceivables > 0">
             {{ t('settlement.receivablesFromPurchases', 'Dluží vám z vámi zaplacených společných nákupů') }}
@@ -132,6 +132,16 @@
 
     </div>
 
+    <section v-if="memberPaymentExpenses.length > 0" class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+      <h2 class="text-sm font-bold text-slate-100">{{ t('settlement.memberPurchases', 'Úhrady nákupů zaplacených členy') }}</h2>
+      <p class="text-xs text-slate-400">{{ t('settlement.memberPurchasesHint', 'Tyto podíly se hradí přímo plátci nákupu, odděleně od účtu správce. Přijetí potvrdí plátce nebo správce v detailu výdaje.') }}</p>
+      <p class="text-sm text-amber-300">{{ t('settlement.myMemberDebts', 'Moje závazky vůči členům: {amount} Kč', { amount: currentUserMemberDebt.toLocaleString('cs-CZ') }) }}</p>
+      <button v-for="expense in memberPaymentExpenses" :key="expense.id" type="button" @click="openModal('EXP_DETAIL', expense)" class="w-full flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border border-slate-700 bg-slate-800 text-left text-xs focus:ring-2 focus:ring-emerald-500/40 print:!block print:break-inside-avoid">
+        <span>{{ expense.title }} · {{ t('settlement.purchasePayer', 'Plátce: {name}', { name: expense.payerName }) }}</span>
+        <span class="text-emerald-300 print:hidden">{{ t('settlement.openPurchase', 'Zobrazit podíly a potvrdit úhradu →') }}</span>
+      </button>
+    </section>
+
     <!-- Settlement Cards for Each Roommate -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
@@ -145,7 +155,7 @@
         <div
           v-for="s in allDisplaySettlements"
           :key="s.roommateId"
-          class="p-5 rounded-2xl bg-slate-900 border transition-all relative overflow-hidden"
+          class="p-5 rounded-2xl bg-slate-900 border transition-all relative overflow-hidden print:break-inside-avoid print:overflow-visible"
           :class="[
             s.roommateId === currentUser.id ? 'border-emerald-500/60 ring-2 ring-emerald-500/20 bg-gradient-to-r from-slate-900 via-slate-850 to-emerald-950/20' :
             s.status === 'PO_SPLATNOSTI' ? 'border-rose-500/40 bg-gradient-to-r from-slate-900 to-rose-950/10' :
@@ -212,7 +222,7 @@
                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>{{ t('settlement.lastReminder', 'Poslední upomínka odeslána: {date}', { date: s.lastReminderSent }) }}</span>
+                  <span>{{ t('settlement.lastReminder', 'Poslední upomínka odeslána: {date}', { date: formatStoredTime(s.lastReminderSent) }) }}</span>
                 </div>
               </div>
             </div>
@@ -294,7 +304,7 @@
       </div>
 
       <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" :aria-label="t('settlement.matrixAria', 'Matice vzájemného vyrovnání')">
-        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">{{ t('settlement.scrollHint', 'Tabulku lze posouvat vodorovně →') }}</p>
+        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden print:hidden">{{ t('settlement.scrollHint', 'Tabulku lze posouvat vodorovně →') }}</p>
         <table class="w-full min-w-[760px] text-left text-xs">
           <thead class="bg-slate-800/80 text-slate-400 border-b border-slate-700">
             <tr>
@@ -341,6 +351,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatStoredTime } from '../utils/localeDisplay'
 import { SETTLEMENT_BADGE_CLASSES } from '../utils/labels'
 import { formatDateCz, formatCzk } from '../utils/format'
 import { DEMO_TODAY } from '../data/mockData'
@@ -359,6 +370,8 @@ const {
   currentUserDebt,
   isCurrentUserOverdue,
   currentUserReceivables,
+  currentUserMemberDebt,
+  expenses,
   settlements, 
   settings, 
   roommates,
@@ -367,7 +380,6 @@ const {
   overdueDebtorsCount, 
   openModal, 
   sendReminder, 
-  showToast 
 } = useSpolubyt()
 
 const settlementDebtorsSummary = computed(() => {
@@ -402,9 +414,13 @@ const getRoommateColor = (roommateId: string) => {
   return 'bg-emerald-600'
 }
 
-const showExportToast = () => {
-  showToast(t('settlement.exportTitle', 'Generování PDF'), t('settlement.exportMessage', 'Měsíční protokol vyrovnání byl vygenerován a připraven k tisku.'), 'success')
+const showExportToast = (): void => {
+  window.print()
 }
+
+const memberPaymentExpenses = computed(() => expenses.value.filter(expense => expense.payerId !== managerRoommate.value.id
+  && expense.shares.some(share => share.status === 'DLUŽÍ' || share.status === 'PO_SPLATNOSTI')
+  && (isMasterTenant.value || expense.payerId === currentUser.value.id || expense.shares.some(share => share.roommateId === currentUser.value.id && (share.status === 'DLUŽÍ' || share.status === 'PO_SPLATNOSTI')))))
 
 const formatDate = (dateStr: string): string => formatDateCz(dateStr, 'none')
 
