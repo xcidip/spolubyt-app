@@ -13,7 +13,7 @@
       </div>
 
       <div class="flex items-center gap-2.5">
-        <button
+        <button type="button"
           @click="openModal('METER_ADD')"
           class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-105"
         >
@@ -65,7 +65,7 @@
 
           <!-- Medium selector pills -->
           <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-xl text-xs font-semibold">
-            <button
+            <button type="button"
               v-for="med in ['Elektřina', 'Plyn', 'Voda']"
               :key="med"
               @click="activeChartMedium = med"
@@ -250,7 +250,7 @@
           </div>
         </div>
 
-        <button
+        <button type="button"
           @click="openModal('METER_ADD')"
           class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-bold border border-slate-700 transition-colors flex items-center justify-center gap-2"
         >
@@ -297,13 +297,15 @@
                 +{{ m.delta }} {{ m.unit }}
               </td>
               <td class="py-2.5 px-3 text-slate-300">{{ m.recordedBy }}</td>
-              <td class="py-2.5 px-3 text-slate-400 text-xs">{{ m.note || '—' }}</td>
+              <td class="py-2.5 px-3 text-slate-400 text-xs">{{ m.note || '—' }}
+                <button v-if="latestMeters[m.type]?.id === m.id" type="button" @click="deleteLatestMeterReading(m.id)" class="ml-2 text-rose-400 underline focus:ring-2 focus:ring-emerald-500/40" :aria-label="'Smazat poslední odečet ' + METER_TYPE_LABELS[m.type]">Smazat poslední</button>
+              </td>
             </tr>
             <tr v-if="meters.length === 0">
               <td colspan="6" class="py-10 text-center text-slate-400">
                 <div class="space-y-2">
                   <p class="font-medium text-slate-300">{{ t('energy.emptyTitle', 'Zatím nejsou zaznamenány žádné odečty.') }}</p>
-                  <button @click="openModal('METER_ADD')" class="text-xs text-emerald-400 underline font-semibold">{{ t('energy.addFirstReading', 'Zadat první odečet') }}</button>
+                  <button type="button" @click="openModal('METER_ADD')" class="text-xs text-emerald-400 underline font-semibold">{{ t('energy.addFirstReading', 'Zadat první odečet') }}</button>
                 </div>
               </td>
             </tr>
@@ -316,13 +318,15 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateCz } from '../utils/format'
+import type { MediumConfig } from '../types'
 import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { ENERGY_MONTHLY_HISTORY } from '../data/mockData'
 import { METER_TYPE_LABELS } from '../utils/labels'
 import { t } from '../i18n'
 
-const { meters, latestMeters, openModal, annualEnergyPrediction } = useSpolubyt()
+const { meters, latestMeters, openModal, annualEnergyPrediction, deleteLatestMeterReading } = useSpolubyt()
 
 const activeChartMedium = ref('Elektřina')
 
@@ -348,13 +352,6 @@ const lastReadingDate = computed(() => {
   }, '')
   return latest ? formatDate(latest) : '—'
 })
-
-interface MediumConfig {
-  unit: string
-  allowance: number
-  maxScale: number
-  data: { month: string; value: number }[]
-}
 
 const MEDIUM_CONFIGS: Record<string, MediumConfig> = {
   'Elektřina': {
@@ -410,13 +407,6 @@ const chartAriaLabel = computed(() => {
   return t('energy.chartAria', 'Měsíční spotřeba {medium} v {unit}. Zálohová hranice {allowance} {unit}. Hodnoty: {values}.', { medium: mediumLabel(activeChartMedium.value), unit: currentConfig.value.unit, allowance: currentConfig.value.allowance, values })
 })
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  const parts = dateStr.split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}. ${parts[1]}. ${parts[0]}`
-  }
-  return dateStr
-}
+const formatDate = (dateStr: string): string => formatDateCz(dateStr, 'full')
 </script>
 

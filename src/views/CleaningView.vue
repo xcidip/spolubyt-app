@@ -54,7 +54,7 @@
     >
       <div class="flex items-center gap-2 text-xs font-bold text-purple-300">
         <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse"></span>
-        <span>{{ t('cleaning.incomingSwapTitle', 'Žádost o výměnu směny k vyřízení') }}</span>
+        <span>{{ t('cleaning.incomingSwapTitle', 'Žádost o převzetí směny k vyřízení') }}</span>
       </div>
       <div 
         v-for="shift in pendingIncomingSwaps" 
@@ -74,16 +74,16 @@
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <button
+          <button type="button"
             @click="acceptShiftSwap(shift.id)"
             class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/30 flex items-center gap-1.5"
           >
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
             </svg>
-            <span>{{ t('cleaning.acceptSwap', 'Přijmout výměnu') }}</span>
+            <span>{{ t('cleaning.acceptSwap', 'Převzít směnu') }}</span>
           </button>
-          <button
+          <button type="button"
             @click="rejectShiftSwap(shift.id)"
             class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-colors"
           >
@@ -98,7 +98,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <!-- Week Controls -->
         <div class="flex items-center gap-2">
-          <button
+          <button type="button"
             @click="selectCleaningWeek(selectedCleaningWeek - 1)"
             class="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 transition-colors"
             :title="t('cleaning.prevWeek', 'Předchozí týden')"
@@ -126,7 +126,7 @@
             </span>
           </div>
 
-          <button
+          <button type="button"
             @click="selectCleaningWeek(selectedCleaningWeek + 1)"
             class="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 transition-colors"
             :title="t('cleaning.nextWeek', 'Další týden')"
@@ -136,7 +136,7 @@
             </svg>
           </button>
 
-          <button
+          <button type="button"
             v-if="selectedCleaningWeek !== currentWeekNumber"
             @click="selectCleaningWeek(currentWeekNumber)"
             class="text-xs px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-400 border border-slate-700 font-medium transition-colors ml-1"
@@ -303,13 +303,13 @@
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 text-xs font-bold text-purple-300">
                 <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-                <span>{{ t('cleaning.pendingSwapWith', 'Čekající žádost: výměna s {name}', { name: getShiftForTask(taskDef.key)?.swapRequest?.targetRoommateName }) }}</span>
+                <span>{{ t('cleaning.pendingSwapWith', 'Čekající žádost: převzetí uživatelem {name}', { name: getShiftForTask(taskDef.key)?.swapRequest?.targetRoommateName }) }}</span>
               </div>
-              <button
+              <button type="button"
                 v-if="canCancelSwap(getShiftForTask(taskDef.key))"
                 @click="cancelShiftSwap(getShiftForTask(taskDef.key)!.id)"
                 class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-                :title="t('cleaning.cancelSwapTitle', 'Odvolat žádost o výměnu směny')"
+                :title="t('cleaning.cancelSwapTitle', 'Odvolat žádost o převzetí směny')"
               >
                 {{ t('cleaning.cancelRequest', 'Zrušit žádost') }}
               </button>
@@ -329,16 +329,16 @@
               v-if="isSwapRecipient(getShiftForTask(taskDef.key))"
               class="pt-1.5 flex items-center gap-2 border-t border-purple-500/20"
             >
-              <button
+              <button type="button"
                 @click="acceptShiftSwap(getShiftForTask(taskDef.key)!.id)"
                 class="flex-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
               >
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                 </svg>
-                <span>{{ t('cleaning.acceptSwap', 'Přijmout výměnu') }}</span>
+                <span>{{ t('cleaning.acceptSwap', 'Převzít směnu') }}</span>
               </button>
-              <button
+              <button type="button"
                 @click="rejectShiftSwap(getShiftForTask(taskDef.key)!.id)"
                 class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-colors"
               >
@@ -397,7 +397,7 @@
           <template v-if="canUserConfirm(getShiftForTask(taskDef.key))">
             
             <!-- Not completed: Primary Confirm Button -->
-            <button
+            <button type="button"
               v-if="!getShiftForTask(taskDef.key)?.isCompleted"
               @click="handleConfirmShift(getShiftForTask(taskDef.key)!)"
               class="flex-1 min-w-[160px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all hover:scale-105"
@@ -416,7 +416,7 @@
             </button>
 
             <!-- Completed: Revert Button -->
-            <button
+            <button type="button"
               v-else
               @click="handleConfirmShift(getShiftForTask(taskDef.key)!)"
               class="flex-1 min-w-[160px] flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"
@@ -433,7 +433,7 @@
           <template v-else>
             <div class="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <!-- Disabled Locked Button -->
-              <button
+              <button type="button"
                 disabled
                 class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800/40 text-slate-400 text-xs font-medium border border-slate-800 cursor-not-allowed"
                 :title="t('cleaning.lockedTitle', 'Tuto směnu smí potvrdit pouze {name} nebo správce bytu.', { name: getShiftForTask(taskDef.key)?.roommateName })"
@@ -445,7 +445,7 @@
               </button>
 
               <!-- Reminder Button if not completed -->
-              <button
+              <button type="button"
                 v-if="!getShiftForTask(taskDef.key)?.isCompleted"
                 @click="sendCleaningReminder(getShiftForTask(taskDef.key)!.id)"
                 class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-sky-300 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 shrink-0"
@@ -460,13 +460,13 @@
           </template>
 
           <!-- Shift Swap Request Button for uncompleted shifts without pending swap -->
-          <button
+          <button type="button"
             v-if="!getShiftForTask(taskDef.key)?.isCompleted && getShiftForTask(taskDef.key)?.swapRequest?.status !== 'PENDING'"
             @click="openSwapModal(getShiftForTask(taskDef.key)!)"
             class="px-3.5 py-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/40 text-purple-300 hover:text-purple-200 text-xs font-semibold border border-purple-500/30 transition-all flex items-center gap-1.5 shrink-0"
-            :title="t('cleaning.swapTitle', 'Zažádat o výměnu směny se spolubydlícím')"
+            :title="t('cleaning.swapTitle', 'Požádat spolubydlícího o převzetí směny')"
           >
-            <span>{{ t('cleaning.swapShort', 'Výměna směny ⇄') }}</span>
+            <span>{{ t('cleaning.swapShort', 'Převzetí směny') }}</span>
           </button>
 
         </div>
@@ -479,7 +479,7 @@
         <p class="text-sm font-semibold text-slate-200">{{ t('cleaning.emptyTitle', 'Pro vybraný týden nejsou k dispozici žádné úklidové směny.') }}</p>
         <p class="text-xs text-slate-400">{{ t('cleaning.emptyHint', 'Zkuste zvolit aktuální týden nebo posunout rozpis na další týden.') }}</p>
       </div>
-      <button
+      <button type="button"
         @click="selectCleaningWeek(currentWeekNumber)"
         class="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-400 border border-slate-700 font-medium transition-colors"
       >
@@ -556,20 +556,20 @@
                 <div 
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-colors"
                   :class="[
-                    getAssignedRoommateFor(task.key, w.number)?.id === currentUser.id
+                    assignedRoommate(task.key, w.number)?.id === currentUser.id
                       ? 'bg-amber-500/15 border-amber-500/40 text-amber-200 font-bold'
                       : 'bg-slate-800/60 border-slate-700/60 text-slate-300'
                   ]"
                 >
                   <div 
                     class="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                    :class="getAssignedRoommateFor(task.key, w.number)?.avatarColor || 'bg-slate-700'"
+                    :class="assignedRoommate(task.key, w.number)?.avatarColor || 'bg-slate-700'"
                   >
-                    {{ getAssignedRoommateFor(task.key, w.number)?.avatarInitial }}
+                    {{ assignedRoommate(task.key, w.number)?.avatarInitial }}
                   </div>
-                  <span>{{ getAssignedRoommateFor(task.key, w.number)?.name.split(' ')[0] }}</span>
+                  <span>{{ assignedRoommate(task.key, w.number)?.name.split(' ')[0] }}</span>
                   <span 
-                    v-if="getAssignedRoommateFor(task.key, w.number)?.id === currentUser.id"
+                    v-if="assignedRoommate(task.key, w.number)?.id === currentUser.id"
                     class="text-xs bg-amber-500 text-slate-950 px-1 rounded font-extrabold"
                   >
                     {{ t('cleaning.youBadge', 'Ty') }}
@@ -635,20 +635,19 @@
         aria-labelledby="swap-modal-title"
         aria-describedby="swap-modal-description"
         tabindex="-1"
-        @keydown.tab="trapSwapFocus"
+
       >
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div>
-            <div class="text-xs font-bold text-purple-400 mb-0.5">{{ t('cleaning.swapModalKicker', 'Výměna úklidu') }}</div>
+            <div class="text-xs font-bold text-purple-400 mb-0.5">{{ t('cleaning.swapModalKicker', 'Převzetí úklidu') }}</div>
             <h3 id="swap-modal-title" class="text-lg font-bold text-white tracking-tight">
-              {{ t('cleaning.swapModalTitle', 'Žádost o výměnu směny ⇄') }}
+              {{ t('cleaning.swapModalTitle', 'Žádost o převzetí směny ⇄') }}
             </h3>
           </div>
-          <button 
-            ref="swapCloseButton"
+          <button type="button"
             @click="closeSwapModal"
             class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
-            :aria-label="t('cleaning.closeSwapDialog', 'Zavřít dialog výměny směny')"
+            :aria-label="t('cleaning.closeSwapDialog', 'Zavřít dialog převzetí směny')"
           >
             ✕
           </button>
@@ -667,10 +666,10 @@
 
         <div class="space-y-4 text-xs">
           <div>
-            <label class="block text-slate-300 font-medium mb-1.5">
+            <label for="cleaningview-field-1" class="block text-slate-300 font-medium mb-1.5">
               {{ t('cleaning.pickTarget', 'Vyber spolubydlícího pro výměnu *') }}
             </label>
-            <select
+            <select id="cleaningview-field-1"
               v-model="selectedTargetRoommateId"
               class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-purple-500/40 focus:outline-none"
             >
@@ -685,10 +684,10 @@
           </div>
 
           <div>
-            <label class="block text-slate-300 font-medium mb-1.5">
-              {{ t('cleaning.reasonLabel', 'Důvod výměny / zpráva pro spolubydlícího (volitelné)') }}
+            <label for="cleaningview-field-2" class="block text-slate-300 font-medium mb-1.5">
+              {{ t('cleaning.reasonLabel', 'Důvod převzetí / zpráva pro spolubydlícího (volitelné)') }}
             </label>
-            <input
+            <input id="cleaningview-field-2"
               v-model="swapNote"
               type="text"
               :placeholder="t('cleaning.reasonPlaceholder', 'Např. Mám zkoušku / jedu domů na víkend...')"
@@ -698,18 +697,18 @@
         </div>
 
         <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
-          <button
+          <button type="button"
             @click="closeSwapModal"
             class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"
           >
             {{ t('cleaning.cancel', 'Zrušit') }}
           </button>
-          <button
+          <button type="button"
             @click="submitSwap"
             :disabled="!selectedTargetRoommateId"
             class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-purple-950/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>{{ t('cleaning.sendSwapRequest', 'Odeslat žádost o výměnu') }}</span>
+            <span>{{ t('cleaning.sendSwapRequest', 'Odeslat žádost o převzetí') }}</span>
           </button>
         </div>
       </div>
@@ -719,12 +718,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed } from 'vue'
+import { useDialog } from '../composables/useDialog'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CleaningShift, CleaningTaskKey } from '../types'
 import { t } from '../i18n'
 
 const {
+  activeModal,
+  selectedShift,
+  openModal,
+  closeModal,
   roommates,
   currentUser,
   isMasterTenant,
@@ -743,12 +747,11 @@ const {
   cancelShiftSwap
 } = useSpolubyt()
 
-const isSwapModalOpen = ref(false)
-const shiftToSwap = ref<CleaningShift | null>(null)
+const isSwapModalOpen = computed(() => activeModal.value === 'SHIFT_SWAP')
+const shiftToSwap = selectedShift
 const selectedTargetRoommateId = ref<string>('')
 const swapNote = ref<string>('')
 const swapModalPanel = ref<HTMLElement | null>(null)
-const swapCloseButton = ref<HTMLButtonElement | null>(null)
 
 const swapCandidates = computed(() => {
   if (!shiftToSwap.value) return []
@@ -756,57 +759,19 @@ const swapCandidates = computed(() => {
 })
 
 const openSwapModal = (shift: CleaningShift) => {
-  shiftToSwap.value = shift
+  openModal('SHIFT_SWAP', shift)
   const candidates = roommates.value.filter(r => r.id !== shift.roommateId)
   selectedTargetRoommateId.value = candidates.length > 0 ? candidates[0].id : ''
   swapNote.value = ''
-  isSwapModalOpen.value = true
+
 }
 
-const closeSwapModal = () => {
-  isSwapModalOpen.value = false
-  shiftToSwap.value = null
+const closeSwapModal = (): void => {
+  closeModal()
   swapNote.value = ''
 }
 
-const trapSwapFocus = (event: KeyboardEvent) => {
-  if (!isSwapModalOpen.value || !swapModalPanel.value) return
-  const focusable = Array.from(swapModalPanel.value.querySelectorAll<HTMLElement>(
-    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-  )).filter(el => el.offsetParent !== null)
-  if (focusable.length === 0) return
-
-  const first = focusable[0]
-  const last = focusable[focusable.length - 1]
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault()
-    last.focus()
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault()
-    first.focus()
-  }
-}
-
-const handleGlobalKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && isSwapModalOpen.value) {
-    closeSwapModal()
-  }
-}
-
-watch(isSwapModalOpen, async (isOpen) => {
-  if (isOpen) {
-    await nextTick()
-    swapCloseButton.value?.focus()
-  }
-})
-
-onMounted(() => {
-  document.addEventListener('keydown', handleGlobalKeydown)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleGlobalKeydown)
-})
+useDialog(swapModalPanel, closeSwapModal, isSwapModalOpen)
 
 const submitSwap = () => {
   if (!shiftToSwap.value || !selectedTargetRoommateId.value) return
@@ -890,25 +855,14 @@ const getIconBg = (key: CleaningTaskKey) => {
 }
 
 // 4-Week Rotation Matrix Data
-const rotationWeeks = computed(() => [
-  { number: 45, label: 'Týden 45', dates: '2. 11. – 8. 11.' },
-  { number: 46, label: 'Týden 46', dates: '9. 11. – 15. 11.' },
-  { number: 47, label: 'Týden 47', dates: '16. 11. – 22. 11.' },
-  { number: 48, label: 'Týden 48', dates: '23. 11. – 29. 11.' }
-])
+const rotationWeeks = computed(() => [45, 46, 47, 48].map(number => ({
+  number,
+  label: `Týden ${number}`,
+  dates: cleaningShifts.value.find(s => s.weekNumber === number)?.weekLabel.replace(/^.*?\(/, '').replace(/\)$/, '') || '',
+})))
 
-const taskOrderMap: Record<CleaningTaskKey, number> = {
-  KITCHEN: 0,
-  BATHROOM: 1,
-  CORRIDOR: 2,
-  TRASH: 3
-}
-
-const getAssignedRoommateFor = (taskKey: CleaningTaskKey, weekNum: number) => {
-  const taskIdx = taskOrderMap[taskKey]
-  const diff = weekNum - 45
-  const rmIdx = ((taskIdx + (diff % 4)) % 4 + 4) % 4
-  return roommates.value[rmIdx] || roommates.value[0]
+const assignedRoommate = (taskKey: CleaningTaskKey, weekNum: number) => {
+  const shift = cleaningShifts.value.find(s => s.weekNumber === weekNum && s.taskKey === taskKey)
+  return roommates.value.find(r => r.id === shift?.roommateId)
 }
 </script>
-

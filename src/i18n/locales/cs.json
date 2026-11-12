@@ -185,20 +185,20 @@
       "message": "Spolubydlícímu {name} byla odeslána notifikace k povinnosti \"{task}\"."
     },
     "swapRequested": {
-      "title": "Žádost o výměnu odeslána",
+      "title": "Žádost o převzetí odeslána",
       "message": "Žádost o převzetí směny „{task}“ byla doručena spolubydlícímu: {name}."
     },
     "swapAccepted": {
-      "title": "Výměna směny byla potvrzena 🎉",
+      "title": "Převzetí směny byla potvrzena 🎉",
       "message": "Směna „{task}“ byla úspěšně převedena na: {name}."
     },
     "swapRejected": {
-      "title": "Žádost o výměnu byla odmítnuta",
+      "title": "Žádost o převzetí byla odmítnuta",
       "message": "Směna „{task}“ zůstává přiřazena původnímu spolubydlícímu ({name})."
     },
     "swapCancelled": {
-      "title": "Žádost o výměnu byla zrušena",
-      "message": "Žádost o výměnu směny „{task}“ byla úspěšně odvolána."
+      "title": "Žádost o převzetí byla zrušena",
+      "message": "Žádost o převzetí směny „{task}“ byla úspěšně odvolána."
     },
     "error": {
       "title": "Chyba",
@@ -206,14 +206,14 @@
     },
     "warning": {
       "title": "Upozornění",
-      "selfSwap": "Nelze vyměnit směnu sám se sebou."
+      "selfSwap": "Nelze požádat sám sebe o převzetí směny."
     },
     "accessDenied": {
       "title": "Přístup odepřen",
       "confirmShift": "Tuto směnu může potvrdit pouze {name} nebo správce bytu.",
-      "requestSwap": "O výměnu směny může požádat pouze přiřazený spolubydlící nebo správce bytu.",
-      "acceptSwap": "Výměnu může schválit pouze oslovený spolubydlící nebo správce bytu.",
-      "rejectSwap": "Výměnu může odmítnout pouze oslovený spolubydlící nebo správce bytu.",
+      "requestSwap": "O převzetí směny může požádat pouze přiřazený spolubydlící nebo správce bytu.",
+      "acceptSwap": "Převzetí může schválit pouze oslovený spolubydlící nebo správce bytu.",
+      "rejectSwap": "Převzetí může odmítnout pouze oslovený spolubydlící nebo správce bytu.",
       "cancelSwap": "Žádost může zrušit pouze ten, kdo o ni požádal, nebo správce bytu.",
       "saveSettings": "Kmenové údaje bytu a bankovní spojení může upravit pouze správce bytu.",
       "updateArea": "Podlahovou výměru pokojů může upravit pouze správce bytu."
@@ -312,9 +312,9 @@
     "permMemberRules": "Podle domovního řádu máte oprávnění",
     "permMemberOnly": "potvrdit pouze svoji vlastní směnu",
     "permMemberLocked": "U směn ostatních spolubydlících je potvrzení uzamčeno (můžete jim pouze poslat připomínku).",
-    "incomingSwapTitle": "Žádost o výměnu směny k vyřízení",
+    "incomingSwapTitle": "Žádost o převzetí směny k vyřízení",
     "swapAsksYou": "tě žádá o převzetí směny:",
-    "acceptSwap": "Přijmout výměnu",
+    "acceptSwap": "Převzít směnu",
     "reject": "Odmítnout",
     "prevWeek": "Předchozí týden",
     "currentWeek": "Aktuální týden",
@@ -333,8 +333,8 @@
     "myShift": "Moje směna",
     "dueLabel": "Termín:",
     "dueValue": "Do neděle",
-    "pendingSwapWith": "Čekající žádost: výměna s {name}",
-    "cancelSwapTitle": "Odvolat žádost o výměnu směny",
+    "pendingSwapWith": "Čekající žádost: převzetí uživatelem {name}",
+    "cancelSwapTitle": "Odvolat žádost o převzetí směny",
     "cancelRequest": "Zrušit žádost",
     "noteLabel": "Poznámka:",
     "requesterLabel": "Žadatel:",
@@ -348,8 +348,8 @@
     "lockedLabel": "Uzamčeno (pouze pro {name})",
     "remindTitle": "Poslat spolubydlícímu přátelské upozornění na blížící se termín",
     "remind": "Připomenout",
-    "swapTitle": "Zažádat o výměnu směny se spolubydlícím",
-    "swapShort": "Výměna směny ⇄",
+    "swapTitle": "Požádat spolubydlícího o převzetí směny",
+    "swapShort": "Převzetí směny",
     "emptyTitle": "Pro vybraný týden nejsou k dispozici žádné úklidové směny.",
     "emptyHint": "Zkuste zvolit aktuální týden nebo posunout rozpis na další týden.",
     "showCurrentWeek": "Zobrazit aktuální týden",
@@ -372,16 +372,16 @@
     "ruleSuppliesTitle": "Společné čistící pomůcky",
     "ruleSuppliesText": "Pytle na odpadky, saponáty a tablety do myčky jsou hrazeny společně. V případě potřeby je přidejte do",
     "ruleSuppliesStrong": "Společného nákupního košíku",
-    "swapModalKicker": "Výměna úklidu",
-    "swapModalTitle": "Žádost o výměnu směny ⇄",
-    "closeSwapDialog": "Zavřít dialog výměny směny",
+    "swapModalKicker": "Převzetí úklidu",
+    "swapModalTitle": "Žádost o převzetí směny ⇄",
+    "closeSwapDialog": "Zavřít dialog převzetí směny",
     "transferringShift": "Převáděná směna:",
     "currentAssignee": "Současný řešitel:",
     "pickTarget": "Vyber spolubydlícího pro výměnu *",
-    "reasonLabel": "Důvod výměny / zpráva pro spolubydlícího (volitelné)",
+    "reasonLabel": "Důvod převzetí / zpráva pro spolubydlícího (volitelné)",
     "reasonPlaceholder": "Např. Mám zkoušku / jedu domů na víkend...",
     "cancel": "Zrušit",
-    "sendSwapRequest": "Odeslat žádost o výměnu",
+    "sendSwapRequest": "Odeslat žádost o převzetí",
     "taskShort": {
       "kitchen": "Kuchyň a myčka",
       "bathroom": "Koupelna a WC",
@@ -858,14 +858,14 @@
     "downloadPdf": "Stáhnout PDF",
     "itemsHint": "Položkový seznam z dokladu:",
     "qty": "Počet kusů: {qty} ks",
-    "auditTitle": "Kryptografická a systémová stopa záznamu",
+    "auditTitle": "Historie záznamu",
     "recordId": "ID záznamu:",
     "authorization": "Autorizace:",
     "writeTime": "Čas zápisu:",
     "integrity": "Status integrity:",
-    "verified": "Ověřeno (SHA-256 match)",
+    "verified": "Lokální demo záznam",
     "lastSync": "Poslední synchronizace:",
-    "minutesAgo": "Před 2 minutami",
+    "minutesAgo": "Bez synchronizace – offline prototyp",
     "delete": "Smazat výdaj",
     "closeWindow": "Zavřít okno",
     "lightboxTitle": "DETAIL DOKLADU (LIGHTBOX)",

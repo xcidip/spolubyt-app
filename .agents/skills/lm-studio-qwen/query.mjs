@@ -2,13 +2,15 @@
 // Query a local LM Studio server (OpenAI-compatible API).
 //
 // Usage:
-//   node query.mjs "your prompt"
+//   node query.mjs --file /tmp/prompt.txt
 //   node query.mjs --list
-//   node query.mjs "prompt" --model qwen/qwen3.5-9b --temperature 0.7 --url http://localhost:1234/v1
+//   node query.mjs --file /tmp/prompt.txt --model qwen/qwen3.5-9b
 //
 // Env:
 //   LMSTUDIO_URL     default http://localhost:1234/v1
 //   LMSTUDIO_MODEL   default qwen/qwen3.5-9b
+
+import { readFile } from 'node:fs/promises'
 
 const DEFAULTS = {
   url: process.env.LMSTUDIO_URL || 'http://localhost:1234/v1',
@@ -17,23 +19,25 @@ const DEFAULTS = {
 }
 
 function parseArgs(argv) {
-  const opts = { ...DEFAULTS, list: false, help: false }
-  const words = []
+  const opts = { ...DEFAULTS, list: false, help: false, allowRemote: false, file: null }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
-    if (a === '--list') opts.list = true
+    if (a === '--file') opts.file = argv[++i]
+    else if (a === '--allow-remote') opts.allowRemote = true
+    else if (a === '--list') opts.list = true
     else if (a === '--model') opts.model = argv[++i]
     else if (a === '--temperature') opts.temperature = Number(argv[++i])
     else if (a === '--url') opts.url = argv[++i]
     else if (a === '--help' || a === '-h') opts.help = true
-    else words.push(a)
+    else throw new Error(`Unknown argument: ${a}. Use --file or stdin for prompts.`)
   }
-  opts.prompt = words.join(' ').trim()
+  if (opts.file === undefined) throw new Error('--file requires a path')
+  if (!Number.isFinite(opts.temperature)) throw new Error('Invalid temperature')
   return opts
 }
 
 function usage() {
-  console.error('Usage: node query.mjs "prompt" [--model id] [--temperature n] [--url base]')
+  console.error('Usage: node query.mjs [--file path] [--model id] [--temperature n] [--url base] [--allow-remote] (prompt from stdin otherwise)')
   console.error('       node query.mjs --list')
 }
 
@@ -44,10 +48,14 @@ async function main() {
     return
   }
 
-  const base = opts.url.replace(/\/+$/, '')
+  const endpoint = new URL(opts.url)
+  if (!['http:', 'https:'].includes(endpoint.protocol) || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) throw new Error('Unsupported API URL')
+  if (!opts.allowRemote && !['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname)) throw new Error('Remote API requires explicit --allow-remote')
+  const base = endpoint.href.replace(/\/+$/, '')
+  const request = (url, init = {}) => fetch(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(30_000) })
 
   if (opts.list) {
-    const res = await fetch(`${base}/models`)
+    const res = await request(`${base}/models`)
     if (!res.ok) throw new Error(`GET /models failed: ${res.status} ${await res.text()}`)
     const data = await res.json()
     const ids = (data.data ?? []).map((m) => m.id)
@@ -56,13 +64,20 @@ async function main() {
     return
   }
 
-  if (!opts.prompt) {
+  if (opts.file) opts.prompt = await readFile(opts.file, 'utf8')
+  else {
+    if (process.stdin.isTTY) throw new Error('Provide a prompt through --file or stdin')
+    const chunks = []
+    for await (const chunk of process.stdin) chunks.push(chunk)
+    opts.prompt = Buffer.concat(chunks).toString('utf8')
+  }
+  if (!opts.prompt.trim()) {
     usage()
     process.exitCode = 2
     return
   }
 
-  const res = await fetch(`${base}/chat/completions`, {
+  const res = await request(`${base}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -23,7 +23,7 @@
       </div>
 
       <div class="flex items-center gap-2.5">
-        <button
+        <button type="button"
           @click="showExportToast"
           class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
         >
@@ -185,11 +185,7 @@
 
                   <span 
                     class="px-2 py-0.5 rounded text-xs font-bold"
-                    :class="[
-                      s.status === 'VYROVNÁNO' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                      s.status === 'PO_SPLATNOSTI' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse' :
-                      'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    ]"
+                    :class="SETTLEMENT_BADGE_CLASSES[s.status]"
                   >
                     {{ s.status === 'PO_SPLATNOSTI' ? t('settlement.overdueDays', 'Po splatnosti ({days} dní)', { days: s.daysOverdue }) : (s.status === 'VYROVNÁNO' ? t('settlement.settledOk', 'Vyrovnáno – v pořádku') : t('settlementStatus.' + s.status, SETTLEMENT_STATUS_LABELS[s.status])) }}
                   </span>
@@ -201,11 +197,11 @@
 
                 <!-- Cost Breakdown text -->
                 <div v-if="s.totalDebt > 0" class="text-xs text-slate-300 mt-2 flex flex-wrap items-center gap-2 font-mono">
-                  <span class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownRent', 'Nájem:') }} {{ s.breakdown.rent }} Kč</span>
-                  <span class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownEnergy', 'Energie:') }} {{ s.breakdown.energy }} Kč</span>
-                  <span v-if="s.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">WiFi: {{ s.breakdown.wifi }} Kč</span>
-                  <span v-if="s.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownDrugstore', 'Drogerie:') }} {{ s.breakdown.drogerie }} Kč</span>
-                  <span v-if="s.breakdown.other" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownOther', 'Ostatní:') }} {{ s.breakdown.other }} Kč</span>
+                  <span class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownRent', 'Nájem:') }} {{ formatCzk(s.breakdown.rent) }}</span>
+                  <span class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownEnergy', 'Energie:') }} {{ formatCzk(s.breakdown.energy) }}</span>
+                  <span v-if="s.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">WiFi: {{ formatCzk(s.breakdown.wifi) }}</span>
+                  <span v-if="s.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownDrugstore', 'Drogerie:') }} {{ formatCzk(s.breakdown.drogerie) }}</span>
+                  <span v-if="s.breakdown.other" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownOther', 'Ostatní:') }} {{ formatCzk(s.breakdown.other) }}</span>
                 </div>
                 <div v-else class="text-xs text-emerald-400/90 mt-1">
                   {{ s.roommateId === managerRoommate.id ? t('settlement.managerNote', 'Správce bytu – vede účet pro nájem a zálohy.') : t('settlement.allDebtsCleared', 'Všechny pohledávky za měsíc Listopad 2026 byly kompletně vypořádány převodem na účet.') }}
@@ -238,7 +234,7 @@
               <div class="flex flex-wrap items-center gap-2">
                 
                 <!-- Odeslat upomínku button: ONLY for Master Tenant, never to oneself -->
-                <button
+                <button type="button"
                   v-if="isMasterTenant && s.roommateId !== currentUser.id && s.status === 'PO_SPLATNOSTI'"
                   @click="sendReminder(s.roommateId)"
                   class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold shadow-md shadow-rose-950/40 transition-all flex items-center gap-1.5"
@@ -250,7 +246,7 @@
                 </button>
 
                 <!-- SPAYD QR Platba (Prominent for current user if owing, or standard) -->
-                <button
+                <button type="button"
                   v-if="s.totalDebt > 0"
                   @click="openModal('QR_MODAL', s)"
                   class="px-3.5 py-2 rounded-xl text-xs font-semibold border transition-colors flex items-center gap-1.5"
@@ -263,7 +259,7 @@
                 </button>
 
                 <!-- Označit jako zaplaceno: ONLY for Master Tenant -->
-                <button
+                <button type="button"
                   v-if="isMasterTenant && s.totalDebt > 0"
                   @click="openModal('CONFIRM_MODAL', s)"
                   class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/40"
@@ -321,16 +317,16 @@
                 <span v-if="s.roommateId === currentUser.id" class="text-emerald-400 ml-1.5 text-xs">{{ t('settlement.youTag', '[Vy]') }}</span>
                 <span v-else-if="s.roommateId === managerRoommate.id" class="text-slate-400 ml-1.5 text-xs">{{ t('settlement.managerTag', '[Správce]') }}</span>
               </td>
-              <td class="py-2.5 px-3 font-mono text-slate-300">{{ s.breakdown.rent }} CZK</td>
-              <td class="py-2.5 px-3 font-mono text-slate-300">{{ s.breakdown.energy }} CZK</td>
-              <td class="py-2.5 px-3 font-mono text-slate-300">{{ (s.breakdown.drogerie || 0) + (s.breakdown.wifi || 0) + (s.breakdown.other || 0) }} CZK</td>
+              <td class="py-2.5 px-3 font-mono text-slate-300">{{ s.breakdown.rent.toLocaleString('cs-CZ') }} CZK</td>
+              <td class="py-2.5 px-3 font-mono text-slate-300">{{ s.breakdown.energy.toLocaleString('cs-CZ') }} CZK</td>
+              <td class="py-2.5 px-3 font-mono text-slate-300">{{ ((s.breakdown.drogerie || 0) + (s.breakdown.wifi || 0) + (s.breakdown.other || 0)).toLocaleString('cs-CZ') }} CZK</td>
               <td class="py-2.5 px-3 font-mono font-bold text-right" :class="s.totalDebt > 0 ? (s.status === 'PO_SPLATNOSTI' ? 'text-rose-400' : 'text-amber-400') : 'text-emerald-400'">
                 {{ s.totalDebt.toLocaleString('cs-CZ') }} CZK
               </td>
               <td class="py-2.5 px-3 text-center">
                 <span 
                   class="px-2 py-0.5 rounded text-xs font-bold"
-                  :class="s.status === 'VYROVNÁNO' ? 'bg-emerald-500/20 text-emerald-300' : (s.status === 'PO_SPLATNOSTI' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300')"
+                  :class="SETTLEMENT_BADGE_CLASSES[s.status]"
                 >
                   {{ t('settlementStatus.' + s.status, SETTLEMENT_STATUS_LABELS[s.status]) }}
                 </span>
@@ -345,6 +341,9 @@
 </template>
 
 <script setup lang="ts">
+import { SETTLEMENT_BADGE_CLASSES } from '../utils/labels'
+import { formatDateCz, formatCzk } from '../utils/format'
+import { DEMO_TODAY } from '../data/mockData'
 import { computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { DebtSettlement } from '../types'
@@ -354,6 +353,7 @@ import { t } from '../i18n'
 const { 
   currentUser,
   managerRoommate,
+  managerSettlement,
   isMasterTenant,
   currentUserSettlement,
   currentUserDebt,
@@ -384,18 +384,7 @@ const settlementDebtorsSummary = computed(() => {
 const allDisplaySettlements = computed<DebtSettlement[]>(() => {
   const list = [...settlements.value]
   // Add manager record
-  const managerRecord: DebtSettlement = {
-    roommateId: managerRoommate.value.id,
-    roommateName: managerRoommate.value.name,
-    roomName: managerRoommate.value.roomName,
-    roomAreaM2: managerRoommate.value.roomAreaM2,
-    areaSharePct: managerRoommate.value.areaSharePct,
-    totalDebt: 0,
-    breakdown: { rent: 0, energy: 0, wifi: 0, drogerie: 0 },
-    dueDate: '2026-11-10',
-    daysOverdue: 0,
-    status: 'VYROVNÁNO'
-  }
+  const managerRecord = managerSettlement.value
 
   // Put current user first, then manager, then others
   const results = [managerRecord, ...list]
@@ -417,14 +406,7 @@ const showExportToast = () => {
   showToast(t('settlement.exportTitle', 'Generování PDF'), t('settlement.exportMessage', 'Měsíční protokol vyrovnání byl vygenerován a připraven k tisku.'), 'success')
 }
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  const parts = dateStr.split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}. ${parts[1]}.`
-  }
-  return dateStr
-}
+const formatDate = (dateStr: string): string => formatDateCz(dateStr, 'none')
 
 const currentUserDueDateLabel = computed(() => {
   return currentUserSettlement.value?.dueDate
@@ -444,7 +426,7 @@ const currentUserOverdueText = computed(() => {
 })
 
 const rentDueDate = computed(() => {
-  const now = new Date()
+  const now = new Date(DEMO_TODAY + 'T12:00:00')
   return new Date(now.getFullYear(), now.getMonth(), settings.value.dueDayOfMonth)
 })
 

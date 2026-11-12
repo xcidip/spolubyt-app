@@ -193,3 +193,42 @@ export interface EnergyPrediction {
   riskLevel: 'Nízké riziko' | 'Mírné překročení' | 'Vysoké riziko'
 }
 
+
+export type ModalId = 'EXP_ADD' | 'EXP_DETAIL' | 'QR_MODAL' | 'CONFIRM_MODAL' | 'METER_ADD' | 'SHIFT_SWAP'
+
+export interface ModalPayloads {
+  EXP_ADD: ExpensePrefillData | undefined
+  EXP_DETAIL: Expense
+  QR_MODAL: DebtSettlement
+  CONFIRM_MODAL: DebtSettlement
+  METER_ADD: undefined
+  SHIFT_SWAP: CleaningShift
+}
+
+export interface ConfirmModalState {
+  isOpen: boolean
+  title: string
+  message: string
+  confirmLabel: string
+  cancelLabel: string
+  isDestructive: boolean
+  onConfirm: () => void
+}
+
+export interface ExpenseFilters {
+  search: string
+  period: string
+  category: string
+  payer: string
+  status: string
+  sortBy: 'date' | 'amount' | 'title'
+  sortOrder: 'asc' | 'desc'
+}
+
+export interface MediumConfig {
+  unit: string
+  allowance: number
+  maxScale: number
+  data: { month: string; value: number }[]
+}
+

@@ -4,7 +4,7 @@
       
       <!-- Left: Logo & Apartment switcher -->
       <div class="flex items-center gap-4">
-        <button 
+        <button type="button"
           @click="navigateTo('DASH')"
           class="flex items-center gap-3 text-left group focus:outline-none"
           :title="t('header.backToDashboard', 'Zpět na Nástěnku')"
@@ -78,7 +78,7 @@
 
         <!-- User Persona Switcher -->
         <div class="relative" ref="dropdownRef">
-          <button
+          <button type="button"
             @click="isUserMenuOpen = !isUserMenuOpen"
             class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 transition-colors focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
             aria-haspopup="listbox"
@@ -116,7 +116,7 @@
               {{ t('header.testAs', 'Testovat jako persona:') }}
             </div>
             <div class="space-y-1">
-              <button
+              <button type="button"
                 v-for="r in roommates"
                 :key="r.id"
                 @click="selectPersona(r.id)"
@@ -144,7 +144,7 @@
         </div>
 
         <!-- Reset demo data button -->
-        <button
+        <button type="button"
           @click="resetDemoData"
           class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl transition-colors border border-transparent hover:border-slate-700"
           :title="t('header.reset', 'Obnovit výchozí testovací data')"
@@ -156,7 +156,7 @@
         </button>
 
         <!-- Primary CTA: Nový výdaj -->
-        <button
+        <button type="button"
           @click="openModal('EXP_ADD')"
           class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-md shadow-emerald-900/30 transition-all transform hover:-translate-y-0.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
         >
@@ -185,9 +185,7 @@ const {
   setCurrentUser, 
   openModal, 
   navigateTo, 
-  resetDemoData,
-  isSidebarCollapsed,
-  toggleSidebar
+  resetDemoData
 } = useSpolubyt()
 
 const isUserMenuOpen = ref(false)

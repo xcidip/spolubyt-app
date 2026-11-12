@@ -1,6 +1,9 @@
 <template>
   <div class="h-screen h-dvh bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300 overflow-hidden">
     
+    <div v-if="storageWriteFailed || storageRecovered || storageConflict" role="alert" class="p-3 bg-amber-950 text-amber-200 text-sm">
+      {{ storageConflict ? 'Data změnila jiná záložka. Před dalšími úpravami obnovte tuto stránku.' : storageWriteFailed ? 'Změny se nepodařilo uložit. Zůstanou pouze do zavření stránky.' : 'Uložená data byla poškozená. Byl obnoven výchozí stav prototypu.' }}
+    </div>
     <!-- Top System Bar -->
     <Header class="shrink-0" />
 
@@ -11,7 +14,7 @@
       <Sidebar class="hidden md:flex shrink-0 h-full" />
 
       <!-- Central Content Area -->
-      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0">
+      <main ref="mainRef" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0">
         
         <!-- Mobile Bottom Nav -->
         <nav class="md:hidden flex items-center gap-1 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" :aria-label="t('nav.main', 'Hlavní navigace')">
@@ -23,7 +26,7 @@
             :class="currentPage === item.id ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
             :aria-current="currentPage === item.id ? 'page' : undefined"
           >
-            <component :is="item.icon" class="w-4 h-4 mb-0.5" />
+            <NavIcon :page="item.id" class="w-4 h-4 mb-0.5" />
             <span class="text-xs leading-tight">{{ t(item.labelKey, item.label) }}</span>
           </button>
         </nav>
@@ -61,16 +64,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import {
-  LayoutDashboard,
-  Receipt,
-  Scale,
-  Zap,
-  ShoppingCart,
-  Sparkles,
-  Settings
-} from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
+import NavIcon from './components/NavIcon.vue'
+import { NAV_ITEMS } from './utils/labels'
 import { useSpolubyt } from './composables/useSpolubyt'
 import { t } from './i18n'
 
@@ -97,12 +93,18 @@ import CleaningView from './views/CleaningView.vue'
 import SettingsView from './views/SettingsView.vue'
 
 const { 
+  storageWriteFailed,
+  storageRecovered,
+  storageConflict,
   currentPage, 
   activeModal, 
   selectedExpense, 
   selectedSettlement, 
   navigateTo 
 } = useSpolubyt()
+
+const mainRef = ref<HTMLElement | null>(null)
+watch(currentPage, () => mainRef.value?.scrollTo({ top: 0 }), { flush: 'post' })
 
 const activeViewComponent = computed(() => {
   switch (currentPage.value) {
@@ -117,14 +119,5 @@ const activeViewComponent = computed(() => {
   }
 })
 
-const mobileNavItems = [
-  { id: 'DASH', labelKey: 'nav.dashboard', label: 'Nástěnka', icon: LayoutDashboard },
-  { id: 'EXPENSES', labelKey: 'nav.expenses', label: 'Výdaje', icon: Receipt },
-  { id: 'SETTLEMENT', labelKey: 'nav.settlement', label: 'Vyrovnání', icon: Scale },
-  { id: 'ENERGY', labelKey: 'nav.energy', label: 'Energie', icon: Zap },
-  { id: 'CART', labelKey: 'nav.cart', label: 'Košík', icon: ShoppingCart },
-  { id: 'CLEANING', labelKey: 'nav.cleaning', label: 'Úklid', icon: Sparkles },
-  { id: 'SETTINGS', labelKey: 'nav.settings', label: 'Nastavení', icon: Settings }
-] as const
+const mobileNavItems = NAV_ITEMS
 </script>
-

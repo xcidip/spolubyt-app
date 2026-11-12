@@ -10,15 +10,18 @@
     >
       <div 
         v-if="confirmModal.isOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="'confirm-title'"
         @keydown.esc="closeConfirmation"
+      @click.self="closeConfirmation"
       >
         <div 
           class="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 text-slate-100"
-          @click.stop
+          ref="dialogPanel"
+        tabindex="-1"
+        @click.stop
         >
           <!-- Warning Icon -->
           <div class="flex items-center gap-3.5 mb-4">
@@ -70,9 +73,13 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useDialog } from '../composables/useDialog'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { t } from '../i18n'
 
 const { confirmModal, closeConfirmation } = useSpolubyt()
+const dialogPanel = ref<HTMLElement | null>(null)
+useDialog(dialogPanel, closeConfirmation, computed(() => confirmModal.value.isOpen))
 </script>
 

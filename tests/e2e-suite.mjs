@@ -2,7 +2,7 @@
  * Comprehensive 4-Tier E2E Test Suite for Spolubyt App
  * Methodology: Category-Partition, Boundary Value Analysis, Pairwise Combinations, Real-World Workloads
  * 
- * Total Test Cases: 132
+ * Total Test Cases: computed by runner
  * - Tier 1: Feature Coverage (56 tests across 11 features)
  * - Tier 2: Boundary & Corner Cases (55 tests across 11 features)
  * - Tier 3: Cross-Feature Combinations (15 tests)
@@ -15,6 +15,9 @@ import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
 import { createServer } from 'vite'
 import QRCode from 'qrcode'
+import { parse } from 'vue/compiler-sfc'
+import { createSSRApp } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -106,6 +109,37 @@ function loadSource(relativePath) {
   return fs.readFileSync(fullPath, 'utf8')
 }
 
+function templateElements(source) {
+  const parsed = parse(source)
+  assertEqual(parsed.errors.length, 0, 'Vue template must parse')
+  assertDefined(parsed.descriptor.template)
+  const elements = []
+  function walk(node) {
+    if (node.type === 1) elements.push(node)
+    for (const child of node.children || []) walk(child)
+  }
+  walk(parsed.descriptor.template.ast)
+  return elements
+}
+
+function classList(node) {
+  return (node.props.find(prop => prop.type === 6 && prop.name === 'class')?.value?.content || '').split(/\s+/)
+}
+
+function dashboardCardBottom(titleKey) {
+  const cards = templateElements(loadSource('src/views/DashboardView.vue'))
+    .filter(node => node.tag === 'div' && classList(node).includes('p-5') && node.loc.source.includes(titleKey))
+  assertEqual(cards.length, 1, 'Expected one KPI card for ' + titleKey)
+  const bottom = cards[0].children.find(node => node.type === 1 && classList(node).includes('mt-2'))
+  assertDefined(bottom, 'KPI card must have a bottom action row')
+  return bottom
+}
+
+async function renderView(relativePath) {
+  const { default: component } = await viteServer.ssrLoadModule(relativePath)
+  return renderToString(createSSRApp(component))
+}
+
 // Helper to create valid Expense payload
 function createExpensePayload(overrides = {}) {
   const amount = overrides.totalAmount ?? 1200
@@ -167,11 +201,44 @@ export function getFreshStore() {
   store.currentPage.value = 'DASH'
   store.setCurrentUser('user-tomas')
   store.closeModal()
+  store.resetExpenseFilters()
+  store.toasts.value = []
+  store.storageWriteFailed.value = false
+  store.storageRecovered.value = false
+  store.storageConflict.value = false
   return store
 }
 
+function storagePrefix() {
+  const source = loadSource('src/composables/useSpolubyt.ts')
+  const match = source.match(/const STORAGE_KEY_PREFIX = '([^']+)'/)
+  assertDefined(match, 'Storage prefix must remain explicit and versioned')
+  return match[1]
+}
+
+function defaultSnapshot() {
+  return JSON.parse(JSON.stringify({
+    roommates: mockDataModule.INITIAL_ROOMMATES,
+    currentUserId: 'user-tomas',
+    settings: mockDataModule.INITIAL_SETTINGS,
+    settlements: mockDataModule.INITIAL_SETTLEMENTS,
+    expenses: mockDataModule.INITIAL_EXPENSES,
+    meters: mockDataModule.INITIAL_METERS,
+    cartItems: mockDataModule.INITIAL_CART_ITEMS,
+    cleaning_shifts: mockDataModule.INITIAL_CLEANING_SHIFTS,
+    sidebar_collapsed: false,
+  }))
+}
+
+async function reloadStore() {
+  viteServer.moduleGraph.invalidateAll()
+  storeModule = await viteServer.ssrLoadModule('./src/composables/useSpolubyt.ts')
+  mockDataModule = await viteServer.ssrLoadModule('./src/data/mockData.ts')
+  return storeModule.useSpolubyt()
+}
+
 // =========================================================================
-// REGISTER ALL 132 TEST CASES ACROSS 4 TIERS
+// REGISTER TEST CASES ACROSS 4 TIERS
 // =========================================================================
 
 // -------------------------------------------------------------------------
@@ -320,30 +387,28 @@ test('T3.M8', 'Money views retain fractional shares and QR uses two decimal plac
 
 // F1: Dashboard Cards (gap-2, flex-wrap)
 test('T1.F1.1', 'Card 2 bottom row has gap-2 or gap-x-2 layout class', 1, 'F1_Dashboard_Cards', () => {
-  const src = loadSource('src/views/DashboardView.vue')
-  assertMatch(src, /class="[^"]*Card 2[^"]*"|mt-2[^"]*flex[^"]*justify-between[^"]*gap-[x-]?[234]|mt-3[^"]*flex[^"]*justify-between[^"]*gap-[x-]?[234]/i, 'Card 2 must have gap spacing class in bottom row')
+  const classes = classList(dashboardCardBottom('dashboard.receivablesTitle'))
+  assert(classes.includes('gap-2') || classes.includes('gap-x-2'))
 })
 
 test('T1.F1.2', 'Card 2 bottom row has flex-wrap to prevent collision', 1, 'F1_Dashboard_Cards', () => {
-  const src = loadSource('src/views/DashboardView.vue')
-  assertContains(src, 'flex-wrap', 'Card 2 bottom row must include flex-wrap')
+  assert(classList(dashboardCardBottom('dashboard.receivablesTitle')).includes('flex-wrap'))
 })
 
-test('T1.F1.3', 'Card 2 button element includes shrink-0 to preserve click target', 1, 'F1_Dashboard_Cards', () => {
-  const src = loadSource('src/views/DashboardView.vue')
-  assertMatch(src, /Vyrovnání\s*→|Zaplatit QR\s*→/, 'Card 2 must have action button affordance')
-  assertContains(src, 'shrink-0', 'Card 2 action button must have shrink-0')
+test('T1.F1.3', 'Card 2 action buttons preserve their width', 1, 'F1_Dashboard_Cards', () => {
+  const row = dashboardCardBottom('dashboard.receivablesTitle')
+  const buttons = row.children.filter(node => node.type === 1 && node.tag === 'button')
+  assertEqual(buttons.length, 2, 'QR and settlement branches must each have an action')
+  assert(buttons.every(button => classList(button).includes('shrink-0')))
 })
 
 test('T1.F1.4', 'Card 3 bottom row has gap-2 or gap-x-2 layout class', 1, 'F1_Dashboard_Cards', () => {
-  const src = loadSource('src/views/DashboardView.vue')
-  assertMatch(src, /flex[^"]*justify-between[^"]*gap-[x-]?[234]/, 'Card 3 bottom row must contain gap spacing')
+  const classes = classList(dashboardCardBottom('dashboard.rentDueTitle'))
+  assert(classes.includes('gap-2') || classes.includes('gap-x-2'))
 })
 
 test('T1.F1.5', 'Card 3 bottom row has flex-wrap for responsive resilience', 1, 'F1_Dashboard_Cards', () => {
-  const src = loadSource('src/views/DashboardView.vue')
-  const count = (src.match(/flex-wrap/g) || []).length
-  assert(count >= 2, `Expected at least 2 occurrences of flex-wrap across cards, found ${count}`)
+  assert(classList(dashboardCardBottom('dashboard.rentDueTitle')).includes('flex-wrap'))
 })
 
 // F2: Dashboard Natural Case Headings
@@ -464,7 +529,7 @@ test('T1.F5.2', 'useSpolubyt retains expensePrefill state for transfer', 1, 'F5_
 
 test('T1.F5.3', 'ExpenseAddModal.vue initializes form title and totalAmount from expensePrefill', 1, 'F5_Expense_Modal_Prefill', () => {
   const modalSrc = loadSource('src/components/ExpenseAddModal.vue')
-  assertMatch(modalSrc, /expensePrefill\.value\?\.title|expensePrefill/i, 'ExpenseAddModal must read expensePrefill')
+  assertContains(modalSrc, 'expensePrefill.value?.title', 'Form must initialize its title from prefill')
 })
 
 test('T1.F5.4', 'Adding expense with cartItemId removes the transferred item from cartItems', 1, 'F5_Expense_Modal_Prefill', () => {
@@ -486,7 +551,7 @@ test('T1.F5.4', 'Adding expense with cartItemId removes the transferred item fro
     totalAmount: 89,
     category: 'Drogerie',
     payerId: store.currentUser.value.id
-  }))
+  }), { cartItemIds: [newItem.id] })
 
   assertEqual(store.cartItems.value.length, initialCount - 1, 'Item should be removed from cart after transfer')
   assert(!store.cartItems.value.some(i => i.id === newItem.id), 'Item ID should no longer exist in cart')
@@ -511,7 +576,7 @@ test('T1.F5.6', 'convertCartToExpense prefills EXP_ADD with correct keys and cle
   assertEqual(store.activeModal.value, 'EXP_ADD', 'Modal must be set to EXP_ADD')
   assertDefined(store.expensePrefill.value, 'expensePrefill must be populated')
   assertEqual(store.expensePrefill.value.totalAmount, expectedTotal, 'Prefill totalAmount must equal cart total')
-  assertEqual(store.expensePrefill.value.category, 'Drogerie', 'Prefill category must be Drogerie')
+  assertEqual(store.expensePrefill.value.category, 'Služby', 'Mixed categories use a shared purchase category')
   assertEqual(store.expensePrefill.value.items.length, initialCount, 'Prefill must carry every cart line item')
 
   const prefillTitle = store.expensePrefill.value.title
@@ -519,7 +584,7 @@ test('T1.F5.6', 'convertCartToExpense prefills EXP_ADD with correct keys and cle
     title: prefillTitle,
     totalAmount: expectedTotal,
     category: 'Drogerie'
-  }))
+  }), { cartItemIds: store.expensePrefill.value.cartItemIds })
   assertEqual(store.cartItems.value.length, 0, 'All transferred cart items must be removed after save')
 })
 
@@ -582,6 +647,7 @@ test('T1.F7.2', 'requestShiftSwap creates pending swap request with target flatm
   assertDefined(store.requestShiftSwap, 'requestShiftSwap must be exported')
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   shift.swapRequest = undefined
 
   store.requestShiftSwap(shift.id, 'user-jakub', 'Mám seminární práci')
@@ -593,13 +659,14 @@ test('T1.F7.2', 'requestShiftSwap creates pending swap request with target flatm
 
 test('T1.F7.3', 'Shift with active swap displays "čekající žádost" pending badge', 1, 'F7_Cleaning_Shift_Swap', () => {
   const src = loadSource('src/views/CleaningView.vue')
-  assertMatch(src, /čekající žádost|swapRequest/i, 'CleaningView must show pending swap indication')
+  assertMatch(src, /v-(?:if|else-if)="[^"]*swapRequest\?\.status === 'PENDING'"/, 'Pending badge must be conditional on request status')
 })
 
 test('T1.F7.4', 'acceptShiftSwap reassigns shift to recipient and marks ACCEPTED', 1, 'F7_Cleaning_Shift_Swap', () => {
   const store = getFreshStore()
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   store.requestShiftSwap(shift.id, 'user-jakub', 'Výměna')
   store.setCurrentUser('user-jakub')
   store.acceptShiftSwap(shift.id)
@@ -612,6 +679,7 @@ test('T1.F7.5', 'rejectShiftSwap marks swap REJECTED and preserves original room
   const store = getFreshStore()
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   const originalRoommateId = shift.roommateId
   store.requestShiftSwap(shift.id, 'user-jakub', 'Výměna')
   store.setCurrentUser('user-jakub')
@@ -656,24 +724,28 @@ test('T1.F8.5', 'drawdownPct accurately calculates projected advance utilization
 })
 
 // F9: QR Code Generation & Display
-test('T1.F9.1', 'SPAYD QR string adheres to SPD*1.0*ACC: standard syntax', 1, 'F9_QR_Code_Generation', () => {
-  const qrSrc = loadSource('src/components/QrPaymentModal.vue')
-  assertMatch(qrSrc, /SPD\*1\.0\*ACC:/, 'QrPaymentModal must generate SPAYD standard starting with SPD*1.0*ACC:')
+test('T1.F9.1', 'SPAYD helper builds exact payment fields used by QR component', 1, 'F9_QR_Code_Generation', async () => {
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  assertEqual(buildSpayd('CZ6508000000000123456789', 9850, 'Jakub Kovář'),
+    'SPD*1.0*ACC:CZ6508000000000123456789*AM:9850.00*CC:CZK*MSG:Spolubyt Najem 11/2026 Jakub Kovar*X-VS:20261101')
+  assertContains(loadSource('src/components/QrPaymentModal.vue'), 'buildSpayd(')
 })
 
-test('T1.F9.2', 'SPAYD string formats debt amount with 2 decimal places and CC:CZK', 1, 'F9_QR_Code_Generation', () => {
-  const qrSrc = loadSource('src/components/QrPaymentModal.vue')
-  assertMatch(qrSrc, /\*AM:.*\*CC:CZK/, 'SPAYD string must format amount and CZK currency')
+test('T1.F9.2', 'SPAYD helper formats haléře and CZK currency', 1, 'F9_QR_Code_Generation', async () => {
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  assertContains(buildSpayd('CZ6508000000000123456789', 4200.5678, 'Tomáš'), '*AM:4200.57*CC:CZK*')
 })
 
-test('T1.F9.3', 'SPAYD string strips whitespace from bank IBAN', 1, 'F9_QR_Code_Generation', () => {
-  const qrSrc = loadSource('src/components/QrPaymentModal.vue')
-  assertMatch(qrSrc, /iban\.replace\(/, 'IBAN must have whitespace stripped for SPAYD standard')
+test('T1.F9.3', 'SPAYD helper strips whitespace from IBAN', 1, 'F9_QR_Code_Generation', async () => {
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  assertContains(buildSpayd('CZ65 0800 0000 0001 2345 6789', 1, 'Tomáš'), '*ACC:CZ6508000000000123456789*')
 })
 
-test('T1.F9.4', 'SPAYD string generates valid ASCII normalized payment message', 1, 'F9_QR_Code_Generation', () => {
-  const qrSrc = loadSource('src/components/QrPaymentModal.vue')
-  assertMatch(qrSrc, /\*MSG:/, 'SPAYD string must include payment message')
+test('T1.F9.4', 'SPAYD helper sanitizes payment message field delimiters', 1, 'F9_QR_Code_Generation', async () => {
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const result = buildSpayd('CZ6508000000000123456789', 1, 'Eliška*AM:999*')
+  assertContains(result, '*MSG:Spolubyt Najem 11/2026 EliskaAM999*X-VS:20261101')
+  assertEqual(result.split('*AM:').length, 2)
 })
 
 test('T1.F9.5', 'QRCode library successfully renders SPAYD string into matrix', 1, 'F9_QR_Code_Generation', async () => {
@@ -790,20 +862,19 @@ test('T2.B1.3', 'Card 2 handles long flatmate names in subtitle without blowout'
   assertContains(src, 'min-w-0', 'Labels must have min-w-0 to allow truncation or proper flex shrink')
 })
 
-test('T2.B1.4', 'Card 3 handles large rent amounts (e.g. 100 000 CZK) gracefully', 2, 'B1_Dashboard_Cards_Boundaries', () => {
+test('T2.B1.4', 'Dashboard renders a large rent amount with Czech formatting', 2, 'B1_Dashboard_Cards_Boundaries', async () => {
   const store = getFreshStore()
   store.settings.value.monthlyRent = 125000
-  const formatted = store.settings.value.monthlyRent.toLocaleString('cs-CZ')
-  assertContains(formatted, '125', 'Should format without NaN or scientific notation')
+  const html = await renderView('./src/views/DashboardView.vue')
+  assertContains(html, (125000).toLocaleString('cs-CZ'))
 })
 
-test('T2.B1.5', 'Card 3 handles missing or partial bank account numbers safely', 2, 'B1_Dashboard_Cards_Boundaries', () => {
+test('T2.B1.5', 'Dashboard renders an empty bank account without undefined output', 2, 'B1_Dashboard_Cards_Boundaries', async () => {
   const store = getFreshStore()
-  const origAccount = store.settings.value.accountNumber
   store.settings.value.accountNumber = ''
-  const displayAccount = store.settings.value.accountNumber.split(' ')[0] || 'Nezadáno'
-  assertEqual(displayAccount, 'Nezadáno')
-  store.settings.value.accountNumber = origAccount
+  const html = await renderView('./src/views/DashboardView.vue')
+  assertContains(html, 'Účet:')
+  assertNotContains(html, 'undefined')
 })
 
 // B2: Natural Case Headings Boundaries
@@ -834,28 +905,30 @@ test('T2.B2.5', 'Section sub-headings retain sentence case with first letter cap
 })
 
 // B3: Welcome Banner Contextual Info Boundaries
-test('T2.B3.1', 'Welcome banner handles user with no assigned cleaning shift in current week', 2, 'B3_Welcome_Banner_Boundaries', () => {
-  const src = loadSource('src/views/DashboardView.vue')
-  assertMatch(src, /myCurrentCleaningShift\s*\?\s*myCurrentCleaningShift\.taskTitle\s*:\s*['"]Nemáte přiřazen úklid['"]|Nemáte přiřazen úklid|Volný týden/, 'Banner must handle absence of assigned shift')
+test('T2.B3.1', 'Dashboard renders the no-shift state when persona has no assignment', 2, 'B3_Welcome_Banner_Boundaries', async () => {
+  const store = getFreshStore()
+  store.cleaningShifts.value = store.cleaningShifts.value.filter(shift => shift.roommateId !== store.currentUser.value.id)
+  assertEqual(store.myCurrentCleaningShift.value, undefined)
+  const html = await renderView('./src/views/DashboardView.vue')
+  assertContains(html, 'Nemáte přiřazen úklid')
 })
 
 test('T2.B3.2', 'Welcome banner handles user whose shift is already completed with Splněno badge', 2, 'B3_Welcome_Banner_Boundaries', () => {
   const store = getFreshStore()
   store.setCurrentUser('user-tomas')
   const shift = store.myCurrentCleaningShift.value
-  if (shift) {
-    shift.isCompleted = true
-    assertEqual(store.myCurrentCleaningPending.value, false)
-  }
+  assertDefined(shift)
+  shift.isCompleted = true
+  assertEqual(store.myCurrentCleaningPending.value, false)
 })
 
 test('T2.B3.3', 'Welcome banner handles user with an active pending swap request', 2, 'B3_Welcome_Banner_Boundaries', () => {
   const store = getFreshStore()
   const shift = store.myCurrentCleaningShift.value
-  if (shift) {
-    store.requestShiftSwap(shift.id, 'user-jakub', 'Nemohu uklízet')
-    assertEqual(shift.swapRequest?.status, 'PENDING')
-  }
+  assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
+  store.requestShiftSwap(shift.id, 'user-jakub', 'Nemohu uklízet')
+  assertEqual(shift.swapRequest?.status, 'PENDING')
 })
 
 test('T2.B3.4', 'Welcome banner uses flex-col on mobile and flex-row on desktop for clean stacking', 2, 'B3_Welcome_Banner_Boundaries', () => {
@@ -930,11 +1003,12 @@ test('T2.B4.5', 'Unmarking a purchased item cleans up purchasedBy and purchasedA
 })
 
 // B5: Expense Modal Prefill & Transfer Boundaries
-test('T2.B5.1', 'Transferring cart item with 0 or missing amount defaults safely to positive fallback', 2, 'B5_Expense_Prefill_Boundaries', () => {
+test('T2.B5.1', 'Expense prefill retains an explicitly zero amount for form validation', 2, 'B5_Expense_Prefill_Boundaries', () => {
   const store = getFreshStore()
   store.openModal('EXP_ADD', { title: 'Bez ceny', totalAmount: 0 })
   assertDefined(store.expensePrefill.value)
   assertEqual(store.expensePrefill.value.title, 'Bez ceny')
+  assertEqual(store.expensePrefill.value.totalAmount, 0)
 })
 
 test('T2.B5.2', 'Item title with quotes and special characters escapes safely', 2, 'B5_Expense_Prefill_Boundaries', () => {
@@ -947,10 +1021,13 @@ test('T2.B5.2', 'Item title with quotes and special characters escapes safely', 
   assertEqual(store.expensePrefill.value.title, specialName)
 })
 
-test('T2.B5.3', 'Expense prefill with non-standard category defaults gracefully', 2, 'B5_Expense_Prefill_Boundaries', () => {
+test('T2.B5.3', 'Opening a prefill preserves its title without creating an expense', 2, 'B5_Expense_Prefill_Boundaries', () => {
   const store = getFreshStore()
-  store.openModal('EXP_ADD', { title: 'Unknown category item', category: 'Jiné' })
-  assertDefined(store.expensePrefill.value)
+  const count = store.expenses.value.length
+  store.openModal('EXP_ADD', { title: 'Předvyplněný výdaj', category: 'Údržba' })
+  assertEqual(store.expensePrefill.value.title, 'Předvyplněný výdaj')
+  assertEqual(store.expensePrefill.value.category, 'Údržba')
+  assertEqual(store.expenses.value.length, count)
 })
 
 test('T2.B5.4', 'Closing expense modal without adding expense retains item in cart', 2, 'B5_Expense_Prefill_Boundaries', () => {
@@ -969,12 +1046,14 @@ test('T2.B5.5', 'Deleting item from cart while prefill is open does not crash ad
   assertDefined(item)
   store.convertCartItemToExpense(item)
   store.cartItems.value = store.cartItems.value.filter(i => i.id !== item.id)
-  store.addExpense(createExpensePayload({
+  const saved = store.addExpense(createExpensePayload({
     title: 'Rychle smazat',
     totalAmount: 30,
     category: 'Drogerie',
     payerId: store.currentUser.value.id
-  }))
+  }), { cartItemIds: [item.id] })
+  assertEqual(saved, true)
+  store.closeModal()
   assertEqual(store.activeModal.value, null)
 })
 
@@ -1038,6 +1117,7 @@ test('T2.B7.1', 'Requesting shift swap with oneself is rejected', 2, 'B7_Shift_S
   const store = getFreshStore()
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   shift.swapRequest = undefined
   store.requestShiftSwap(shift.id, 'user-tomas', 'Výměna se sebou')
   assertEqual(shift.swapRequest, undefined, 'Self-swap must not create a swapRequest')
@@ -1047,6 +1127,7 @@ test('T2.B7.2', 'Requesting shift swap with non-existent flatmate ID is safely r
   const store = getFreshStore()
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   shift.swapRequest = undefined
   store.requestShiftSwap(shift.id, 'user-non-existent', 'Výměna')
   assertEqual(shift.swapRequest, undefined, 'Invalid roommate ID must not create swapRequest')
@@ -1056,6 +1137,7 @@ test('T2.B7.3', 'Non-recipient member cannot accept an incoming shift swap reque
   const store = getFreshStore()
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   store.requestShiftSwap(shift.id, 'user-jakub', 'Prosím vezmi to')
   store.setCurrentUser('user-eliska')
   store.acceptShiftSwap(shift.id)
@@ -1067,6 +1149,7 @@ test('T2.B7.4', 'Canceling a swap request restores shift swapRequest status to C
   const store = getFreshStore()
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   store.requestShiftSwap(shift.id, 'user-jakub', 'Zruším to')
   store.cancelShiftSwap(shift.id)
   assertEqual(shift.swapRequest.status, 'CANCELLED')
@@ -1076,6 +1159,7 @@ test('T2.B7.5', 'Non-requester cannot cancel another flatmates swap request', 2,
   const store = getFreshStore()
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   store.requestShiftSwap(shift.id, 'user-jakub', 'Zruším to')
   store.setCurrentUser('user-eliska')
   store.cancelShiftSwap(shift.id)
@@ -1122,36 +1206,38 @@ test('T2.B8.4', 'Prediction formattedDelta prefixes + sign for positive surplus'
   store.settings.value.monthlyUtilities = orig
 })
 
-test('T2.B8.5', 'Risk level accurately transitions through threshold boundaries', 2, 'B8_Energy_Boundaries', () => {
+test('T2.B8.5', 'Risk level transitions precisely at 100/101/108/109 percent', 2, 'B8_Energy_Boundaries', () => {
   const store = getFreshStore()
-  const orig = store.settings.value.monthlyUtilities
-  store.settings.value.monthlyUtilities = 8600
-  const pred = store.annualEnergyPrediction.value
-  assert(['Nízké riziko', 'Mírné překročení', 'Vysoké riziko'].includes(pred.riskLevel))
-  store.settings.value.monthlyUtilities = orig
+  assertEqual(store.annualEnergyPrediction.value.projectedAnnualCost, 101750)
+  for (const [pct, risk] of [[100, 'Nízké riziko'], [101, 'Mírné překročení'], [108, 'Mírné překročení'], [109, 'Vysoké riziko']]) {
+    store.settings.value.monthlyUtilities = 101750 / (12 * pct / 100)
+    assertEqual(store.annualEnergyPrediction.value.drawdownPct, pct)
+    assertEqual(store.annualEnergyPrediction.value.riskLevel, risk)
+  }
 })
 
 // B9: QR Code Generation Boundaries
-test('T2.B9.1', 'SPAYD sanitizes heavy Czech diacritics into clean ASCII', 2, 'B9_QR_Boundaries', () => {
-  const heavyCzechName = 'František Čermák-Dvořák'
-  const sanitized = heavyCzechName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9 ]/g, '')
-  assertEqual(sanitized, 'Frantisek CermakDvorak', 'Diacritics must be stripped to clean ASCII')
+test('T2.B9.1', 'SPAYD sanitizes heavy Czech diacritics while preserving hyphens', 2, 'B9_QR_Boundaries', async () => {
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  assertContains(buildSpayd('CZ6508000000000123456789', 1, 'František Čermák-Dvořák'), '*MSG:Spolubyt Najem 11/2026 Frantisek Cermak-Dvorak*')
 })
 
-test('T2.B9.2', 'SPAYD rounds fractional decimal debt accurately to 2 places', 2, 'B9_QR_Boundaries', () => {
-  const debt = 4200.5678
-  assertEqual(debt.toFixed(2), '4200.57', 'Must round to 2 decimal places')
+test('T2.B9.2', 'SPAYD rounds fractional debt accurately to 2 places', 2, 'B9_QR_Boundaries', async () => {
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  assertContains(buildSpayd('CZ6508000000000123456789', 0.01, 'Tomáš'), '*AM:0.01*CC:CZK*')
 })
 
-test('T2.B9.3', 'SPAYD message exceeding 60 characters is truncated cleanly to 60 characters', 2, 'B9_QR_Boundaries', () => {
-  const longMsg = 'Spolubyt Najem a poplatky za energie a internet na mesic listopad 2026 pro byt Praha 6'
-  const truncated = longMsg.slice(0, 60)
-  assertEqual(truncated.length, 60, 'Message must be capped at 60 chars')
+test('T2.B9.3', 'SPAYD message is truncated to exactly 60 ASCII characters', 2, 'B9_QR_Boundaries', async () => {
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const result = buildSpayd('CZ6508000000000123456789', 1, 'Ž'.repeat(100))
+  const message = result.split('*MSG:')[1].split('*')[0]
+  assertEqual(message, ('Spolubyt Najem 11/2026 ' + 'Z'.repeat(100)).slice(0, 60))
+  assertEqual(message.length, 60)
 })
 
-test('T2.B9.4', 'SPAYD string formats variable symbol without special characters', 2, 'B9_QR_Boundaries', () => {
-  const vs = '20261101'
-  assertMatch(vs, /^\d{1,10}$/, 'Variable symbol must be numeric up to 10 digits')
+test('T2.B9.4', 'SPAYD helper uses frozen November variable symbol', 2, 'B9_QR_Boundaries', async () => {
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  assert(buildSpayd('CZ6508000000000123456789', 1, 'Tomáš').endsWith('*X-VS:20261101'))
 })
 
 test('T2.B9.5', 'Attempting QR payment modal open for 0 debt is prevented or handled gracefully', 2, 'B9_QR_Boundaries', () => {
@@ -1229,20 +1315,46 @@ test('T2.B11.2', 'Production CSS bundle size remains under 100 kB budget', 2, 'B
   }
 })
 
-test('T2.B11.3', 'LocalStorage quota simulation handled gracefully without throwing unhandled exceptions', 2, 'B11_Integrity_Boundaries', () => {
+test('T2.B11.3', 'Storage quota failure is caught after persistence watcher runs', 2, 'B11_Integrity_Boundaries', async () => {
   const store = getFreshStore()
-  const origSetItem = globalThis.localStorage.setItem
+  await new Promise(resolve => setTimeout(resolve))
+  const originalSetItem = globalThis.localStorage.setItem
+  const originalError = console.error
+  let writes = 0
   globalThis.localStorage.setItem = () => {
+    writes++
     throw new Error('QuotaExceededError')
   }
-  store.setCurrentUser('user-jakub')
-  globalThis.localStorage.setItem = origSetItem
+  console.error = () => {}
+  try {
+    store.setCurrentUser('user-jakub')
+    await new Promise(resolve => setTimeout(resolve))
+    assert(writes > 0, 'Watcher must attempt persistence while quota failure is installed')
+    assertEqual(store.storageWriteFailed.value, true)
+    assertEqual(store.currentUser.value.id, 'user-jakub')
+  } finally {
+    globalThis.localStorage.setItem = originalSetItem
+    console.error = originalError
+    store.storageWriteFailed.value = false
+  }
 })
 
-test('T2.B11.4', 'Corrupted JSON in localStorage falls back to default fixtures without crash', 2, 'B11_Integrity_Boundaries', () => {
-  globalThis.localStorage.setItem('spolubyt_hifi_v1_roommates', '{invalid_json[')
-  const store = getFreshStore()
-  assert(store.roommates.value.length >= 4, 'Should recover with default roommates')
+test('T2.B11.4', 'Corrupted storage is hydrated through fallback rather than fixture reset', 2, 'B11_Integrity_Boundaries', async () => {
+  await new Promise(resolve => setTimeout(resolve))
+  const prefix = storagePrefix()
+  globalThis.localStorage.clear()
+  globalThis.localStorage.setItem(prefix + 'state', '{invalid_json[')
+  const originalError = console.error
+  console.error = () => {}
+  try {
+    const store = await reloadStore()
+    assertEqual(JSON.stringify(store.roommates.value), JSON.stringify(mockDataModule.INITIAL_ROOMMATES))
+    assertEqual(store.currentUser.value.id, 'user-tomas')
+    assertEqual(store.isMasterTenant.value, true)
+    assertEqual(store.storageRecovered.value, true)
+  } finally {
+    console.error = originalError
+  }
 })
 
 test('T2.B11.5', 'Expense CSV export prepends UTF-8 BOM marker for Excel compatibility', 2, 'B11_Integrity_Boundaries', () => {
@@ -1281,7 +1393,7 @@ test('T3.C2', 'Cart-to-Expense + Debt Settlement: Cart item to expense increment
     totalAmount: 400,
     category: 'Údržba',
     payerId: store.currentUser.value.id
-  }))
+  }), { cartItemIds: [item.id] })
   assertEqual(store.expenses.value.length, initialExpensesCount + 1)
 })
 
@@ -1301,6 +1413,7 @@ test('T3.C4', 'Cleaning Swap + Role Switching: Člen A requests swap with Člen 
   const store = getFreshStore()
   const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-tomas')
   assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
   store.setCurrentUser('user-tomas')
   store.requestShiftSwap(shift.id, 'user-jakub', 'Mám schůzku')
   assertEqual(shift.swapRequest.status, 'PENDING')
@@ -1313,21 +1426,20 @@ test('T3.C4', 'Cleaning Swap + Role Switching: Člen A requests swap with Člen 
 test('T3.C5', 'Cleaning Swap + Welcome Banner: Swap request updates welcome banner status for both users', 3, 'Cross_Feature', () => {
   const store = getFreshStore()
   const shift = store.myCurrentCleaningShift.value
-  if (shift) {
-    store.requestShiftSwap(shift.id, 'user-jakub', 'Výměna')
-    assertEqual(shift.swapRequest?.status, 'PENDING')
-  }
+  assertDefined(shift)
+  if (shift.isCompleted) store.toggleShiftStatus(shift.id)
+  store.requestShiftSwap(shift.id, 'user-jakub', 'Výměna')
+  assertEqual(shift.swapRequest?.status, 'PENDING')
 })
 
 test('T3.C6', 'Cleaning Complete + Welcome Banner: Completing shift immediately reflects Splněno ✓ in banner', 3, 'Cross_Feature', () => {
   const store = getFreshStore()
   const shift = store.myCurrentCleaningShift.value
-  if (shift) {
-    shift.isCompleted = false
-    store.toggleShiftStatus(shift.id)
-    assertEqual(shift.isCompleted, true)
-    assertEqual(store.myCurrentCleaningPending.value, false)
-  }
+  assertDefined(shift)
+  shift.isCompleted = false
+  store.toggleShiftStatus(shift.id)
+  assertEqual(shift.isCompleted, true)
+  assertEqual(store.myCurrentCleaningPending.value, false)
 })
 
 test('T3.C7', 'Energy Prediction + Settings Update: Updating monthlyUtilities dynamically updates annual advances', 3, 'Cross_Feature', () => {
@@ -1356,7 +1468,7 @@ test('T3.C9', 'Energy Prediction + Dashboard Thermometer: drawdownPct dynamicall
   const pred = store.annualEnergyPrediction.value
   assertDefined(pred.drawdownPct)
   const src = loadSource('src/views/DashboardView.vue')
-  assertMatch(src, /annualEnergyPrediction|\.drawdownPct|teplomer|Teploměr/i, 'Dashboard must bind to dynamic prediction percentage')
+  assertContains(src, 'annualEnergyPrediction.drawdownPct', 'Dashboard must bind the actual prediction percentage')
 })
 
 test('T3.C10', 'Role Switching + Cleaning Authorization: Člen cannot confirm other shift, Správce can', 3, 'Cross_Feature', () => {
@@ -1443,7 +1555,7 @@ test('T4.S1', 'Scenario 1: Shared Shopping & Immediate Expense Split', 4, 'Tenan
     category: 'Drogerie',
     payerId: 'user-jakub',
     payerName: 'Jakub Kovář'
-  }))
+  }), { cartItemIds: [item.id] })
   // 5. Verify item removed from cart
   assert(!store.cartItems.value.some(i => i.id === item.id))
   // 6. Verify expense logged
@@ -1494,9 +1606,8 @@ test('T4.S4', 'Scenario 4: Monthly Rent & Utility Settlement via SPAYD QR', 4, '
   assertDefined(settlement)
   assert(settlement.totalDebt > 0)
   // 2. Construct SPAYD string
-  const iban = store.settings.value.iban.replace(/\s+/g, '')
-  const amount = settlement.totalDebt.toFixed(2)
-  const spayd = `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*MSG:Spolubyt Najem 11/2026 ${settlement.roommateName}*X-VS:20261101`
+  const { buildSpayd } = await viteServer.ssrLoadModule('./src/utils/spayd.ts')
+  const spayd = buildSpayd(store.settings.value.iban, settlement.totalDebt, settlement.roommateName)
   // 3. Generate QR Canvas
   const qrSvg = await QRCode.toString(spayd, { type: 'svg' })
   assert(qrSvg.length > 100, 'QR SVG must be generated')
@@ -1545,6 +1656,388 @@ test('T4.S6', 'Scenario 6: Full Household Operational Cycle (Disaster Recovery &
   assert(!store.cartItems.value.some(i => i.name === 'Sáčky do koše'))
 })
 
+// TODO1 regressions: exercise application operations rather than copies of their logic.
+test('T3.R1', 'Seed debts equal open manager shares and category buckets', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  for (const settlement of store.settlements.value) {
+    const buckets = { rent: 0, energy: 0, drogerie: 0, other: 0 }
+    for (const expense of store.expenses.value) {
+      assertEqual(Math.round(expense.shares.reduce((sum, share) => sum + share.amount, 0) * 100), Math.round(expense.totalAmount * 100), expense.id + ' allocated total')
+      if (expense.payerId !== store.managerRoommate.value.id) continue
+      for (const share of expense.shares) {
+        if (share.roommateId !== settlement.roommateId || !['DLUŽÍ', 'PO_SPLATNOSTI'].includes(share.status)) continue
+        const bucket = expense.category === 'Bydlení' ? 'rent' : expense.category === 'Energie' ? 'energy' : expense.category === 'Drogerie' ? 'drogerie' : 'other'
+        buckets[bucket] += Math.round(share.amount * 100)
+      }
+    }
+    assertEqual(Object.values(buckets).reduce((sum, cents) => sum + cents, 0), Math.round(settlement.totalDebt * 100), settlement.roommateId)
+    for (const [bucket, cents] of Object.entries(buckets)) assertEqual(cents, Math.round((settlement.breakdown[bucket] || 0) * 100), settlement.roommateId + ' ' + bucket)
+    assertEqual(settlement.breakdown.wifi || 0, 0, 'Services must use the same bucket as add/delete')
+  }
+})
+
+test('T3.R2', 'Unrelated expense saves never consume a stale cart prefill', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const item = store.cartItems.value[0]
+  store.convertCartItemToExpense(item)
+  const cartBefore = JSON.stringify(store.cartItems.value)
+  assertEqual(store.addExpense(createExpensePayload()), true)
+  assertEqual(JSON.stringify(store.cartItems.value), cartBefore)
+  assertEqual(store.activeModal.value, 'EXP_ADD', 'Caller owns modal closure')
+  assertEqual(store.addExpense(createExpensePayload(), { cartItemIds: [item.id] }), true)
+  assert(!store.cartItems.value.some(row => row.id === item.id))
+})
+
+test('T3.R3', 'Members cannot delete another payer expense, confirm debt or send reminders', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  store.setCurrentUser('user-eliska')
+  const expense = store.expenses.value.find(e => e.id === 'exp-3')
+  assertDefined(expense)
+  assertEqual(store.canDeleteExpense(expense), false)
+  const before = JSON.stringify({ expenses: store.expenses.value, settlements: store.settlements.value })
+  for (const action of [
+    () => store.deleteExpense(expense.id),
+    () => store.confirmPayment('user-eliska', { date: '2026-11-12', method: 'BANK', note: '', notifyMember: false }),
+    () => store.sendReminder('user-jakub'),
+  ]) {
+    action()
+    assertEqual(JSON.stringify({ expenses: store.expenses.value, settlements: store.settlements.value }), before)
+    assertEqual(store.toasts.value.at(-1).title, 'Přístup odepřen')
+    assertEqual(store.toasts.value.at(-1).type, 'warning')
+    assertEqual(store.confirmModal.value.isOpen, false)
+  }
+  const ownExpense = store.expenses.value.find(e => e.payerId === 'user-eliska')
+  assertDefined(ownExpense)
+  assertEqual(store.canDeleteExpense(ownExpense), true)
+  store.deleteExpense(ownExpense.id)
+  assertEqual(store.confirmModal.value.isOpen, true)
+  store.confirmModal.value.onConfirm()
+  assert(!store.expenses.value.some(e => e.id === ownExpense.id))
+})
+
+test('T3.R4', 'Settings and room changes reject members without mutating data', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  store.setCurrentUser('user-jakub')
+  const settings = JSON.stringify(store.settings.value)
+  const roommates = JSON.stringify(store.roommates.value)
+  assertEqual(store.saveApartmentSettings({ ...store.settings.value, monthlyRent: 1 }), false)
+  assertEqual(JSON.stringify(store.settings.value), settings)
+  assertEqual(store.toasts.value.at(-1).title, 'Přístup odepřen')
+  assertEqual(store.updateRoommateArea('user-jakub', 99), false)
+  assertEqual(JSON.stringify(store.roommates.value), roommates)
+  assertEqual(store.toasts.value.at(-1).title, 'Přístup odepřen')
+})
+
+test('T3.R5', 'Settings reject malformed account, amounts and due days atomically', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const before = JSON.stringify(store.settings.value)
+  for (const patch of [
+    { iban: '' }, { iban: 'CZ65*AM:999' },
+    { monthlyRent: '' }, { monthlyRent: -1 }, { monthlyRent: NaN },
+    { monthlyUtilities: 0 }, { monthlyUtilities: Infinity },
+    { dueDayOfMonth: 0 }, { dueDayOfMonth: 29 }, { dueDayOfMonth: 1.5 },
+    { name: ' ' }, { accountNumber: '' },
+  ]) {
+    assertEqual(store.saveApartmentSettings({ ...store.settings.value, ...patch }), false, JSON.stringify(patch))
+    assertEqual(JSON.stringify(store.settings.value), before)
+    assertEqual(store.toasts.value.at(-1).type, 'error')
+  }
+  assertEqual(store.saveApartmentSettings({ ...store.settings.value, monthlyUtilities: 9000, dueDayOfMonth: 20 }), true)
+  assertEqual(store.annualEnergyPrediction.value.annualAdvances, 108000)
+  assert(store.settlements.value.every(s => s.dueDate === '2026-11-20'))
+})
+
+test('T3.R6', 'Room area edits update settlement presentation without rewriting historical debts', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const before = debtSnapshot(store)
+  assertEqual(store.updateRoommateArea('user-jakub', 25), true)
+  const roommate = store.roommates.value.find(r => r.id === 'user-jakub')
+  const settlement = store.settlements.value.find(r => r.roommateId === 'user-jakub')
+  assertDefined(roommate)
+  assertDefined(settlement)
+  assertEqual(settlement.roomAreaM2, roommate.roomAreaM2)
+  assertEqual(settlement.areaSharePct, roommate.areaSharePct)
+  assertEqual(debtSnapshot(store), before)
+})
+
+test('T3.R7', 'Meter validation rejects lower values, invalid and out-of-order dates', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const previous = store.latestMeters.value['ELEKTŘINA']
+  const before = JSON.stringify(store.meters.value)
+  for (const patch of [
+    { value: previous.value - 1 }, { value: NaN }, { value: Infinity }, { value: -1 },
+    { date: '2026-10-30' }, { date: '2026-11-13' }, { date: '' }, { date: '2026-02-30' },
+  ]) {
+    assertEqual(store.addMeterReading({ type: 'ELEKTŘINA', date: '2026-11-12', value: previous.value + 1, ...patch }), false)
+    assertEqual(JSON.stringify(store.meters.value), before)
+    assertEqual(store.toasts.value.at(-1).type, 'error')
+  }
+  assertEqual(store.addMeterReading({ type: 'ELEKTŘINA', date: '2026-11-12', value: previous.value + 1 }), true)
+  assertEqual(store.latestMeters.value['ELEKTŘINA'].delta, 1)
+})
+
+test('T3.R8', 'Only the latest meter reading can be removed, with confirmation', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const previous = store.latestMeters.value['ELEKTŘINA']
+  assertEqual(store.addMeterReading({ type: 'ELEKTŘINA', date: '2026-11-12', value: previous.value + 10000 }), true)
+  const added = store.latestMeters.value['ELEKTŘINA']
+  const before = JSON.stringify(store.meters.value)
+  store.deleteLatestMeterReading(previous.id)
+  assertEqual(store.confirmModal.value.isOpen, false)
+  assertEqual(JSON.stringify(store.meters.value), before)
+  store.deleteLatestMeterReading(added.id)
+  assertEqual(store.confirmModal.value.isOpen, true)
+  assertEqual(JSON.stringify(store.meters.value), before)
+  store.confirmModal.value.onConfirm()
+  assertEqual(store.latestMeters.value['ELEKTŘINA'].id, previous.id)
+  assertEqual(store.addMeterReading({ type: 'ELEKTŘINA', date: '2026-11-12', value: previous.value + 10 }), true)
+})
+
+test('T3.R9', 'Completed and already-pending cleaning shifts cannot receive new requests', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const completed = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.isCompleted)
+  assertDefined(completed)
+  const before = JSON.stringify(completed)
+  store.requestShiftSwap(completed.id, 'user-jakub')
+  assertEqual(JSON.stringify(completed), before)
+  assertEqual(store.toasts.value.at(-1).type, 'warning')
+  const pending = store.cleaningShifts.value.find(s => s.weekNumber === 45 && !s.isCompleted)
+  assertDefined(pending)
+  store.requestShiftSwap(pending.id, 'user-martin')
+  assertEqual(pending.swapRequest.status, 'PENDING')
+  const request = JSON.stringify(pending.swapRequest)
+  store.requestShiftSwap(pending.id, 'user-eliska')
+  assertEqual(JSON.stringify(pending.swapRequest), request)
+  assertEqual(store.toggleShiftStatus(pending.id), true)
+  assertEqual(pending.swapRequest.status, 'CANCELLED')
+  store.setCurrentUser('user-martin')
+  store.acceptShiftSwap(pending.id)
+  assertEqual(pending.roommateId, 'user-jakub')
+})
+
+test('T3.R10', 'Cleaning request and reject permissions preserve state, manager can intervene', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-jakub')
+  assertDefined(shift)
+  store.setCurrentUser('user-eliska')
+  const before = JSON.stringify(shift)
+  store.requestShiftSwap(shift.id, 'user-martin')
+  assertEqual(JSON.stringify(shift), before)
+  assertEqual(store.toasts.value.at(-1).title, 'Přístup odepřen')
+  store.setCurrentUser('user-jakub')
+  store.requestShiftSwap(shift.id, 'user-martin')
+  const pending = JSON.stringify(shift)
+  store.setCurrentUser('user-eliska')
+  store.rejectShiftSwap(shift.id)
+  assertEqual(JSON.stringify(shift), pending)
+  assertEqual(store.toasts.value.at(-1).title, 'Přístup odepřen')
+  store.setCurrentUser('user-tomas')
+  store.acceptShiftSwap(shift.id)
+  assertEqual(shift.roommateId, 'user-martin')
+  assertEqual(shift.swapRequest.status, 'ACCEPTED')
+})
+
+test('T3.R11', 'Invalid week numbers do not generate or persist cleaning shifts', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const before = JSON.stringify(store.cleaningShifts.value)
+  for (const week of [0, -1, 54, 60, NaN, Infinity, 45.5]) {
+    store.selectCleaningWeek(week)
+    assertEqual(store.selectedCleaningWeek.value, 45)
+    assertEqual(JSON.stringify(store.cleaningShifts.value), before)
+  }
+  store.selectCleaningWeek(53)
+  assertEqual(store.selectedWeekShifts.value.length, 4)
+})
+
+test('T3.R12', 'Rapid creation produces unique IDs and expense codes', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const originalNow = Date.now
+  Date.now = () => 123456789
+  try {
+    for (let index = 0; index < 20; index++) {
+      assertEqual(store.addExpense(createExpensePayload()), true)
+      store.addCartItem({ name: 'Položka ' + index, category: 'Drogerie', unitPrice: 10, qty: 1 })
+      assertEqual(store.addMeterReading({ type: 'ELEKTŘINA', date: '2026-11-12', value: 15000 + index }), true)
+    }
+  } finally {
+    Date.now = originalNow
+  }
+  for (const slice of [store.expenses.value, store.cartItems.value, store.meters.value]) assertEqual(new Set(slice.map(row => row.id)).size, slice.length)
+  assertEqual(new Set(store.expenses.value.map(row => row.code)).size, store.expenses.value.length)
+  assert(store.expenses.value.slice(0, 20).every(e => e.code.startsWith('VYD-2026-11-')))
+})
+
+test('T3.R13', 'Persistence round trip hydrates modified slices and active persona', 3, 'TODO1_Regressions', async () => {
+  const store = getFreshStore()
+  store.addExpense(createExpensePayload({ title: 'Uložený výdaj' }))
+  store.addCartItem({ name: 'Uložená položka', category: 'Údržba', unitPrice: 9, qty: 2 })
+  assertEqual(store.saveApartmentSettings({ ...store.settings.value, monthlyUtilities: 9100 }), true)
+  store.setCurrentUser('user-jakub')
+  await new Promise(resolve => setTimeout(resolve))
+  const snapshot = Object.fromEntries(['expenses', 'settlements', 'cartItems', 'settings', 'roommates', 'meters', 'cleaningShifts'].map(key => [key, JSON.stringify(store[key].value)]))
+  const hydrated = await reloadStore()
+  for (const [key, expected] of Object.entries(snapshot)) assertEqual(JSON.stringify(hydrated[key].value), expected, key)
+  assertEqual(hydrated.currentUser.value.id, 'user-jakub')
+  assertEqual(hydrated.isMasterTenant.value, false)
+})
+
+test('T3.R14', 'Malformed JSON shapes recover before any UI reads the persona', 3, 'TODO1_Regressions', async () => {
+  await new Promise(resolve => setTimeout(resolve))
+  const originalError = console.error
+  console.error = () => {}
+  try {
+    for (const malformed of [null, [], [{ id: 'incomplete' }]]) {
+      globalThis.localStorage.clear()
+      const snapshot = defaultSnapshot()
+      snapshot.roommates = malformed
+      snapshot.currentUserId = 'unknown'
+      globalThis.localStorage.setItem(storagePrefix() + 'state', JSON.stringify(snapshot))
+      const store = await reloadStore()
+      assertEqual(store.currentUser.value.id, 'user-tomas')
+      assertEqual(store.isMasterTenant.value, true)
+      assertEqual(store.roommates.value.length, mockDataModule.INITIAL_ROOMMATES.length)
+      assertEqual(store.storageRecovered.value, true)
+      await new Promise(resolve => setTimeout(resolve))
+    }
+  } finally {
+    console.error = originalError
+  }
+})
+
+test('T3.R15', 'CSV cells quote delimiters and neutralize spreadsheet formulas', 3, 'TODO1_Regressions', async () => {
+  const { csvCell } = await viteServer.ssrLoadModule('./src/utils/format.ts')
+  assertEqual(csvCell('Jan "Tester"; Novák'), '"Jan ""Tester""; Novák"')
+  for (const value of ['=HYPERLINK("x")', '+1', '-1', '@SUM(A1)', ' =1']) {
+    const cell = csvCell(value)
+    assert(cell.startsWith('"\''), value + ' must be a literal cell')
+    assert(cell.endsWith('"'))
+  }
+  assertEqual(csvCell(9850), '"9850"')
+})
+
+test('T3.R16', 'Empty cart, unknown shifts and repeated toggles remain deterministic', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const item = store.cartItems.value[0]
+  const initial = !!item.isPurchased
+  for (let count = 0; count < 100; count++) store.toggleCartItemPurchased(item.id)
+  assertEqual(!!item.isPurchased, initial)
+  const shifts = JSON.stringify(store.cleaningShifts.value)
+  assertEqual(store.toggleShiftStatus('unknown-shift'), false)
+  store.requestShiftSwap('unknown-shift', 'user-jakub')
+  store.acceptShiftSwap('unknown-shift')
+  store.rejectShiftSwap('unknown-shift')
+  store.cancelShiftSwap('unknown-shift')
+  assertEqual(JSON.stringify(store.cleaningShifts.value), shifts)
+  store.cartItems.value = []
+  store.convertCartToExpense()
+  assertEqual(store.activeModal.value, null)
+  assertEqual(store.toasts.value.at(-1).type, 'warning')
+})
+
+test('T3.R17', 'An invalid snapshot slice resets the whole household atomically', 3, 'TODO1_Regressions', async () => {
+  await new Promise(resolve => setTimeout(resolve))
+  const snapshot = defaultSnapshot()
+  snapshot.expenses = null
+  snapshot.settings.monthlyRent = 12345
+  snapshot.settlements[0].totalDebt = 1
+  globalThis.localStorage.setItem(storagePrefix() + 'state', JSON.stringify(snapshot))
+  const originalError = console.error
+  console.error = () => {}
+  try {
+    const store = await reloadStore()
+    assertEqual(store.storageRecovered.value, true)
+    assertEqual(JSON.stringify(store.expenses.value), JSON.stringify(mockDataModule.INITIAL_EXPENSES))
+    assertEqual(JSON.stringify(store.settlements.value), JSON.stringify(mockDataModule.INITIAL_SETTLEMENTS))
+    assertEqual(store.settings.value.monthlyRent, mockDataModule.INITIAL_SETTINGS.monthlyRent)
+  } finally {
+    console.error = originalError
+  }
+})
+
+test('T3.R18', 'An unknown stored persona normalizes to an existing roommate', 3, 'TODO1_Regressions', async () => {
+  await new Promise(resolve => setTimeout(resolve))
+  const snapshot = defaultSnapshot()
+  snapshot.currentUserId = 'unknown'
+  globalThis.localStorage.setItem(storagePrefix() + 'state', JSON.stringify(snapshot))
+  const store = await reloadStore()
+  assertEqual(store.currentUser.value.id, snapshot.roommates[0].id)
+  assertEqual(store.isMasterTenant.value, true)
+})
+
+test('T3.R19', 'Stale tab edits cannot overwrite another tab snapshot', 3, 'TODO1_Regressions', async () => {
+  const store = getFreshStore()
+  await new Promise(resolve => setTimeout(resolve))
+  const key = storagePrefix() + 'state'
+  const newer = JSON.parse(globalThis.localStorage.getItem(key))
+  newer.settings.name = 'Novější změna z jiné karty'
+  const externalSnapshot = JSON.stringify(newer)
+  globalThis.localStorage.setItem(key, externalSnapshot)
+  store.addCartItem({ name: 'Lokální úprava', category: 'Drogerie', unitPrice: 10, qty: 1 })
+  await new Promise(resolve => setTimeout(resolve))
+  assertEqual(store.storageConflict.value, true)
+  assertEqual(globalThis.localStorage.getItem(key), externalSnapshot)
+})
+
+test('T3.R20', 'Malformed optional receipt items trigger atomic snapshot recovery', 3, 'TODO1_Regressions', async () => {
+  await new Promise(resolve => setTimeout(resolve))
+  const snapshot = defaultSnapshot()
+  snapshot.expenses[0].receiptItems = [null]
+  snapshot.settings.name = 'Tento neplatný snapshot se nesmí načíst'
+  globalThis.localStorage.clear()
+  globalThis.localStorage.setItem(storagePrefix() + 'state', JSON.stringify(snapshot))
+  const originalError = console.error
+  console.error = () => {}
+  try {
+    const store = await reloadStore()
+    assertEqual(store.storageRecovered.value, true)
+    assertEqual(JSON.stringify(store.expenses.value), JSON.stringify(mockDataModule.INITIAL_EXPENSES))
+    assertEqual(store.settings.value.name, mockDataModule.INITIAL_SETTINGS.name)
+    assertEqual(JSON.stringify(store.settlements.value), JSON.stringify(mockDataModule.INITIAL_SETTLEMENTS))
+  } finally {
+    console.error = originalError
+  }
+})
+
+test('T3.R21', 'Due-day changes synchronize open share and expense statuses without changing money or paid history', 3, 'TODO1_Regressions', () => {
+  const store = getFreshStore()
+  const moneyBefore = JSON.stringify(store.settlements.value.map(row => ({ totalDebt: row.totalDebt, breakdown: row.breakdown })))
+  const memberExpense = store.expenses.value.find(expense => expense.payerId !== store.managerRoommate.value.id)
+  assertDefined(memberExpense)
+  const memberBefore = JSON.stringify(memberExpense)
+  const paidHistory = store.expenses.value.flatMap(expense => expense.shares
+    .filter(share => share.status === 'UHRAZENO' || share.status === 'PLÁTCE')
+    .map(share => ({ expenseId: expense.id, roommateId: share.roommateId, snapshot: JSON.stringify(share) })))
+
+  for (const [day, shareStatus, settlementStatus, expenseStatus] of [
+    [20, 'DLUŽÍ', 'PŘED_SPLATNOSTÍ', 'ČÁSTEČNĚ'],
+    [1, 'PO_SPLATNOSTI', 'PO_SPLATNOSTI', 'PO_SPLATNOSTI'],
+  ]) {
+    assertEqual(store.saveApartmentSettings({ ...store.settings.value, dueDayOfMonth: day }), true)
+    const debtors = store.settlements.value.filter(settlement => settlement.totalDebt > 0)
+    assert(debtors.length > 0)
+    for (const settlement of debtors) {
+      assertEqual(settlement.status, settlementStatus)
+      assertEqual(settlement.dueDate, `2026-11-${String(day).padStart(2, '0')}`)
+    }
+    const openExpenses = store.expenses.value.filter(expense => expense.payerId === store.managerRoommate.value.id
+      && expense.shares.some(share => ['DLUŽÍ', 'PO_SPLATNOSTI'].includes(share.status)))
+    assert(openExpenses.length > 0)
+    for (const expense of openExpenses) {
+      assertEqual(expense.status, expenseStatus, expense.id)
+      for (const share of expense.shares.filter(row => ['DLUŽÍ', 'PO_SPLATNOSTI'].includes(row.status))) {
+        assertEqual(share.status, shareStatus, expense.id + ' ' + share.roommateId)
+      }
+    }
+    assertEqual(JSON.stringify(store.settlements.value.map(row => ({ totalDebt: row.totalDebt, breakdown: row.breakdown }))), moneyBefore)
+    assertEqual(JSON.stringify(memberExpense), memberBefore)
+    for (const history of paidHistory) {
+      const expense = store.expenses.value.find(row => row.id === history.expenseId)
+      assertDefined(expense)
+      assertEqual(JSON.stringify(expense.shares.find(row => row.roommateId === history.roommateId)), history.snapshot)
+    }
+  }
+})
+
 // =========================================================================
 // TEST RUNNER & REPORTER
 // =========================================================================
@@ -1554,6 +2047,7 @@ export async function runSuite() {
   console.log('       SPOLUBYT APP: 4-TIER COMPREHENSIVE E2E VERIFICATION SUITE')
   console.log('================================================================================\n')
 
+  assert(testResults.length > 0, 'No tests registered')
   await setupEnvironment()
 
   let passed = 0
@@ -1562,8 +2056,14 @@ export async function runSuite() {
 
   for (const t of testResults) {
     const tStart = Date.now()
+    let timeout
     try {
-      await t.fn()
+      await Promise.race([
+        Promise.resolve().then(() => t.fn()),
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error(`Test ${t.id} timed out after 120 seconds`)), 120000)
+        }),
+      ])
       t.duration = Date.now() - tStart
       t.status = 'PASS'
       passed++
@@ -1575,7 +2075,9 @@ export async function runSuite() {
       failed++
       failures.push(t)
       console.log(`  \x1b[31m✖ [FAIL]\x1b[0m [Tier ${t.tier}] [${t.id}] ${t.title} (${t.duration}ms)`)
-      console.log(`     \x1b[31m${err.message}\x1b[0m`)
+      console.log(`     \x1b[31m${err.stack || err.message}\x1b[0m`)
+    } finally {
+      clearTimeout(timeout)
     }
   }
 
@@ -1611,7 +2113,7 @@ export async function runSuite() {
 }
 
 // Auto-run if executed directly via node
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
   runSuite().then(summary => {
     process.exit(summary.failed > 0 ? 1 : 0)
   }).catch(err => {

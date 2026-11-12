@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
 
 jobs:
   publish-tauri:
@@ -26,21 +25,26 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: lts/*
+          node-version-file: .nvmrc
           cache: "npm"
 
+      - name: Verify release tag and synchronized versions
+        run: node scripts/check-release.mjs
+
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
-        uses: swatinem/rust-cache@v2
+        uses: swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
         with:
           workspaces: "./src-tauri -> target"
 
@@ -53,15 +57,33 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Verify prototype
+        run: npm test && npm run build
+
+      - name: Install license notice generator
+        run: cargo install cargo-about --version 0.9.3 --locked --features cli
+
+      - name: Generate third-party notices
+        shell: bash
+        run: |
+          cargo about generate --manifest-path src-tauri/Cargo.toml --locked --fail --format json --output-file "rust-notices-${{ strategy.job-index }}.json"
+          node scripts/license-notices.mjs "frontend-notices-${{ strategy.job-index }}.txt"
+
       - name: Build and Release Tauri App
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@fce9c6108b31ea247710505d3aaaa893ee6768d4 # v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
           releaseName: "Spolubyt v__VERSION__"
           releaseBody: "Automaticky sestavené instalační balíčky pro macOS, Windows a Linux."
-          releaseDraft: false
+          releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
 
+
+      - name: Attach third-party notices to draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${GITHUB_REF_NAME}" "rust-notices-${{ strategy.job-index }}.json" "frontend-notices-${{ strategy.job-index }}.txt" --clobber

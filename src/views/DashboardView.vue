@@ -52,7 +52,7 @@
         </div>
 
         <!-- Quick Action: Zapsat odečet měřidla -->
-        <button
+        <button type="button"
           @click="openModal('METER_ADD')"
           class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors shrink-0"
         >
@@ -85,7 +85,7 @@
         <div class="text-xs text-slate-400 mt-2 flex items-center justify-between gap-2 flex-wrap">
           <span v-if="isMasterTenant">{{ t('dashboard.previousMonth', 'Předchozí měsíc:') }} {{ previousMonthTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
           <span v-else>{{ t('dashboard.totalFlatCosts', 'Celkem náklady bytu:') }} {{ monthlyTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
-          <button @click="navigateTo('EXPENSES')" class="text-emerald-400 hover:underline font-medium text-xs shrink-0">
+          <button type="button" @click="navigateTo('EXPENSES')" class="text-emerald-400 hover:underline font-medium text-xs shrink-0">
             {{ t('dashboard.statement', 'Výpis →') }}
           </button>
         </div>
@@ -139,14 +139,14 @@
             {{ isCurrentUserOverdue ? t('dashboard.overdueSince', '⚠️ Splatnost vypršela {date}!', { date: currentUserDueDateLabel }) : (currentUserDebt > 0 ? t('dashboard.dueOn', 'Termín splatnosti: {date}', { date: currentUserDueDateLabel }) : t('dashboard.allSettledCheck', '✓ Všechny platby máte vyrovnány')) }}
           </span>
 
-          <button 
+          <button type="button"
             v-if="!isMasterTenant && currentUserDebt > 0"
-            @click="openModal('QR_MODAL', currentUserSettlement)"
+            @click="currentUserSettlement && openModal('QR_MODAL', currentUserSettlement)"
             class="text-emerald-400 hover:underline font-bold text-xs flex items-center gap-1 shrink-0"
           >
             {{ t('dashboard.payQr', 'Zaplatit QR →') }}
           </button>
-          <button 
+          <button type="button"
             v-else
             @click="navigateTo('SETTLEMENT')" 
             class="text-emerald-400 hover:underline font-medium text-xs shrink-0"
@@ -235,7 +235,7 @@
                 {{ isMasterTenant ? t('dashboard.balanceSubtitleManager', 'Přehled dlužných pohledávek za nájem, energie a společné nákupy') : t('dashboard.balanceSubtitleMember', 'Stav vyrovnání za měsíc listopad 2026') }}
               </p>
             </div>
-            <button
+            <button type="button"
               @click="navigateTo('SETTLEMENT')"
               class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
             >
@@ -284,15 +284,15 @@
             <!-- Breakdown of user's debt if any -->
             <div v-if="currentUserSettlement && currentUserSettlement.totalDebt > 0" class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
               <div class="flex flex-wrap gap-2 text-xs font-mono text-slate-300">
-                <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownRent', 'Nájem:') }} {{ currentUserSettlement.breakdown.rent }} Kč</span>
-                <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownEnergy', 'Energie:') }} {{ currentUserSettlement.breakdown.energy }} Kč</span>
-                <span v-if="currentUserSettlement.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">WiFi: {{ currentUserSettlement.breakdown.wifi }} Kč</span>
-                <span v-if="currentUserSettlement.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownDrogerie', 'Drogerie:') }} {{ currentUserSettlement.breakdown.drogerie }} Kč</span>
-                <span v-if="currentUserSettlement.breakdown.other" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownOther', 'Ostatní:') }} {{ currentUserSettlement.breakdown.other }} Kč</span>
+                <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownRent', 'Nájem:') }} {{ formatCzk(currentUserSettlement.breakdown.rent) }}</span>
+                <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownEnergy', 'Energie:') }} {{ formatCzk(currentUserSettlement.breakdown.energy) }}</span>
+                <span v-if="currentUserSettlement.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">WiFi: {{ formatCzk(currentUserSettlement.breakdown.wifi) }}</span>
+                <span v-if="currentUserSettlement.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownDrogerie', 'Drogerie:') }} {{ formatCzk(currentUserSettlement.breakdown.drogerie) }}</span>
+                <span v-if="currentUserSettlement.breakdown.other" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownOther', 'Ostatní:') }} {{ formatCzk(currentUserSettlement.breakdown.other) }}</span>
               </div>
 
-              <button
-                @click="openModal('QR_MODAL', currentUserSettlement)"
+              <button type="button"
+                @click="currentUserSettlement && openModal('QR_MODAL', currentUserSettlement)"
                 class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-950/40 transition-all hover:scale-105"
               >
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -344,11 +344,7 @@
                   <div class="text-xs">
                     <span 
                       class="px-2 py-0.5 rounded font-semibold text-xs"
-                      :class="[
-                        s.status === 'VYROVNÁNO' ? 'bg-emerald-500/20 text-emerald-300' :
-                        s.status === 'PO_SPLATNOSTI' ? 'bg-rose-500/20 text-rose-300 animate-pulse' :
-                        'bg-amber-500/20 text-amber-300'
-                      ]"
+                      :class="SETTLEMENT_BADGE_CLASSES[s.status]"
                     >
                       {{ s.status === 'PO_SPLATNOSTI' ? t('dashboard.overdueDays', 'Po splatnosti ({days} dní)', { days: s.daysOverdue }) : t('settlementStatus.' + s.status, SETTLEMENT_STATUS_LABELS[s.status]) }}
                     </span>
@@ -357,7 +353,7 @@
 
                 <!-- Actions: Full actions for Manager, read-only/QR for members -->
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button
+                  <button type="button"
                     v-if="s.totalDebt > 0"
                     @click="openModal('QR_MODAL', s)"
                     class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-1"
@@ -370,7 +366,7 @@
                   </button>
 
                   <!-- Upomínka only for Master Tenant -->
-                  <button
+                  <button type="button"
                     v-if="isMasterTenant && s.status === 'PO_SPLATNOSTI'"
                     @click="sendReminder(s.roommateId)"
                     class="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold border border-rose-500/30 transition-colors"
@@ -380,7 +376,7 @@
                   </button>
 
                   <!-- Zaplaceno only for Master Tenant -->
-                  <button
+                  <button type="button"
                     v-if="isMasterTenant && s.totalDebt > 0"
                     @click="openModal('CONFIRM_MODAL', s)"
                     class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors shadow-sm"
@@ -403,7 +399,7 @@
               </h2>
               <p class="text-xs text-slate-400">{{ t('dashboard.recentExpensesSubtitle', 'Chronologický přehled nedávných transakcí') }}</p>
             </div>
-            <button
+            <button type="button"
               @click="navigateTo('EXPENSES')"
               class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
             >
@@ -431,16 +427,11 @@
                 <tr 
                   v-for="exp in recentExpenses" 
                   :key="exp.id" 
-                  @click="openModal('EXP_DETAIL', exp)"
-                  tabindex="0"
-                  role="button"
-                  @keydown.enter="openModal('EXP_DETAIL', exp)"
-                  @keydown.space.prevent="openModal('EXP_DETAIL', exp)"
                   class="hover:bg-slate-800/60 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
                 >
                   <td class="py-2.5 px-3 font-mono text-slate-400">{{ formatDate(exp.date) }}</td>
                   <td class="py-2.5 px-3 font-medium text-slate-200">
-                    {{ exp.title }}
+                    <button type="button" @click="openModal('EXP_DETAIL', exp)" class="text-left hover:text-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 rounded">{{ exp.title }}</button>
                   </td>
                   <td class="py-2.5 px-3 text-slate-400">{{ exp.payerName }}</td>
                   <td class="py-2.5 px-3 font-mono font-bold text-slate-100 text-right">
@@ -449,7 +440,7 @@
                   <td class="py-2.5 px-3 text-center">
                     <span 
                       class="px-2 py-0.5 rounded text-xs font-bold"
-                      :class="exp.status === 'UHRAZENO' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'"
+                      :class="EXPENSE_BADGE_CLASSES[exp.status]"
                     >
                       {{ t('expenseStatus.' + exp.status, EXPENSE_STATUS_LABELS[exp.status]) }}
                     </span>
@@ -462,7 +453,7 @@
                   <td colspan="6" class="py-10 text-center text-slate-400">
                     <div class="space-y-2">
                       <p class="font-medium text-slate-300">{{ t('dashboard.noExpensesYet', 'Zatím zde nejsou žádné výdaje.') }}</p>
-                      <button @click="navigateTo('EXPENSES')" class="text-xs text-emerald-400 underline font-semibold">{{ t('dashboard.showAllExpenses', 'Zobrazit všechny výdaje') }}</button>
+                      <button type="button" @click="navigateTo('EXPENSES')" class="text-xs text-emerald-400 underline font-semibold">{{ t('dashboard.showAllExpenses', 'Zobrazit všechny výdaje') }}</button>
                     </div>
                   </td>
                 </tr>
@@ -485,7 +476,7 @@
               </svg>
               <span>{{ t('dashboard.energyAndMeters', 'Energie a měřidla') }}</span>
             </h2>
-            <button
+            <button type="button"
               @click="navigateTo('ENERGY')"
               class="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
             >
@@ -541,7 +532,7 @@
             </div>
           </div>
 
-          <button
+          <button type="button"
             @click="openModal('METER_ADD')"
             class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5"
           >
@@ -561,7 +552,7 @@
               </svg>
               <span>{{ t('dashboard.cleaningThisWeek', 'Úklid tento týden') }}</span>
             </h2>
-            <button
+            <button type="button"
               @click="navigateTo('CLEANING')"
               class="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
             >
@@ -593,7 +584,7 @@
             </div>
 
             <!-- Confirm button directly on dashboard -->
-            <button
+            <button type="button"
               v-if="!myCurrentCleaningShift.isCompleted"
               @click="toggleShiftStatus(myCurrentCleaningShift.id)"
               class="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow"
@@ -654,14 +645,14 @@
               class="flex items-center justify-between p-2 rounded-lg bg-slate-850 border border-slate-800"
             >
               <span class="text-slate-300 truncate max-w-[170px]">{{ item.name }}</span>
-              <span class="font-mono text-emerald-400 font-semibold">{{ item.qty }}× {{ item.unitPrice }} Kč</span>
+              <span class="font-mono text-emerald-400 font-semibold">{{ item.qty }}× {{ formatCzk(item.unitPrice) }}</span>
             </div>
             <div v-if="unpurchasedCartItems.length === 0" class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
               {{ t('dashboard.allItemsPurchased', 'Všechny položky jsou již nakoupené.') }}
             </div>
           </div>
 
-          <button
+          <button type="button"
             @click="navigateTo('CART')"
             class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors text-center"
           >
@@ -702,6 +693,9 @@
 </template>
 
 <script setup lang="ts">
+import { EXPENSE_BADGE_CLASSES, SETTLEMENT_BADGE_CLASSES } from '../utils/labels'
+import { formatDateCz, formatCzk } from '../utils/format'
+import { DEMO_TODAY } from '../data/mockData'
 import { computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { t } from '../i18n'
@@ -713,6 +707,7 @@ import {
 const { 
   currentUser,
   managerRoommate,
+  managerSettlement,
   isMasterTenant,
   currentUserSettlement,
   currentUserDebt,
@@ -726,8 +721,6 @@ const {
   overdueDebtorsCount, 
   settlements, 
   expenses, 
-  cartItems, 
-  cartTotalCount, 
   cartTotalPrice, 
   cartRemainingCount,
   cartRemainingPrice,
@@ -779,18 +772,7 @@ const otherSettlements = computed(() => {
   // For members: show the manager first (account holder), then other roommates
   const others = settlements.value.filter(s => s.roommateId !== currentUser.value.id)
   return [
-    {
-      roommateId: managerRoommate.value.id,
-      roommateName: managerRoommate.value.name,
-      roomName: managerRoommate.value.roomName,
-      roomAreaM2: managerRoommate.value.roomAreaM2,
-      areaSharePct: managerRoommate.value.areaSharePct,
-      totalDebt: 0,
-      breakdown: { rent: 0, energy: 0 },
-      dueDate: '2026-11-10',
-      daysOverdue: 0,
-      status: 'VYROVNÁNO' as const
-    },
+    managerSettlement.value,
     ...others
   ]
 })
@@ -802,23 +784,7 @@ const getRoommateColor = (roommateId: string) => {
   return 'bg-emerald-600'
 }
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  const parts = dateStr.split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}. ${parts[1]}.`
-  }
-  return dateStr
-}
-
-const formatFullDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  const parts = dateStr.split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}. ${parts[1]}. ${parts[0]}`
-  }
-  return dateStr
-}
+const formatDate = (dateStr: string): string => formatDateCz(dateStr, 'none')
 
 const currentUserDueDateLabel = computed(() => {
   return currentUserSettlement.value?.dueDate
@@ -840,7 +806,7 @@ const currentUserOverdueText = computed(() => {
 })
 
 const rentDueDate = computed(() => {
-  const now = new Date()
+  const now = new Date(DEMO_TODAY + 'T12:00:00')
   return new Date(now.getFullYear(), now.getMonth(), settings.value.dueDayOfMonth)
 })
 

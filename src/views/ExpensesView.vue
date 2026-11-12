@@ -10,12 +10,12 @@
         <p class="text-xs text-slate-400 mt-0.5">
           {{ t('expenses.showingCount', 'Zobrazeno') }} <strong class="text-slate-200">{{ filteredExpenses.length }}</strong> {{ t('expenses.ofTotal', 'z {total} záznamů', { total: expenses.length }) }} • 
           {{ t('expenses.filteredSum', 'Součet vyfiltrovaných nákladů:') }} <strong class="text-emerald-400 font-mono">{{ filteredExpensesSum.toLocaleString('cs-CZ') }} CZK</strong> •
-          {{ t('expenses.yourShare', 'Váš podíl:') }} <strong class="text-sky-300 font-mono">{{ Math.round(myFilteredShareSum).toLocaleString('cs-CZ') }} CZK</strong>
+          {{ t('expenses.yourShare', 'Váš podíl:') }} <strong class="text-sky-300 font-mono">{{ myFilteredShareSum.toLocaleString('cs-CZ') }} CZK</strong>
         </p>
       </div>
 
       <div class="flex items-center gap-2.5">
-        <button
+        <button type="button"
           @click="exportExpensesCsv"
           class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
           :title="t('expenses.exportCsvHint', 'Exportovat vyfiltrovaný seznam do formátu CSV')"
@@ -26,7 +26,7 @@
           <span>{{ t('expenses.exportCsv', 'Export CSV') }}</span>
         </button>
 
-        <button
+        <button type="button"
           @click="openModal('EXP_ADD')"
           class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-105"
         >
@@ -110,21 +110,21 @@
         
         <div class="flex items-center gap-2">
           <span class="text-slate-400 font-medium">{{ t('expenses.statusFilterLabel', 'Stav:') }}</span>
-          <button
+          <button type="button"
             @click="expenseFilters.status = 'ALL'"
             class="px-2.5 py-1 rounded-lg transition-colors font-medium"
             :class="expenseFilters.status === 'ALL' ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30' : 'bg-slate-800 text-slate-400 hover:text-slate-200'"
           >
             {{ t('expenses.allTransactions', 'Všechny transakce') }}
           </button>
-          <button
+          <button type="button"
             @click="expenseFilters.status = 'UNPAID'"
             class="px-2.5 py-1 rounded-lg transition-colors font-medium"
             :class="expenseFilters.status === 'UNPAID' ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30' : 'bg-slate-800 text-slate-400 hover:text-slate-200'"
           >
             {{ t('expenses.onlyUnpaid', 'Pouze neuhrazené dluhy') }}
           </button>
-          <button
+          <button type="button"
             @click="expenseFilters.status = 'PAID'"
             class="px-2.5 py-1 rounded-lg transition-colors font-medium"
             :class="expenseFilters.status === 'PAID' ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30' : 'bg-slate-800 text-slate-400 hover:text-slate-200'"
@@ -133,7 +133,7 @@
           </button>
         </div>
 
-        <button
+        <button type="button"
           @click="resetExpenseFilters"
           class="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-1 transition-colors px-2 py-1"
         >
@@ -214,11 +214,6 @@
               v-for="exp in filteredExpenses" 
               :key="exp.id"
               class="hover:bg-slate-800/60 transition-colors group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
-              @click="openModal('EXP_DETAIL', exp)"
-              tabindex="0"
-              role="button"
-              @keydown.enter="openModal('EXP_DETAIL', exp)"
-              @keydown.space.prevent="openModal('EXP_DETAIL', exp)"
             >
               <!-- Date -->
               <td class="py-3 px-3.5 font-mono text-slate-400 whitespace-nowrap">
@@ -228,7 +223,7 @@
               <!-- Title & Code -->
               <td class="py-3 px-3.5">
                 <div class="font-medium text-slate-100 group-hover:text-emerald-300 transition-colors">
-                  {{ exp.title }}
+                  <button type="button" @click="openModal('EXP_DETAIL', exp)" class="text-left hover:text-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 rounded">{{ exp.title }}</button>
                 </div>
                 <div class="text-xs font-mono text-slate-400 mt-0.5">
                   {{ exp.code }}
@@ -238,7 +233,7 @@
               <!-- Category -->
               <td class="py-3 px-3.5 whitespace-nowrap">
                 <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-xs border border-slate-700">
-                  {{ t('categories.' + exp.category, exp.category) }}
+                  {{ t('categories.' + exp.category, CATEGORY_LABELS[exp.category]) }}
                 </span>
               </td>
 
@@ -278,11 +273,7 @@
               <td class="py-3 px-3.5 text-center whitespace-nowrap">
                 <span 
                   class="px-2 py-0.5 rounded text-xs font-bold"
-                  :class="[
-                    exp.status === 'UHRAZENO' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                    exp.status === 'PO_SPLATNOSTI' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
-                    'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                  ]"
+                  :class="EXPENSE_BADGE_CLASSES[exp.status]"
                 >
                   {{ t('expenseStatus.' + exp.status, EXPENSE_STATUS_LABELS[exp.status]) }}
                 </span>
@@ -291,8 +282,9 @@
               <!-- Action buttons -->
               <td class="py-3 px-3.5 text-right whitespace-nowrap" @click.stop>
                 <div class="flex items-center justify-end">
-                  <button
-                    @click="deleteExpense(exp.id)"
+                  <button type="button"
+                    v-if="canDeleteExpense(exp)"
+                    @click.stop="deleteExpense(exp.id)"
                     class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                     :title="t('expenses.deleteExpense', 'Smazat výdaj')"
                     :aria-label="t('expenses.deleteExpense', 'Smazat výdaj')"
@@ -310,7 +302,7 @@
               <td colspan="9" class="py-10 text-center text-slate-400">
                 <div class="space-y-2">
                   <p class="font-medium text-slate-300">{{ t('expenses.noMatch', 'Nenalezen žádný výdaj odpovídající zadaným filtrům.') }}</p>
-                  <button 
+                  <button type="button"
                     @click="resetExpenseFilters"
                     class="text-xs text-emerald-400 underline font-semibold"
                   >
@@ -339,6 +331,8 @@
 </template>
 
 <script setup lang="ts">
+import { EXPENSE_BADGE_CLASSES, CATEGORY_LABELS } from '../utils/labels'
+import { formatDateCz } from '../utils/format'
 import { computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { t } from '../i18n'
@@ -355,6 +349,7 @@ const {
   resetExpenseFilters, 
   openModal, 
   deleteExpense, 
+  canDeleteExpense,
   exportExpensesCsv 
 } = useSpolubyt()
 
@@ -374,20 +369,13 @@ const toggleSort = (col: 'date' | 'amount' | 'title') => {
   }
 }
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  const parts = dateStr.split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}. ${parts[1]}. ${parts[0].slice(2)}`
-  }
-  return dateStr
-}
+const formatDate = (dateStr: string): string => formatDateCz(dateStr, 'short')
 
 const getMyShareText = (exp: Expense) => {
   const share = exp.shares.find(s => s.roommateId === currentUser.value.id)
   if (!share) return '0 CZK'
   if (share.status === 'PLÁTCE') return t('expenses.payerShare', 'Plátce — 0 Kč k doplacení')
-  return `${Math.round(share.amount).toLocaleString('cs-CZ')} CZK`
+  return `${share.amount.toLocaleString('cs-CZ')} CZK`
 }
 </script>
 

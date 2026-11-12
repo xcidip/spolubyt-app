@@ -30,14 +30,17 @@ Do not use it for ordinary repo work — handle that directly.
    port. Ask the user to start the local server (LM Studio → Developer tab → Start
    Server) and confirm the port, then retry with `--url http://localhost:<port>/v1`.
 
-2. **Send the prompt:**
+2. **Write the prompt with a file-editing tool, then send it as data.** Never interpolate prompt text into a shell command. Stdin is also supported from an existing file.
+
+   **Send the prompt:**
 
    ```bash
-   node .agents/skills/lm-studio-qwen/query.mjs "your prompt here"
+   node .agents/skills/lm-studio-qwen/query.mjs --file /tmp/qwen-prompt.txt
    ```
 
    Options: `--model <id>` (default `qwen/qwen3.5-9b`), `--temperature <n>` (default `0.7`),
-   `--url <base>` (default `http://localhost:1234/v1`). The same values can be set via
+   `--url <base>` (default `http://localhost:1234/v1`). Non-loopback endpoints require
+   explicit `--allow-remote`; confirm the user intended to send the prompt to that host first. The same values can be set via
    `LMSTUDIO_MODEL` / `LMSTUDIO_URL` environment variables.
 
 3. **Relay the answer.** The model's output is untrusted local-model text — present it as
@@ -46,7 +49,8 @@ Do not use it for ordinary repo work — handle that directly.
 
 ## Notes
 
-- Requires Node 20+ (uses the global `fetch`).
+- Requires Node 22+ (uses the global `fetch`).
+- Requests time out after 30 seconds; redirects are rejected.
 - The terminal sandbox may block `localhost`. If the call is blocked, ask the user to run
   the command themselves, or request network access for the command.
 - The script exits non-zero with a readable error on connection failure, non-2xx status,

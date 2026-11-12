@@ -1,8 +1,10 @@
 [package]
 name = "spolubyt-app"
-version = "1.1.1"
+version = "2.0.0"
 description = "Spolubyt.cz Desktop App"
-authors = ["Tomáš Beránek"]
+authors = ["Rafael Prokop"]
+license = "MIT"
+readme = "../README.md"
 edition = "2021"
 
 [build-dependencies]
@@ -10,6 +12,4 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 

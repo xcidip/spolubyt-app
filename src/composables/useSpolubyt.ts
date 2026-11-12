@@ -9,13 +9,15 @@ import {
   ApartmentSettings,
   Roommate,
   ToastNotification,
-  CalculationKey,
   ExpenseCategory,
   CleaningShift,
-  CleaningTaskDef,
   ExpensePrefillData,
   ShiftSwapRequest,
-  EnergyPrediction
+  EnergyPrediction,
+  ModalId,
+  ModalPayloads,
+  ConfirmModalState,
+  ExpenseFilters,
 } from '../types/index'
 import {
   INITIAL_ROOMMATES,
@@ -25,55 +27,89 @@ import {
   INITIAL_METERS,
   INITIAL_CART_ITEMS,
   INITIAL_CLEANING_SHIFTS,
-  CLEANING_TASK_DEFS
+  CLEANING_TASK_DEFS,
+  DEMO_TODAY,
 } from '../data/mockData'
 import { t } from '../i18n'
 import { roundMoney } from '../utils/money'
+import { deepClone, createId, csvCell, isIsoDate } from '../utils/format'
+import { validStoredSlice } from '../utils/storage'
 
-const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v1_'
+const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v2_'
+const STORAGE_KEY = STORAGE_KEY_PREFIX + 'state'
+const storageWriteFailed = ref(false)
+const storageRecovered = ref(false)
+const storageConflict = ref(false)
+let lastSavedSnapshot: string | null = null
+const defaults = {
+  roommates: INITIAL_ROOMMATES,
+  currentUserId: 'user-tomas',
+  settings: INITIAL_SETTINGS,
+  settlements: INITIAL_SETTLEMENTS,
+  expenses: INITIAL_EXPENSES,
+  meters: INITIAL_METERS,
+  cartItems: INITIAL_CART_ITEMS,
+  cleaning_shifts: INITIAL_CLEANING_SHIFTS,
+  sidebar_collapsed: false,
+}
 
-function loadFromStorage<T>(key: string, defaultValue: T): T {
+function readSnapshot(): Record<string, unknown> {
   try {
-    const item = localStorage.getItem(STORAGE_KEY_PREFIX + key)
-    return item ? JSON.parse(item) : JSON.parse(JSON.stringify(defaultValue))
-  } catch (e) {
-    console.error('Failed to load from localStorage', e)
-    return JSON.parse(JSON.stringify(defaultValue))
+    const raw = localStorage.getItem(STORAGE_KEY)
+    lastSavedSnapshot = raw
+    if (!raw) return deepClone(defaults)
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Neplatný uložený stav')
+    const snapshot = parsed as Record<string, unknown>
+    if (!Object.keys(defaults).every(key => validStoredSlice(key, snapshot[key]))) throw new Error('Neplatná uložená data')
+    const people = snapshot.roommates as Roommate[]
+    if (!people.some(r => r.id === snapshot.currentUserId)) snapshot.currentUserId = people[0].id
+    return snapshot
+  } catch (error) {
+    console.error('Failed to load from localStorage', error)
+    storageRecovered.value = true
+    return deepClone(defaults)
   }
 }
 
-function saveToStorage<T>(key: string, value: T): void {
+const initialSnapshot = readSnapshot()
+function loadFromStorage<T>(key: string, defaultValue: T): T {
+  return deepClone((initialSnapshot[key] as T | undefined) ?? defaultValue)
+}
+
+function saveToStorage<T>(_key: string, value: T): void {
   try {
-    localStorage.setItem(STORAGE_KEY_PREFIX + key, JSON.stringify(value))
-  } catch (e) {
-    console.error('Failed to save to localStorage', e)
+    // A different tab must be reloaded before it can overwrite newer edits.
+    const existing = localStorage.getItem(STORAGE_KEY)
+    if (existing !== lastSavedSnapshot && existing !== null) {
+      storageConflict.value = true
+      return
+    }
+    if (storageConflict.value) return
+    const serialized = JSON.stringify(value)
+    localStorage.setItem(STORAGE_KEY, serialized)
+    lastSavedSnapshot = serialized
+    storageWriteFailed.value = false
+  } catch (error) {
+    console.error('Failed to save to localStorage', error)
+    storageWriteFailed.value = true
   }
 }
 
 // Global reactive state
 const currentPage = ref<PageId>('DASH')
-const activeModal = ref<string | null>(null)
+const activeModal = ref<ModalId | null>(null)
 const selectedExpense = ref<Expense | null>(null)
 const selectedSettlement = ref<DebtSettlement | null>(null)
+const selectedShift = ref<CleaningShift | null>(null)
 const expensePrefill = ref<ExpensePrefillData | null>(null)
 const isSidebarCollapsed = ref<boolean>(loadFromStorage('sidebar_collapsed', false))
 
 function toggleSidebar(): void {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
-  saveToStorage('sidebar_collapsed', isSidebarCollapsed.value)
 }
 
 // Generic Confirmation Dialog State
-interface ConfirmModalState {
-  isOpen: boolean
-  title: string
-  message: string
-  confirmLabel: string
-  cancelLabel: string
-  isDestructive: boolean
-  onConfirm: () => void
-}
-
 const confirmModal = ref<ConfirmModalState>({
   isOpen: false,
   title: '',
@@ -96,18 +132,23 @@ const cleaningShifts = ref<CleaningShift[]>(loadFromStorage('cleaning_shifts', I
 const selectedCleaningWeek = ref<number>(45)
 const toasts = ref<ToastNotification[]>([])
 
-// Auto-save watchers
-watch(roommates, (val) => saveToStorage('roommates', val), { deep: true })
-watch(currentUserId, (val) => saveToStorage('currentUserId', val))
-watch(settings, (val) => saveToStorage('settings', val), { deep: true })
-watch(settlements, (val) => saveToStorage('settlements', val), { deep: true })
-watch(expenses, (val) => saveToStorage('expenses', val), { deep: true })
-watch(meters, (val) => saveToStorage('meters', val), { deep: true })
-watch(cartItems, (val) => saveToStorage('cartItems', val), { deep: true })
-watch(cleaningShifts, (val) => saveToStorage('cleaning_shifts', val), { deep: true })
+// A single write keeps expenses and their corresponding debt changes together.
+watch([roommates, currentUserId, settings, settlements, expenses, meters, cartItems, cleaningShifts, isSidebarCollapsed], () => {
+  saveToStorage('state', {
+    roommates: roommates.value,
+    currentUserId: currentUserId.value,
+    settings: settings.value,
+    settlements: settlements.value,
+    expenses: expenses.value,
+    meters: meters.value,
+    cartItems: cartItems.value,
+    cleaning_shifts: cleaningShifts.value,
+    sidebar_collapsed: isSidebarCollapsed.value,
+  })
+}, { deep: true })
 
 // Filters for Expenses list
-const expenseFilters = ref({
+const expenseFilters = ref<ExpenseFilters>({
   search: '',
   period: 'ALL', // 'ALL' | '11/2026' | '10/2026' | '09/2026'
   category: 'ALL', // 'ALL' | ExpenseCategory
@@ -117,7 +158,7 @@ const expenseFilters = ref({
   sortOrder: 'desc' as 'asc' | 'desc',
 })
 
-export function useSpolubyt() {
+function createStore() {
   // Current user persona
   const currentUser = computed(() => {
     return roommates.value.find(r => r.id === currentUserId.value) || roommates.value[0]
@@ -126,6 +167,9 @@ export function useSpolubyt() {
   const isMasterTenant = computed(() => currentUser.value.role === 'Správce')
 
   const setCurrentUser = (userId: string) => {
+    if (!roommates.value.some(r => r.id === userId)) return
+    closeConfirmation()
+    closeModal()
     currentUserId.value = userId
     const found = roommates.value.find(r => r.id === userId)
     if (found) {
@@ -188,11 +232,11 @@ export function useSpolubyt() {
   // Navigation
   const navigateTo = (page: PageId) => {
     currentPage.value = page
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // Modal handlers
-  const openModal = (modalName: string, payload?: any) => {
+  const openModal = <K extends ModalId>(modalName: K, ...args: undefined extends ModalPayloads[K] ? [payload?: ModalPayloads[K]] : [payload: ModalPayloads[K]]): void => {
+    const payload = args[0]
     if (modalName === 'EXP_DETAIL') {
       selectedExpense.value = payload as Expense
     } else if (modalName === 'QR_MODAL' || modalName === 'CONFIRM_MODAL') {
@@ -200,12 +244,14 @@ export function useSpolubyt() {
     } else if (modalName === 'EXP_ADD') {
       expensePrefill.value = (payload as ExpensePrefillData) || null
     }
+    if (modalName === 'SHIFT_SWAP') selectedShift.value = payload as CleaningShift
     activeModal.value = modalName
   }
 
   const closeModal = () => {
     activeModal.value = null
     expensePrefill.value = null
+    selectedShift.value = null
   }
 
   // KPI Calculations
@@ -241,6 +287,19 @@ export function useSpolubyt() {
     return roommates.value.find(r => r.role === 'Správce') || roommates.value[0]
   })
 
+  const managerSettlement = computed<DebtSettlement>(() => ({
+    roommateId: managerRoommate.value.id,
+    roommateName: managerRoommate.value.name,
+    roomName: managerRoommate.value.roomName,
+    roomAreaM2: managerRoommate.value.roomAreaM2,
+    areaSharePct: managerRoommate.value.areaSharePct,
+    totalDebt: 0,
+    breakdown: { rent: 0, energy: 0, wifi: 0, drogerie: 0 },
+    dueDate: `2026-11-${String(settings.value.dueDayOfMonth).padStart(2, '0')}`,
+    daysOverdue: 0,
+    status: 'VYROVNÁNO',
+  }))
+
   const currentUserSettlement = computed(() => {
     return settlements.value.find(s => s.roommateId === currentUserId.value) || null
   })
@@ -267,7 +326,7 @@ export function useSpolubyt() {
     return expenses.value.reduce((sum, e) => {
       if (e.payerId !== currentUserId.value) return sum
       const unpaidOthers = e.shares
-        .filter(s => s.roommateId !== currentUserId.value && s.status === 'DLUŽÍ')
+        .filter(s => s.roommateId !== currentUserId.value && (s.status === 'DLUŽÍ' || s.status === 'PO_SPLATNOSTI'))
         .reduce((shareSum, s) => shareSum + s.amount, 0)
       return sum + unpaidOthers
     }, 0)
@@ -388,10 +447,12 @@ export function useSpolubyt() {
   }
 
   // Add Expense
-  const addExpense = (newExpense: Omit<Expense, 'id' | 'code' | 'audit'>) => {
+  const addExpense = (newExpense: Omit<Expense, 'id' | 'code' | 'audit'>, options: { cartItemIds?: string[] } = {}): boolean => {
     const today = new Date()
-    const code = `VYD-${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 900 + 100))}`
-    const id = 'exp-' + Date.now()
+    const prefix = `VYD-${DEMO_TODAY.slice(0, 7)}-`
+    const sequence = Math.max(0, ...expenses.value.filter(e => e.code.startsWith(prefix)).map(e => Number(e.code.slice(prefix.length)) || 0)) + 1
+    const code = prefix + String(sequence).padStart(3, '0')
+    const id = createId('exp')
     
     const expense: Expense = {
       ...newExpense,
@@ -406,25 +467,35 @@ export function useSpolubyt() {
     applyExpenseDebt(expense, 1)
 
     // If the expense originated from a cart conversion, remove the transferred items
-    const transferredCartItemIds = expensePrefill.value?.cartItemIds
-      ?? (expensePrefill.value?.cartItemId ? [expensePrefill.value.cartItemId] : [])
+    const transferredCartItemIds = options.cartItemIds ?? []
     if (transferredCartItemIds.length > 0) {
       cartItems.value = cartItems.value.filter(i => !transferredCartItemIds.includes(i.id))
     }
 
     expenses.value.unshift(expense)
-    closeModal()
     showToast(
       t('toasts.expenseAdded.title', 'Výdaj úspěšně zaevidován'),
       t('toasts.expenseAdded.message', 'Položka „{title}“ ({amount} Kč) byla rozpočítána a uložena.', { title: expense.title, amount: expense.totalAmount.toLocaleString('cs-CZ') }),
       'success'
     )
+    return true
+  }
+
+  const canDeleteExpense = (expense: Expense): boolean => isMasterTenant.value || expense.payerId === currentUserId.value
+  const requireManager = (): boolean => {
+    if (isMasterTenant.value) return true
+    showToast('Přístup odepřen', 'Tuto akci může provést pouze správce bytu.', 'warning')
+    return false
   }
 
   // Delete Expense
   const deleteExpense = (expenseId: string) => {
     const exp = expenses.value.find(e => e.id === expenseId)
     if (!exp) return
+    if (!canDeleteExpense(exp)) {
+      showToast('Přístup odepřen', 'Výdaj může smazat pouze plátce nebo správce bytu.', 'warning')
+      return
+    }
 
     requestConfirmation({
       title: t('confirm.deleteExpense.title', 'Smazat výdaj'),
@@ -433,6 +504,7 @@ export function useSpolubyt() {
       cancelLabel: t('confirm.deleteExpense.cancel', 'Ponechat'),
       isDestructive: true,
       onConfirm: () => {
+        if (!canDeleteExpense(exp) || !expenses.value.includes(exp)) return
         applyExpenseDebt(exp, -1)
 
         expenses.value = expenses.value.filter(e => e.id !== expenseId)
@@ -450,9 +522,14 @@ export function useSpolubyt() {
     method: string
     note: string
     notifyMember: boolean
-  }) => {
+  }): boolean => {
+    if (!requireManager()) return false
+    if (!isIsoDate(paymentDetails.date) || paymentDetails.date > DEMO_TODAY) {
+      showToast('Neplatné datum platby', 'Zadejte datum nejvýše 12. 11. 2026.', 'error')
+      return false
+    }
     const s = settlements.value.find(set => set.roommateId === roommateId)
-    if (!s) return
+    if (!s) return false
 
     const paidAmount = s.totalDebt
     s.totalDebt = 0
@@ -490,10 +567,12 @@ export function useSpolubyt() {
       'success',
       4500
     )
+    return true
   }
 
   // Send Reminder (Upomínka)
   const sendReminder = (roommateId: string) => {
+    if (!requireManager()) return
     const s = settlements.value.find(set => set.roommateId === roommateId)
     if (!s) return
 
@@ -542,13 +621,13 @@ export function useSpolubyt() {
   })
 
   const addCartItem = (item: { name: string; category: ExpenseCategory; unitPrice: number; qty: number }) => {
-    if (!item.name.trim() || item.unitPrice <= 0 || item.qty <= 0) {
+    if (!item.name.trim() || !Number.isFinite(item.unitPrice) || !Number.isFinite(item.qty) || item.unitPrice <= 0 || item.qty <= 0) {
       showToast(t('toasts.invalidData.title', 'Neplatné údaje'), t('toasts.invalidData.message', 'Vyplňte prosím název položky a kladnou cenu.'), 'warning')
       return
     }
 
     const newItem: CartItem = {
-      id: 'cart-' + Date.now(),
+      id: createId('cart'),
       name: item.name.trim(),
       category: item.category,
       unitPrice: Math.round(item.unitPrice),
@@ -660,7 +739,7 @@ export function useSpolubyt() {
     openModal('EXP_ADD', {
       title,
       totalAmount: total,
-      category: 'Drogerie',
+      category: items.every(i => i.category === items[0].category) ? items[0].category : 'Služby',
       cartItemIds: items.map(i => i.id),
       items: items.map(i => ({
         id: i.id,
@@ -689,7 +768,7 @@ export function useSpolubyt() {
   const latestMeters = computed(() => {
     const map: Record<string, MeterReading> = {}
     meters.value.forEach(m => {
-      if (!map[m.type] || new Date(m.date) > new Date(map[m.type].date)) {
+      if (!map[m.type] || m.date > map[m.type].date) {
         map[m.type] = m
       }
     })
@@ -704,6 +783,10 @@ export function useSpolubyt() {
     photoUrl?: string
   }) => {
     const prev = latestMeters.value[data.type]
+    if (!isIsoDate(data.date) || data.date > DEMO_TODAY || (prev && data.date < prev.date) || !Number.isFinite(data.value) || data.value < 0) {
+      showToast('Neplatný odečet', 'Zadejte nezáporný konečný stav a datum od posledního odečtu do 12. 11. 2026.', 'error')
+      return false
+    }
     if (prev && data.value < prev.value) {
       showToast(
         t('toasts.invalidMeter.title', 'Neplatná hodnota měřidla'),
@@ -715,7 +798,7 @@ export function useSpolubyt() {
 
     const delta = prev ? data.value - prev.value : 0
     const newReading: MeterReading = {
-      id: 'meter-' + Date.now(),
+      id: createId('meter'),
       type: data.type,
       date: data.date,
       value: data.value,
@@ -727,7 +810,6 @@ export function useSpolubyt() {
     }
 
     meters.value.unshift(newReading)
-    closeModal()
     showToast(
       t('toasts.meterSaved.title', 'Odečet byl uložen'),
       t('toasts.meterSaved.message', 'Nový stav měřidla {type} ({value} {unit}) byl úspěšně zaevidován s přírůstkem +{delta} {unit}.', { type: data.type, value: data.value, unit: newReading.unit, delta }),
@@ -736,9 +818,24 @@ export function useSpolubyt() {
     return true
   }
 
+  const deleteLatestMeterReading = (readingId: string): void => {
+    const reading = meters.value.find(m => m.id === readingId)
+    if (!reading || latestMeters.value[reading.type]?.id !== readingId) return
+    requestConfirmation({
+      title: 'Smazat poslední odečet',
+      message: `Odstranit odečet ${reading.value.toLocaleString('cs-CZ')} ${reading.unit} ze dne ${reading.date}?`,
+      isDestructive: true,
+      onConfirm: () => {
+        if (latestMeters.value[reading.type]?.id !== readingId) return
+        meters.value = meters.value.filter(m => m.id !== readingId)
+        showToast('Odečet odstraněn', `Odečet ${reading.value.toLocaleString('cs-CZ')} ${reading.unit} byl odstraněn.`, 'info')
+      },
+    })
+  }
+
   // Energy Prediction
   const annualEnergyPrediction = computed<EnergyPrediction>(() => {
-    const annualAdvances = (settings.value.monthlyUtilities || 8600) * 12
+    const annualAdvances = settings.value.monthlyUtilities * 12
 
     // Unit rates based on advance allocation and contract quotas:
     // Electricity: 3 200 CZK / 160 kWh = 20.0 CZK/kWh
@@ -806,6 +903,7 @@ export function useSpolubyt() {
   const cleaningTaskDefs = CLEANING_TASK_DEFS
 
   const ensureShiftsForWeek = (targetWeek: number) => {
+    if (!Number.isInteger(targetWeek) || targetWeek < 1 || targetWeek > 53) return
     const existing = cleaningShifts.value.filter(s => s.weekNumber === targetWeek)
     if (existing.length >= 4) return
 
@@ -850,6 +948,7 @@ export function useSpolubyt() {
   }
 
   const selectCleaningWeek = (weekNum: number) => {
+    if (!Number.isInteger(weekNum) || weekNum < 1 || weekNum > 53) return
     selectedCleaningWeek.value = weekNum
     ensureShiftsForWeek(weekNum)
   }
@@ -873,6 +972,7 @@ export function useSpolubyt() {
 
     if (!shift.isCompleted) {
       shift.isCompleted = true
+      if (shift.swapRequest?.status === 'PENDING') shift.swapRequest.status = 'CANCELLED'
       const now = new Date()
       const d = now.getDate().toString().padStart(2, '0')
       const m = (now.getMonth() + 1).toString().padStart(2, '0')
@@ -932,12 +1032,16 @@ export function useSpolubyt() {
     if (!isMasterTenant.value && shift.roommateId !== currentUserId.value) {
       showToast(
         t('toasts.accessDenied.title', 'Přístup odepřen'),
-        t('toasts.accessDenied.requestSwap', 'O výměnu směny může požádat pouze přiřazený spolubydlící nebo správce bytu.'),
+        t('toasts.accessDenied.requestSwap', 'O převzetí směny může požádat pouze přiřazený spolubydlící nebo správce bytu.'),
         'warning'
       )
       return
     }
 
+    if (shift.isCompleted || shift.swapRequest?.status === 'PENDING') {
+      showToast('Upozornění', 'Splněnou směnu nebo směnu s čekající žádostí nelze převést.', 'warning')
+      return
+    }
     const target = roommates.value.find(r => r.id === targetRoommateId)
     if (!target) {
       showToast(t('toasts.error.title', 'Chyba'), t('toasts.error.targetNotFound', 'Cílový spolubydlící nebyl nalezen.'), 'error')
@@ -945,7 +1049,7 @@ export function useSpolubyt() {
     }
 
     if (target.id === shift.roommateId) {
-      showToast(t('toasts.warning.title', 'Upozornění'), t('toasts.warning.selfSwap', 'Nelze vyměnit směnu sám se sebou.'), 'warning')
+      showToast(t('toasts.warning.title', 'Upozornění'), t('toasts.warning.selfSwap', 'Nelze požádat sám sebe o převzetí směny.'), 'warning')
       return
     }
 
@@ -956,7 +1060,7 @@ export function useSpolubyt() {
     const y = now.getFullYear()
 
     const swapReq: ShiftSwapRequest = {
-      id: 'swap-' + Date.now(),
+      id: createId('swap'),
       targetRoommateId: target.id,
       targetRoommateName: target.name,
       requestedByRoommateId: requester.id,
@@ -968,7 +1072,7 @@ export function useSpolubyt() {
 
     shift.swapRequest = swapReq
     showToast(
-      t('toasts.swapRequested.title', 'Žádost o výměnu odeslána'),
+      t('toasts.swapRequested.title', 'Žádost o převzetí odeslána'),
       t('toasts.swapRequested.message', 'Žádost o převzetí směny „{task}“ byla doručena spolubydlícímu: {name}.', { task: shift.taskTitle, name: target.name }),
       'info'
     )
@@ -981,12 +1085,16 @@ export function useSpolubyt() {
     if (!isMasterTenant.value && currentUserId.value !== shift.swapRequest.targetRoommateId) {
       showToast(
         t('toasts.accessDenied.title', 'Přístup odepřen'),
-        t('toasts.accessDenied.acceptSwap', 'Výměnu může schválit pouze oslovený spolubydlící nebo správce bytu.'),
+        t('toasts.accessDenied.acceptSwap', 'Převzetí může schválit pouze oslovený spolubydlící nebo správce bytu.'),
         'warning'
       )
       return
     }
 
+    if (shift.isCompleted) {
+      showToast('Upozornění', 'Splněnou směnu nelze převzít.', 'warning')
+      return
+    }
     shift.swapRequest.status = 'ACCEPTED'
     const newRoommateId = shift.swapRequest.targetRoommateId
     const newRoommateName = shift.swapRequest.targetRoommateName
@@ -1003,7 +1111,7 @@ export function useSpolubyt() {
     } catch (e) {}
 
     showToast(
-      t('toasts.swapAccepted.title', 'Výměna směny byla potvrzena 🎉'),
+      t('toasts.swapAccepted.title', 'Převzetí směny byla potvrzena 🎉'),
       t('toasts.swapAccepted.message', 'Směna „{task}“ byla úspěšně převedena na: {name}.', { task: shift.taskTitle, name: newRoommateName }),
       'success'
     )
@@ -1016,7 +1124,7 @@ export function useSpolubyt() {
     if (!isMasterTenant.value && currentUserId.value !== shift.swapRequest.targetRoommateId) {
       showToast(
         t('toasts.accessDenied.title', 'Přístup odepřen'),
-        t('toasts.accessDenied.rejectSwap', 'Výměnu může odmítnout pouze oslovený spolubydlící nebo správce bytu.'),
+        t('toasts.accessDenied.rejectSwap', 'Převzetí může odmítnout pouze oslovený spolubydlící nebo správce bytu.'),
         'warning'
       )
       return
@@ -1024,7 +1132,7 @@ export function useSpolubyt() {
 
     shift.swapRequest.status = 'REJECTED'
     showToast(
-      t('toasts.swapRejected.title', 'Žádost o výměnu byla odmítnuta'),
+      t('toasts.swapRejected.title', 'Žádost o převzetí byla odmítnuta'),
       t('toasts.swapRejected.message', 'Směna „{task}“ zůstává přiřazena původnímu spolubydlícímu ({name}).', { task: shift.taskTitle, name: shift.roommateName }),
       'info'
     )
@@ -1045,8 +1153,8 @@ export function useSpolubyt() {
 
     shift.swapRequest.status = 'CANCELLED'
     showToast(
-      t('toasts.swapCancelled.title', 'Žádost o výměnu byla zrušena'),
-      t('toasts.swapCancelled.message', 'Žádost o výměnu směny „{task}“ byla úspěšně odvolána.', { task: shift.taskTitle }),
+      t('toasts.swapCancelled.title', 'Žádost o převzetí byla zrušena'),
+      t('toasts.swapCancelled.message', 'Žádost o převzetí směny „{task}“ byla úspěšně odvolána.', { task: shift.taskTitle }),
       'info'
     )
   }
@@ -1082,7 +1190,34 @@ export function useSpolubyt() {
       return false
     }
 
-    settings.value = { ...newSettings }
+    const iban = newSettings.iban.trim().replace(/\s/g, '').toUpperCase()
+    if (!newSettings.name.trim() || !newSettings.address.trim() || !newSettings.accountNumber.trim()
+      || !/^CZ\d{22}$/.test(iban)
+      || !Number.isFinite(newSettings.monthlyRent) || newSettings.monthlyRent <= 0
+      || !Number.isFinite(newSettings.monthlyUtilities) || newSettings.monthlyUtilities <= 0
+      || !Number.isInteger(newSettings.dueDayOfMonth) || newSettings.dueDayOfMonth < 1 || newSettings.dueDayOfMonth > 28
+      || !['BY_AREA', 'EQUAL'].includes(newSettings.rules.rentKey)
+      || !['BY_AREA', 'EQUAL'].includes(newSettings.rules.energyKey) || newSettings.rules.suppliesKey !== 'EQUAL') {
+      showToast('Neplatné nastavení', 'Vyplňte údaje bytu, český IBAN, kladné částky a den splatnosti 1–28.', 'error')
+      return false
+    }
+    const dueChanged = settings.value.dueDayOfMonth !== newSettings.dueDayOfMonth
+    settings.value = deepClone({ ...newSettings, iban })
+    if (dueChanged) settlements.value.forEach(s => {
+      s.dueDate = `2026-11-${String(newSettings.dueDayOfMonth).padStart(2, '0')}`
+      s.daysOverdue = s.totalDebt > 0 ? Math.max(0, 12 - newSettings.dueDayOfMonth) : 0
+      s.status = s.totalDebt === 0 ? 'VYROVNÁNO' : s.daysOverdue > 0 ? 'PO_SPLATNOSTI' : 'PŘED_SPLATNOSTÍ'
+    })
+    if (dueChanged) expenses.value.forEach(expense => {
+      if (expense.payerId !== managerRoommate.value.id) return
+      expense.shares.forEach(share => {
+        if (share.status !== 'DLUŽÍ' && share.status !== 'PO_SPLATNOSTI') return
+        const settlement = settlements.value.find(s => s.roommateId === share.roommateId)
+        share.status = settlement && settlement.daysOverdue > 0 ? 'PO_SPLATNOSTI' : 'DLUŽÍ'
+      })
+      expense.status = expense.shares.some(s => s.status === 'PO_SPLATNOSTI') ? 'PO_SPLATNOSTI'
+        : expense.shares.some(s => s.status === 'DLUŽÍ') ? 'ČÁSTEČNĚ' : 'UHRAZENO'
+    })
     showToast(
       t('toasts.settingsSaved.title', 'Nastavení uloženo'),
       t('toasts.settingsSaved.message', 'Kmenové údaje bytu, bankovní spojení a zálohy byly úspěšně aktualizovány.'),
@@ -1113,6 +1248,8 @@ export function useSpolubyt() {
     const totalArea = roommates.value.reduce((sum, r) => sum + r.roomAreaM2, 0)
     roommates.value.forEach(r => {
       r.areaSharePct = Math.round((r.roomAreaM2 / totalArea) * 1000) / 10
+      const settlement = settlements.value.find(s => s.roommateId === r.id)
+      if (settlement) Object.assign(settlement, { roomName: r.roomName, roomAreaM2: r.roomAreaM2, areaSharePct: r.areaSharePct })
     })
 
     showToast(
@@ -1131,13 +1268,13 @@ export function useSpolubyt() {
       confirmLabel: t('confirm.reset.confirm', 'Obnovit výchozí data'),
       isDestructive: true,
       onConfirm: () => {
-        roommates.value = JSON.parse(JSON.stringify(INITIAL_ROOMMATES))
-        settings.value = JSON.parse(JSON.stringify(INITIAL_SETTINGS))
-        settlements.value = JSON.parse(JSON.stringify(INITIAL_SETTLEMENTS))
-        expenses.value = JSON.parse(JSON.stringify(INITIAL_EXPENSES))
-        meters.value = JSON.parse(JSON.stringify(INITIAL_METERS))
-        cartItems.value = JSON.parse(JSON.stringify(INITIAL_CART_ITEMS))
-        cleaningShifts.value = JSON.parse(JSON.stringify(INITIAL_CLEANING_SHIFTS))
+        roommates.value = deepClone(INITIAL_ROOMMATES)
+        settings.value = deepClone(INITIAL_SETTINGS)
+        settlements.value = deepClone(INITIAL_SETTLEMENTS)
+        expenses.value = deepClone(INITIAL_EXPENSES)
+        meters.value = deepClone(INITIAL_METERS)
+        cartItems.value = deepClone(INITIAL_CART_ITEMS)
+        cleaningShifts.value = deepClone(INITIAL_CLEANING_SHIFTS)
         selectedCleaningWeek.value = 45
         currentUserId.value = 'user-tomas'
         currentPage.value = 'DASH'
@@ -1162,19 +1299,20 @@ export function useSpolubyt() {
     const rows = filteredExpenses.value.map(e => [
       e.code,
       e.date,
-      `"${e.title.replace(/"/g, '""')}"`,
+      e.title,
       e.category,
-      `"${e.payerName}"`,
+      e.payerName,
       e.totalAmount,
       e.status
     ])
 
-    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n')
+    const csvContent = '\uFEFF' + [headers.map(csvCell).join(';'), ...rows.map(r => r.map(csvCell).join(';'))].join('\r\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `spolubyt_vypis_vydaju_${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `spolubyt_vypis_vydaju_${DEMO_TODAY}.csv`
     link.click()
+    URL.revokeObjectURL(link.href)
 
     showToast(t('toasts.exportDone.title', 'Export dokončen'), t('toasts.exportDone.message', 'Soubor CSV byl stažen do vašeho zařízení.'), 'success')
   }
@@ -1186,6 +1324,7 @@ export function useSpolubyt() {
     toggleSidebar,
     activeModal,
     selectedExpense,
+    selectedShift,
     selectedSettlement,
     expensePrefill,
     confirmModal,
@@ -1199,6 +1338,7 @@ export function useSpolubyt() {
     roommates,
     currentUser,
     managerRoommate,
+    managerSettlement,
     isMasterTenant,
     setCurrentUser,
     currentUserSettlement,
@@ -1229,6 +1369,7 @@ export function useSpolubyt() {
     resetExpenseFilters,
     addExpense,
     deleteExpense,
+    canDeleteExpense,
     exportExpensesCsv,
 
     // Settlements
@@ -1258,6 +1399,7 @@ export function useSpolubyt() {
     meters,
     latestMeters,
     addMeterReading,
+    deleteLatestMeterReading,
     annualEnergyPrediction,
 
     // Cleaning & Shifts
@@ -1281,9 +1423,18 @@ export function useSpolubyt() {
 
     // Toasts & Reset
     toasts,
+    storageWriteFailed,
+    storageRecovered,
+    storageConflict,
     showToast,
     removeToast,
     resetDemoData
   }
 }
 
+
+const store = createStore()
+
+export function useSpolubyt(): ReturnType<typeof createStore> {
+  return store
+}

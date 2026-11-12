@@ -40,23 +40,23 @@ Consequence: correctness is judged by *demonstrable interaction behaviour* and b
 | Styling | Tailwind CSS (utility classes only) | ^3.4.17 |
 | Build | Vite (port 5173, `strictPort`) | ^6.1.0 |
 | Desktop shell | Tauri 2 (Rust) — **passive wrapper, zero IPC** | ^2.12.4 |
-| Icons | `lucide-vue-next` | ^0.475.0 |
+| Icons | local inline SVG + `NavIcon.vue` | — |
 | QR | `qrcode` (canvas) | ^1.5.4 |
 | Delight | `canvas-confetti` | ^1.9.4 |
 | Tests | hand-rolled Node runner + Vite SSR loader | — |
 
-Node **v20+** required. There is **no** ESLint, Prettier, Vitest, Playwright, Pinia, or vue-router — do not introduce them.
+Node **v22+** (`.nvmrc`: 22) required. There is **no** ESLint, Prettier, Vitest, Playwright, Pinia, or vue-router — do not introduce them.
 
 ---
 
 ## 3. Commands
 
 ```bash
-npm install          # deps (node_modules is already present)
+npm install          # deps (install dependencies on a clean checkout)
 npm run dev          # vite dev server → http://localhost:5173
 npm run build        # vue-tsc (type check) && vite build
 npm run preview      # serve dist
-npm test             # node tests/e2e-suite.mjs — 132 E2E cases
+npm test             # node tests/e2e-suite.mjs — 161 E2E cases
 npm run tauri dev    # desktop dev (needs Rust toolchain)
 npm run tauri build  # bundles into src-tauri/target/release/bundle/
 ```
@@ -82,7 +82,7 @@ npm test && npm run build
 | `src-tauri/tauri.conf.json` | `"version"` — this is what the release workflow turns into the `v<version>` tag |
 | `src-tauri/Cargo.toml` | `[package] version` |
 | `src-tauri/Cargo.lock` | `version` in the `name = "spolubyt-app"` package entry |
-| `src/components/Sidebar.vue` | the `Verze prototypu:` literal (currently `1.0.0-rc`) — the only user-visible version |
+| `src/components/Sidebar.vue` | the `Verze prototypu:` literal (currently `2.0.0`) — the only user-visible version |
 
 Rules:
 
@@ -98,16 +98,16 @@ Rules:
 ## 4. File map
 
 ```
-index.html                      entry; loads Plus Jakarta Sans + JetBrains Mono from Google Fonts, lang="cs"
+index.html                      entry; loads local Plus Jakarta Sans + JetBrains Mono from public/fonts, lang="cs"
 src/main.ts                     createApp(App).mount('#app')  — nothing else
 src/style.css                   @tailwind directives + body/scrollbar base styles
 src/App.vue                     app shell: Header + Sidebar + mobile nav + <component :is> + modal layer + ConfirmDialog + ToastContainer
-src/composables/useSpolubyt.ts  ★ SINGLE SOURCE OF TRUTH — all state, all business logic (~1213 lines)
-src/data/mockData.ts            ★ all initial demo data (~961 lines)
-src/types/index.ts              ★ all domain types (~194 lines)
+src/composables/useSpolubyt.ts  ★ SINGLE SOURCE OF TRUTH — all state, all business logic
+src/data/mockData.ts            ★ all initial demo data
+src/types/index.ts              ★ all domain types
 src/views/*.vue                 7 page-level components (no props; they pull from the composable)
 src/components/*.vue            Header, Sidebar, 5 modals, ConfirmDialog, ToastContainer
-tests/e2e-suite.mjs             ★ the only wired test suite (132 cases, 4 tiers)
+tests/e2e-suite.mjs             ★ the only wired test suite (161 cases, 4 tiers)
 tests/m1-challenger.mjs         auxiliary harness — NOT in package.json scripts
 tests/m1-stress-harness.ts      auxiliary harness — NOT in package.json scripts
 src-tauri/                      Tauri 2 shell, stock main.rs, icons, tauri.conf.json
@@ -122,20 +122,20 @@ src-tauri/                      Tauri 2 shell, stock main.rs, icons, tauri.conf.
 
 ### 5.1 Singleton module-level refs
 
-All state lives as **module-level `ref`s declared outside** `export function useSpolubyt()`. This makes the composable a **singleton store** (like a mini-Pinia). Every component calling `useSpolubyt()` shares the same state.
+All state lives as **module-level `ref`s**. `createStore()` initializes computed values and actions once; `useSpolubyt()` returns that same store facade. This makes the composable a **singleton store** (like a mini-Pinia). Every component calling `useSpolubyt()` shares the same state.
 
 **Rules:**
 - Never move state inside the function body — that would create per-component copies and break cross-view reactivity.
 - Never use `provide/inject`, props for shared state, or a new store library.
-- Adding state = add a module-level `ref` + add a `watch(...{deep:true})` persisting it + expose it in the `return {}` block.
+- Adding state = add a module-level `ref`, include it in the combined deep persistence watcher and snapshot validator/defaults, and expose it in the `return {}` block.
 
 ### 5.2 Persistence
 
 ```ts
-const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v1_'
+const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v2_'
 ```
 
-Persisted keys (suffix after the prefix):
+One validated household snapshot is saved atomically at `spolubyt_hifi_v2_state`. Its fields are:
 
 | Key | Slice |
 |---|---|
@@ -149,9 +149,9 @@ Persisted keys (suffix after the prefix):
 | `cleaning_shifts` | `CleaningShift[]` |
 | `sidebar_collapsed` | UI preference (not domain) |
 
-- `loadFromStorage<T>(key, fallback)` / `saveToStorage<T>(key, value)` both swallow errors (`try/catch` + `console.error`) — keep that behaviour.
+- `loadFromStorage<T>(key, fallback)` / `saveToStorage<T>(key, value)` keep fallbacks non-throwing. Invalid snapshots restore the whole demo; write failures and stale-tab conflicts expose reactive flags rendered by App.vue. Writes compare against the last saved snapshot to avoid overwriting another tab.
 - **Not persisted** (intentional): `toasts`, `confirmModal`, `activeModal`, `selectedExpense`, `selectedSettlement`, `expensePrefill`, `expenseFilters`, `selectedCleaningWeek`, `currentPage`.
-- **Changing any persisted shape ⇒ bump `spolubyt_hifi_v1_` → `_v2_`.** Otherwise stale `localStorage` from a previous run will hydrate mismatched objects and crash the UI.
+- **Changing any persisted shape ⇒ increment the `spolubyt_hifi_v2_` prefix.** Otherwise stale `localStorage` from a previous run will hydrate mismatched objects and crash the UI.
 - `resetDemoData()` deep-clones (`JSON.parse(JSON.stringify(...))`) from `mockData`, resets persona to `'user-tomas'`, page to `'DASH'`, week to `45`, and is always wrapped in `requestConfirmation`.
 
 ### 5.3 Navigation
@@ -159,14 +159,14 @@ Persisted keys (suffix after the prefix):
 ```ts
 export type PageId = 'DASH' | 'EXPENSES' | 'SETTLEMENT' | 'ENERGY' | 'SETTINGS' | 'CART' | 'CLEANING'
 const currentPage = ref<PageId>('DASH')
-navigateTo(page)  // sets page + window.scrollTo({top: 0, behavior: 'smooth'})
+navigateTo(page)  // sets page; App.vue watches it and scrolls the main content pane
 ```
 
 `App.vue` maps `currentPage` → component through a `computed` switch. Adding a page requires touching: `types/index.ts` (`PageId`), `useSpolubyt.ts` (returned ref is already generic), `App.vue` (switch + mobile nav), `components/Sidebar.vue` (desktop nav item).
 
 ### 5.4 Modal protocol
 
-Exactly one modal at a time: `activeModal: ref<string | null>`, values:
+Exactly one modal at a time: `activeModal: ref<ModalId | null>`, values:
 
 | `activeModal` | Payload ref | Component |
 |---|---|---|
@@ -175,9 +175,10 @@ Exactly one modal at a time: `activeModal: ref<string | null>`, values:
 | `'QR_MODAL'` | `selectedSettlement: DebtSettlement` | `QrPaymentModal.vue` |
 | `'CONFIRM_MODAL'` | `selectedSettlement: DebtSettlement` | `ConfirmPaymentModal.vue` |
 | `'METER_ADD'` | — | `MeterAddModal.vue` |
+| `'SHIFT_SWAP'` | `selectedShift: CleaningShift` | dialog in `CleaningView.vue` |
 
 - Always open via `openModal(name, payload)` and close via `closeModal()` (which also clears `expensePrefill` to prevent form leakage).
-- Modals render with `v-if` in `App.vue` against `activeModal` — never with local `v-model` visibility state.
+- Primary modals render with `v-if` in `App.vue` against `activeModal`; the cleaning transfer dialog uses the same state in `CleaningView.vue`. All use `useDialog` for focus, trapping, Escape priority, and restoration. Other modals render against `activeModal` — never with local `v-model` visibility state.
 - New modal checklist: type/payload ref → `openModal` branch → `App.vue` `<XModal v-if="activeModal === 'X'" />` → `role="dialog"` + `aria-modal="true"` + `aria-labelledby` + `@keydown.esc` + `@click.stop` on the panel + backdrop click to close.
 
 ### 5.5 Confirmation dialog
@@ -194,7 +195,7 @@ Convention: **Czech copy, specific and contextual** — always name the entity a
 
 ## 6. Domain model & invariants
 
-Types live **only** in `src/types/index.ts`. Do not declare domain interfaces inside components or the composable.
+Domain types live **only** in `src/types/index.ts`. Do not declare domain interfaces inside components or the composable.
 
 ### Personas (`INITIAL_ROOMMATES`, id → role)
 
@@ -229,7 +230,7 @@ Never invent new literals without also handling them in every comparison/switch 
 
 There is **no derived ledger** — settlement debts are mutated by hand:
 
-- `addExpense(expense)`: for each non-payer share that is not `UHRAZENO`, find the roommate's settlement, `totalDebt += share.amount`, add to the matching `breakdown` bucket by category (`Bydlení → rent`, `Energie → energy`, `Drogerie → drogerie`, otherwise `other`), and set status by `daysOverdue > 0`.
+- `addExpense(expense, { cartItemIds }?)`: for each non-payer share that is not `UHRAZENO`, find the roommate's settlement, `totalDebt += share.amount`, add to the matching `breakdown` bucket by category (`Bydlení → rent`, `Energie → energy`, `Drogerie → drogerie`, otherwise `other`), and set status by `daysOverdue > 0`.
 - `deleteExpense(id)`: reverse exactly the same amounts with `Math.max(0, totalDebt - share.amount)`; force `VYROVNÁNO` at zero. Then filter the array. Always via `requestConfirmation` (destructive).
 - `confirmPayment(roommateId, { date, method, note, notifyMember })`: zeroes the settlement (`daysOverdue = 0`, `breakdown` reset), flips **all** that roommate's shares to `UHRAZENO` + `settledDate`, promotes fully-paid expenses to `UHRAZENO`, fires `confetti(...)`, closes modal, toasts.
 - `sendReminder(roommateId)`: stamps `lastReminderSent` (Czech date string) + toast. No network call — that is correct for a prototype.
@@ -238,7 +239,7 @@ There is **no derived ledger** — settlement debts are mutated by hand:
 
 ### Meters
 
-`addMeterReading` **rejects non-monotonic readings** (new value < latest value of that type) with an `'error'` toast and returns `false`. Units: `kWh` for `ELEKTŘINA`, `m³` otherwise. `delta` is computed against `latestMeters[type]`. `latestMeters` is a computed map keyed by type, picking max date.
+`addMeterReading` **rejects non-monotonic readings**, dates older than the latest reading or later than `DEMO_TODAY`, and non-finite/negative values with an `'error'` toast and returns `false`. `deleteLatestMeterReading` allows correcting the latest reading via confirmation. Units: `kWh` for `ELEKTŘINA`, `m³` otherwise. `delta` is computed against `latestMeters[type]`. `latestMeters` is a computed map keyed by type, picking max date.
 
 ### Energy prediction
 
@@ -246,7 +247,7 @@ There is **no derived ledger** — settlement debts are mutated by hand:
 
 ### Cleaning rota & shift swaps
 
-- 4 fixed task keys (`KITCHEN`, `BATHROOM`, `CORRIDOR`, `TRASH`) × 4 roommates; `currentWeekNumber = 45`; `selectedCleaningWeek` drives the view.
+- 4 fixed task keys (`KITCHEN`, `BATHROOM`, `CORRIDOR`, `TRASH`) × 4 roommates; `currentWeekNumber = 45`; `selectedCleaningWeek` drives the view (1–53). Completed shifts cannot be transferred; pending requests cannot be overwritten and are cancelled on completion. This is a transfer, not a reciprocal exchange.
 - `ensureShiftsForWeek(week)` lazily **generates** shifts for weeks other than 45 with ids `shift-w{week}-{taskkey}` and rotates assignment by week offset. Week 45 base date is Monday `2026-11-02`.
 - Swap state machine on `shift.swapRequest`:
   `PENDING --accept--> ACCEPTED` (reassigns `roommateId`/`roommateName` to target, confetti)
@@ -264,7 +265,7 @@ There is **no derived ledger** — settlement debts are mutated by hand:
 SPD*1.0*ACC:<IBAN no spaces>*AM:<amount.toFixed(2)>*CC:CZK*MSG:<ascii, ≤60 chars>*X-VS:20261101
 ```
 
-Diacritics are stripped (`normalize('NFD')` + remove combining marks + keep `[a-zA-Z0-9 -]`). Canvas rendering is DPI-aware and **explicitly strips the inline `width`/`height` styles the library sets**, so Tailwind (`w-44`, `max-w-full`) stays in control — do not remove those `removeProperty` calls, they fix a real layout blowout. Re-renders on `resize` and on `settlement` change; both listener and watcher must be cleaned up (the `onUnmounted` handler exists).
+Diacritics are stripped (`normalize('NFD')` + remove combining marks + keep `[a-zA-Z0-9 -]`). Canvas rendering is DPI-aware and **explicitly strips the inline `width`/`height` styles the library sets**, so Tailwind (`w-44`, `max-w-full`) stays in control — do not remove those `removeProperty` calls, they fix a real layout blowout. Re-renders on `resize` and on SPAYD input change (settlement or bank settings); both listener and watcher must be cleaned up (the `onUnmounted` handler exists).
 
 ---
 
@@ -318,8 +319,8 @@ Diacritics are stripped (`normalize('NFD')` + remove combining marks + keep `[a-
 
 ## 8. Testing — the real constraint
 
-`npm test` runs `tests/e2e-suite.mjs`: **132 cases in 4 tiers**
-(56 feature coverage · 55 boundary/corner · 15 cross-feature · 6 real-world tenant scenarios).
+`npm test` runs `tests/e2e-suite.mjs`: **161 cases in 4 tiers**
+(56 feature coverage · 55 boundary/corner · 44 cross-feature · 6 real-world tenant scenarios).
 
 ### How it works
 
@@ -352,22 +353,22 @@ Rule: **after any template or copy edit, run `npm test`.** A green build does no
 
 1. **Hardcoded demo timeline** — `'2026-11'`, `'2026-10'`, `'2026-09'`, week `45`, due date `10. 11. 2026`, `variableSymbol = '20261101'`. Do not replace with `new Date()`; tests depend on the frozen timeline.
 2. **`annualEnergyPrediction` mixes live inputs with literal consumption/rate constants** (intentional, documented inline).
-3. **No lint/format config and no test CI** — only `release.yml` on `v*` tags. Don't add CI frameworks without being asked.
+3. **No lint/format config and no test CI** — only `release.yml` on `v*` tags, with tests/build, version checks, license notices and draft releases. Don't add CI frameworks without being asked.
 4. **`src-tauri/target/` is build output** (gitignored) — never read it, grep it, or "fix" anything inside it.
-5. Legacy `(s.breakdown as any)` casts inside `addExpense` — leave unless you're refactoring that function.
+5. Settlement debts remain intentionally imperative. Keep seed invariants and paired mutations; do not introduce a derived ledger without a concrete requirement.
 
 ---
 
 ## 10. Recipes
 
 **Add a page**
-`types/index.ts` → extend `PageId` · create `src/views/XView.vue` · `App.vue` → import + `switch` case + mobile nav `<button>` · `components/Sidebar.vue` → nav entry (icon from `lucide-vue-next`) · run `npm test`.
+`types/index.ts` → extend `PageId` · create `src/views/XView.vue` · `App.vue` → import + `switch` case + mobile nav `<button>` · `components/Sidebar.vue` → nav entry (local SVG icon through `NavIcon.vue`) · run `npm test`.
 
 **Add a modal**
 Add payload ref + `openModal` branch in the composable · create component with dialog a11y + Esc + backdrop close · mount in `App.vue` behind `v-if="activeModal === 'NEW'"` · confirm `closeModal()` clears any per-modal payload.
 
 **Add a persisted slice**
-`types/index.ts` interface · `mockData.ts` `INITIAL_X` · `ref(loadFromStorage('x', INITIAL_X))` at module level · `watch(x, v => saveToStorage('x', v), { deep: true })` · expose in the `return {}` · bump the storage prefix version if the shape replaces an existing key.
+`types/index.ts` interface · `mockData.ts` `INITIAL_X` · `ref(loadFromStorage('x', INITIAL_X))` at module level · add to the atomic snapshot watcher, defaults and validator · expose in the `return {}` · bump the storage prefix version if the shape replaces an existing key.
 
 **Add an expense side effect**
 Mutate `settlements` **and** `breakdown` **and** `status` **and** `shares` together (see §6), then toast. Mirror the rollback in `deleteExpense`.
@@ -395,8 +396,8 @@ Governance files: `LICENSE` (MIT), `CODE_OF_CONDUCT.md` (Contributor Covenant), 
 
 ## 12. Tauri notes
 
-- `src-tauri/src/main.rs` is the stock 9-line builder — **no custom commands, no plugins, no IPC**. Frontend must stay web-only (no `@tauri-apps/api` calls currently in use, though the dep is installed).
-- `tauri.conf.json`: `productName: "Spolubyt"`, `identifier: "cz.spolubyt.desktop"`, window 1280×840, min 900×650, `security.csp: null`, `frontendDist: "../dist"`, dev URL `http://localhost:5173`.
+- `src-tauri/src/main.rs` is the stock 9-line builder — **no custom commands, no plugins, no IPC**. Frontend must stay web-only (no `@tauri-apps/api` calls currently in use, the unused dependency has been removed).
+- `tauri.conf.json`: `productName: "Spolubyt"`, `identifier: "cz.spolubyt.desktop"`, window 1280×840, min 900×650, restricted self-only CSP (blob workers and inline dynamic styles allowed; dev CSP permits localhost Vite), `frontendDist: "../dist"`, dev URL `http://localhost:5173`.
 - `beforeDevCommand: npm run dev` — so the Vite port **must stay 5173 with `strictPort`**.
 - Desktop work is optional; the browser experience is the primary deliverable. Don't require Rust to validate a change.
 
@@ -422,3 +423,20 @@ Governance files: `LICENSE` (MIT), `CODE_OF_CONDUCT.md` (Contributor Covenant), 
 - Don't rename UI strings or layout utility classes casually — tests read the source.
 - Don't remove the QR canvas DPI/`removeProperty` logic or the confetti calls.
 - Don't commit secrets; the project has none and needs none.
+
+
+## 14. Local agent tooling and auxiliary checks
+
+`.agents/skills/lm-studio-qwen` and `.agents/skills/run-workflow` are optional developer tools, not prototype dependencies. Qwen prompts must be supplied through a file or stdin, never interpolated into shell commands; remote URLs require explicit `--allow-remote`.
+
+Additional checks (no new test framework):
+
+```bash
+node tests/m1-challenger.mjs
+node tests/m1-challenger.mjs --stress
+node tests/helper-safety.mjs
+node scripts/check-release.mjs
+node scripts/license-notices.mjs /tmp/spolubyt-frontend-notices.txt
+```
+
+`src-tauri/gen/schemas/` is generated and ignored; do not re-add it. Release notices are generated using pinned cargo-about with `src-tauri/about.toml`, and frontend/font notices use `scripts/license-notices.mjs`.

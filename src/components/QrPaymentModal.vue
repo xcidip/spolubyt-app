@@ -6,9 +6,12 @@
       aria-modal="true"
       aria-labelledby="modal-qr-title"
       @keydown.esc="closeModal"
+      @click.self="closeModal"
     >
       <div 
         class="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-6 text-slate-100"
+        ref="dialogPanel"
+        tabindex="-1"
         @click.stop
       >
         <!-- Modal Header -->
@@ -21,7 +24,7 @@
               {{ t('qr.recipient', 'Příjemce:') }} {{ settings.accountNumber }} • {{ t('qr.payer', 'Plátce:') }} <span class="text-emerald-400 font-semibold">{{ settlement.roommateName }} {{ settlement.roommateId === currentUser.id ? t('qr.you', '(Vy)') : '' }}</span>
             </p>
           </div>
-          <button 
+          <button type="button"
             @click="closeModal"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             :aria-label="t('qr.close', 'Zavřít')"
@@ -69,7 +72,7 @@
                   {{ settlement.totalDebt.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} CZK
                 </span>
               </div>
-              <button
+              <button type="button"
                 @click="copyText(settlement.totalDebt.toFixed(2), t('qr.amountDueCopy', 'Částka k úhradě'))"
                 class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold transition-colors flex items-center gap-1"
               >
@@ -83,7 +86,7 @@
                 <span class="text-slate-400 text-xs block">{{ t('qr.accountNumber', 'Číslo účtu příjemce:') }}</span>
                 <span class="font-mono font-bold text-slate-200">{{ settings.accountNumber.split(' ')[0] }}</span>
               </div>
-              <button
+              <button type="button"
                 @click="copyText(settings.accountNumber.split(' ')[0], t('qr.accountNumberCopy', 'Číslo účtu'))"
                 class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs"
               >
@@ -97,7 +100,7 @@
                 <span class="text-slate-400 text-xs block">IBAN:</span>
                 <span class="font-mono text-slate-200">{{ settings.iban }}</span>
               </div>
-              <button
+              <button type="button"
                 @click="copyText(settings.iban, 'IBAN')"
                 class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs"
               >
@@ -111,7 +114,7 @@
                 <span class="text-slate-400 text-xs block">{{ t('qr.variableSymbol', 'Variabilní symbol:') }}</span>
                 <span class="font-mono font-bold text-slate-200">{{ variableSymbol }}</span>
               </div>
-              <button
+              <button type="button"
                 @click="copyText(variableSymbol, t('qr.variableSymbolCopy', 'Variabilní symbol'))"
                 class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs"
               >
@@ -125,7 +128,7 @@
                 <span class="text-slate-400 text-xs block">{{ t('qr.paymentMessageLabel', 'Zpráva pro příjemce:') }}</span>
                 <span class="font-mono text-slate-200 truncate block">{{ paymentMessage }}</span>
               </div>
-              <button
+              <button type="button"
                 @click="copyText(paymentMessage, t('qr.paymentMessageCopy', 'Zpráva pro příjemce'))"
                 class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs shrink-0"
               >
@@ -170,7 +173,10 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateCz } from '../utils/format'
+import { useDialog } from '../composables/useDialog'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { buildSpayd } from '../utils/spayd'
 import QRCode from 'qrcode'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { t } from '../i18n'
@@ -183,39 +189,12 @@ const qrCanvas = ref<HTMLCanvasElement | null>(null)
 const variableSymbol = '20261101'
 const paymentMessage = computed(() => t('qr.paymentMessageText', 'Spolubyt: Najem 11/2026 - {name}', { name: settlement.value?.roommateName || '' }))
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return '—'
-  const parts = dateStr.split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}. ${parts[1]}. ${parts[0]}`
-  }
-  return dateStr
-}
+const formatDate = (dateStr: string): string => formatDateCz(dateStr, 'full')
 
 const dueDateLabel = computed(() => formatDate(settlement.value?.dueDate || ''))
 
-/**
- * Strips Czech diacritics and non-ASCII characters to standard ASCII for SPAYD banking app compatibility.
- */
-const stripDiacritics = (str: string): string => {
-  return (str || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9 -]/g, '')
-    .trim()
-}
-
-// Standard SPAYD string syntax:
-// SPD*1.0*ACC:CZ...*AM:...*CC:CZK*MSG:...*X-VS:...
-const spaydString = computed(() => {
-  if (!settlement.value) return ''
-  const iban = settings.value.iban.replace(/\s+/g, '')
-  const amount = settlement.value.totalDebt.toFixed(2)
-  const cleanName = stripDiacritics(settlement.value.roommateName)
-  const rawMsg = `Spolubyt Najem 11/2026 ${cleanName}`
-  const msg = rawMsg.slice(0, 60)
-  return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*MSG:${msg}*X-VS:${variableSymbol}`
-})
+const spaydString = computed(() => settlement.value
+  ? buildSpayd(settings.value.iban, settlement.value.totalDebt, settlement.value.roommateName, variableSymbol) : '')
 
 const renderQrCode = async () => {
   await nextTick()
@@ -251,7 +230,7 @@ const renderQrCode = async () => {
   }
 }
 
-watch(() => settlement.value, renderQrCode, { deep: true })
+watch(spaydString, renderQrCode)
 
 onMounted(() => {
   renderQrCode()
@@ -262,19 +241,19 @@ onUnmounted(() => {
   window.removeEventListener('resize', renderQrCode)
 })
 
-const copyText = (text: string, label: string) => {
-  navigator.clipboard.writeText(text)
-  showToast(t('qr.copiedTitle', 'Zkopírováno'), t('qr.copiedMessage', '{label} ({text}) byl zkopírován do schránky.', { label, text }), 'info', 2500)
+const copyText = async (text: string, label: string): Promise<void> => {
+  try {
+    await navigator.clipboard.writeText(text)
+    showToast('Zkopírováno', `${label} byl zkopírován do schránky.`, 'info', 2500)
+  } catch {
+    showToast('Kopírování se nezdařilo', 'Vyberte a zkopírujte platební údaje ručně.', 'error')
+  }
 }
 
-const copyAll = () => {
-  const allInfo = `${t('qr.copyAllAccount', 'Účet:')} ${settings.value.accountNumber}
-IBAN: ${settings.value.iban}
-${t('qr.copyAllAmount', 'Částka:')} ${settlement.value.totalDebt} CZK
-${t('qr.copyAllVs', 'VS:')} ${variableSymbol}
-${t('qr.copyAllMessageLabel', 'Zpráva:')} ${paymentMessage.value}`
-  navigator.clipboard.writeText(allInfo)
-  showToast(t('qr.copyAllTitle', 'Kompletní údaje zkopírovány'), t('qr.copyAllMessage', 'Veškeré platební instrukce byly vloženy do schránky.'), 'success')
+const copyAll = (): void => {
+  void copyText(`Účet: ${settings.value.accountNumber}\nIBAN: ${settings.value.iban}\nČástka: ${settlement.value.totalDebt.toLocaleString('cs-CZ')} Kč\nVS: ${variableSymbol}\nZpráva: ${paymentMessage.value}`, 'Platební údaje')
 }
+const dialogPanel = ref<HTMLElement | null>(null)
+useDialog(dialogPanel, closeModal)
 </script>
 

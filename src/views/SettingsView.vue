@@ -13,7 +13,7 @@
       </div>
 
       <div class="flex items-center gap-2.5">
-        <button
+        <button type="button"
           @click="saveAll"
           :disabled="!isMasterTenant"
           class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
@@ -53,8 +53,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
-            <label class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelName', 'Název bytu *') }}</label>
-            <input
+            <label for="settingsview-field-1" class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelName', 'Název bytu *') }}</label>
+            <input id="settingsview-field-1"
               :disabled="!isMasterTenant"
               v-model="formSettings.name"
               type="text"
@@ -63,8 +63,8 @@
           </div>
 
           <div>
-            <label class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelAddress', 'Adresa nemovitosti *') }}</label>
-            <input
+            <label for="settingsview-field-2" class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelAddress', 'Adresa nemovitosti *') }}</label>
+            <input id="settingsview-field-2"
               :disabled="!isMasterTenant"
               v-model="formSettings.address"
               type="text"
@@ -73,8 +73,8 @@
           </div>
 
           <div>
-            <label class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelAccount', 'Číslo bankovního účtu správce *') }}</label>
-            <input
+            <label for="settingsview-field-3" class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelAccount', 'Číslo bankovního účtu správce *') }}</label>
+            <input id="settingsview-field-3"
               :disabled="!isMasterTenant"
               v-model="formSettings.accountNumber"
               type="text"
@@ -83,8 +83,8 @@
           </div>
 
           <div>
-            <label class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelIban', 'Kód IBAN *') }}</label>
-            <input
+            <label for="settingsview-field-4" class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelIban', 'Kód IBAN *') }}</label>
+            <input id="settingsview-field-4"
               :disabled="!isMasterTenant"
               v-model="formSettings.iban"
               type="text"
@@ -93,8 +93,8 @@
           </div>
 
           <div>
-            <label class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelRent', 'Fixní nájemné majiteli (CZK/měsíc) *') }}</label>
-            <input
+            <label for="settingsview-field-5" class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelRent', 'Fixní nájemné majiteli (CZK/měsíc) *') }}</label>
+            <input id="settingsview-field-5"
               :disabled="!isMasterTenant"
               v-model.number="formSettings.monthlyRent"
               type="number"
@@ -103,8 +103,8 @@
           </div>
 
           <div>
-            <label class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelUtilities', 'Měsíční zálohy na energie a služby (CZK/měsíc) *') }}</label>
-            <input
+            <label for="settingsview-field-6" class="block text-slate-300 mb-1 font-medium">{{ t('settings.labelUtilities', 'Měsíční zálohy na energie a služby (CZK/měsíc) *') }}</label>
+            <input id="settingsview-field-6"
               :disabled="!isMasterTenant"
               v-model.number="formSettings.monthlyUtilities"
               type="number"
@@ -163,6 +163,8 @@
                 <td class="py-2.5 px-3.5 text-center">
                   <input
                     type="number"
+                    :id="'area-' + r.id"
+                    :aria-label="'Výměra pokoje – ' + r.name + ' (m²)'"
                     :value="r.roomAreaM2"
                     step="0.5"
                     min="5"
@@ -202,7 +204,7 @@
               {{ t('settings.sectionMembers', 'Seznam členů domácnosti a kontakty') }}
             </h2>
           </div>
-          <button
+          <button type="button"
             @click="inviteMember"
             :disabled="!isMasterTenant"
             class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -260,8 +262,8 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
-            <span class="font-bold text-slate-200 block">{{ t('settings.rentKeyLabel', 'Klíč pro fixní nájemné:') }}</span>
+          <fieldset class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
+            <legend class="font-bold text-slate-200 block">{{ t('settings.rentKeyLabel', 'Klíč pro fixní nájemné:') }}</legend>
             <label class="flex items-center gap-2 text-slate-300" :class="isMasterTenant ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
               <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.rentKey" value="BY_AREA" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>{{ t('settings.byArea', 'Poměrem dle m² pokoje') }}</span>
@@ -270,10 +272,10 @@
               <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.rentKey" value="EQUAL" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>{{ t('settings.equalAll', 'Rovným dílem mezi všechny') }}</span>
             </label>
-          </div>
+          </fieldset>
 
-          <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
-            <span class="font-bold text-slate-200 block">{{ t('settings.energyKeyLabel', 'Klíč pro energie a internet:') }}</span>
+          <fieldset class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
+            <legend class="font-bold text-slate-200 block">{{ t('settings.energyKeyLabel', 'Klíč pro energie a internet:') }}</legend>
             <label class="flex items-center gap-2 text-slate-300" :class="isMasterTenant ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
               <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.energyKey" value="EQUAL" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>{{ t('settings.equalMembers', 'Rovným dílem mezi členy') }}</span>
@@ -282,15 +284,15 @@
               <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.energyKey" value="BY_AREA" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>{{ t('settings.byArea', 'Poměrem dle m² pokoje') }}</span>
             </label>
-          </div>
+          </fieldset>
 
-          <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
-            <span class="font-bold text-slate-200 block">{{ t('settings.suppliesKeyLabel', 'Klíč pro drogerii a úklid:') }}</span>
+          <fieldset class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
+            <legend class="font-bold text-slate-200 block">{{ t('settings.suppliesKeyLabel', 'Klíč pro drogerii a úklid:') }}</legend>
             <label class="flex items-center gap-2 text-slate-300" :class="isMasterTenant ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
               <input :disabled="!isMasterTenant" type="radio" v-model="formSettings.rules.suppliesKey" value="EQUAL" class="text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed" />
               <span>{{ t('settings.equalParticipants', 'Rovným dílem mezi zúčastněné') }}</span>
             </label>
-          </div>
+          </fieldset>
         </div>
       </div>
 
@@ -305,7 +307,7 @@
       <p class="text-xs text-slate-400">
         {{ t('settings.dangerText', 'Reset obnoví výchozí demo data prototypu. Všechny úpravy, nově zadané výdaje a odečty budou přepsány.') }}
       </p>
-      <button
+      <button type="button"
         @click="resetDemoData"
         class="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold border border-rose-500/30 transition-colors"
       >
@@ -320,6 +322,7 @@
 import { reactive, computed, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { t } from '../i18n'
+import { deepClone } from '../utils/format'
 
 const { 
   settings, 
@@ -339,7 +342,7 @@ const handleAreaChange = (event: Event, roommateId: string): void => {
   input.value = String(roommates.value.find(r => r.id === roommateId)?.roomAreaM2 ?? '')
 }
 
-const formSettings = reactive(JSON.parse(JSON.stringify(settings.value)))
+const formSettings = reactive(deepClone(settings.value))
 
 const totalApartmentArea = computed(() => {
   return roommates.value.reduce((sum, r) => sum + r.roomAreaM2, 0)
@@ -350,7 +353,7 @@ const totalAreaSharePct = computed(() => {
 })
 
 watch(settings, (value) => {
-  Object.assign(formSettings, JSON.parse(JSON.stringify(value)))
+  Object.assign(formSettings, deepClone(value))
 }, { deep: true })
 
 const saveAll = () => {

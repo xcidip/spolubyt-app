@@ -18,7 +18,7 @@
       </div>
 
       <div class="flex items-center gap-2.5">
-        <button
+        <button type="button"
           v-if="cartItems.length > 0"
           @click="clearCart"
           class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-rose-300 text-xs font-semibold border border-slate-700 transition-colors"
@@ -26,7 +26,7 @@
           {{ t('cart.clearCart', 'Vysypat košík') }}
         </button>
 
-        <button
+        <button type="button"
           @click="convertRemainingCartToExpense"
           :disabled="cartRemainingCount === 0"
           class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
@@ -125,7 +125,7 @@
                   <!-- Quantity +/- buttons (Interactive state recalculation!) -->
                   <td class="py-3 px-3 text-center whitespace-nowrap">
                     <div class="inline-flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1">
-                      <button
+                      <button type="button"
                         @click="updateCartItemQty(item.id, -1)"
                         class="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 flex items-center justify-center font-bold text-xs transition-colors"
                         :title="t('cart.removeOne', 'Odebrat 1 kus')"
@@ -136,7 +136,7 @@
                       <span class="w-7 text-center font-mono font-bold text-slate-100 text-xs tabular-nums">
                         {{ item.qty }}
                       </span>
-                      <button
+                      <button type="button"
                         @click="updateCartItemQty(item.id, 1)"
                         class="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 flex items-center justify-center font-bold text-xs transition-colors"
                         :title="t('cart.addOne', 'Přidat 1 kus')"
@@ -175,7 +175,7 @@
                         </svg>
                       </button>
 
-                      <button
+                      <button type="button"
                         @click="removeCartItem(item.id)"
                         class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0"
                         :title="t('cart.removeItem', 'Odebrat z košíku')"
@@ -220,8 +220,8 @@
 
           <form @submit.prevent="handleAddItem" class="space-y-3 text-xs">
             <div>
-              <label class="block text-slate-300 mb-1 font-medium">{{ t('cart.nameLabel', 'Název položky *') }}</label>
-              <input
+              <label for="cartview-field-1" class="block text-slate-300 mb-1 font-medium">{{ t('cart.nameLabel', 'Název položky *') }}</label>
+              <input id="cartview-field-1"
                 v-model="newItem.name"
                 type="text"
                 required
@@ -232,9 +232,9 @@
 
             <div class="grid grid-cols-2 gap-2.5">
               <div>
-                <label class="block text-slate-300 mb-1 font-medium">{{ t('cart.priceLabel', 'Cena / ks *') }}</label>
+                <label for="cartview-field-2" class="block text-slate-300 mb-1 font-medium">{{ t('cart.priceLabel', 'Cena / ks *') }}</label>
                 <div class="relative">
-                  <input
+                  <input id="cartview-field-2"
                     v-model.number="newItem.unitPrice"
                     type="number"
                     min="1"
@@ -248,8 +248,8 @@
               </div>
 
               <div>
-                <label class="block text-slate-300 mb-1 font-medium">{{ t('cart.qtyLabel', 'Počet kusů *') }}</label>
-                <input
+                <label for="cartview-field-3" class="block text-slate-300 mb-1 font-medium">{{ t('cart.qtyLabel', 'Počet kusů *') }}</label>
+                <input id="cartview-field-3"
                   v-model.number="newItem.qty"
                   type="number"
                   min="1"
@@ -262,8 +262,8 @@
             </div>
 
             <div>
-              <label class="block text-slate-300 mb-1 font-medium">{{ t('cart.categoryLabel', 'Kategorie') }}</label>
-              <select
+              <label for="cartview-field-4" class="block text-slate-300 mb-1 font-medium">{{ t('cart.categoryLabel', 'Kategorie') }}</label>
+              <select id="cartview-field-4"
                 v-model="newItem.category"
                 class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
               >
@@ -326,7 +326,7 @@
             </div>
           </div>
 
-          <button
+          <button type="button"
             @click="convertRemainingCartToExpense"
             :disabled="cartRemainingCount === 0"
             class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center whitespace-nowrap"

@@ -31,7 +31,9 @@ Closes #
 - [ ] Kód odpovídá zvyklostem projektu (Vue 3 Composition API, TypeScript, Tailwind CSS)
 - [ ] Změny byly lokálně otestovány v prohlížeči (případně v Tauri okně)
 - [ ] Typová kontrola a build proběhly bez chyb: `npm run build`
-- [ ] Všech 131+ E2E testů úspěšně prochází: `npm test`
+- [ ] Všechny E2E testy úspěšně prochází: `npm test`
+- [ ] Verze aplikace je synchronizována ve všech šesti místech dle AGENTS.md (kromě docs-only změn)
+- [ ] Při změně persistovaného tvaru byl zvýšen storage prefix
 - [ ] Funkcionalita nezpůsobuje poškození dat uložených v `localStorage`
 - [ ] Zajištěna přístupnost (a11y): modály jdou zavřít klávesou `Escape`, interaktivní prvky mají focus stav
 

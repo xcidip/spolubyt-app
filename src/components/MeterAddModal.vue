@@ -6,9 +6,12 @@
       aria-modal="true"
       aria-labelledby="modal-meter-title"
       @keydown.esc="closeModal"
+      @click.self="closeModal"
     >
       <div 
         class="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-6 text-slate-100"
+        ref="dialogPanel"
+        tabindex="-1"
         @click.stop
       >
         <!-- Modal Header -->
@@ -21,7 +24,7 @@
               {{ t('meterAdd.subtitle', 'Pravidelný měsíční odečet pro monitoring spotřeby a prevenci nedoplatků.') }}
             </p>
           </div>
-          <button 
+          <button type="button"
             @click="closeModal"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             :aria-label="t('meterAdd.close', 'Zavřít')"
@@ -36,10 +39,10 @@
         <form @submit.prevent="handleSubmit" class="p-6 space-y-5">
           
           <!-- Section 1: Medium selection -->
-          <div>
-            <label class="block text-xs font-bold text-slate-400 mb-2">
+          <fieldset>
+            <legend class="block text-xs font-bold text-slate-400 mb-2">
               {{ t('meterAdd.mediumLabel', '1. Zvolte měřené médium:') }}
-            </label>
+            </legend>
             <div class="grid grid-cols-2 gap-2 text-xs">
               <label 
                 v-for="m in mediumOptions" 
@@ -51,7 +54,7 @@
                 <span class="font-medium">{{ t('meterTypes.' + m.type, m.label) }} ({{ m.unit }})</span>
               </label>
             </div>
-          </div>
+          </fieldset>
 
           <!-- Section 2: Reference & Input -->
           <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
@@ -66,11 +69,11 @@
 
             <!-- New value input -->
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">
+              <label for="meteraddmodal-field-1" class="block text-xs font-medium text-slate-300 mb-1">
                 {{ t('meterAdd.currentValueLabel', 'Aktuální stav číselníku z počítadla *') }}
               </label>
               <div class="relative">
-                <input
+                <input id="meteraddmodal-field-1"
                   v-model.number="newValue"
                   type="number"
                   required
@@ -102,11 +105,13 @@
 
             <!-- Date -->
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">
+              <label for="meteraddmodal-field-2" class="block text-xs font-medium text-slate-300 mb-1">
                 {{ t('meterAdd.dateLabel', 'Datum provedení odečtu *') }}
               </label>
-              <input
+              <input id="meteraddmodal-field-2"
                 v-model="date"
+                :min="previousReading?.date"
+                :max="DEMO_TODAY"
                 type="date"
                 required
                 class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
@@ -117,10 +122,10 @@
 
           <!-- Section 3: Note -->
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">
+            <label for="meteraddmodal-field-3" class="block text-xs font-medium text-slate-300 mb-1">
               {{ t('meterAdd.noteLabel', 'Poznámka k odečtu (volitelné)') }}
             </label>
-            <input
+            <input id="meteraddmodal-field-3"
               v-model="note"
               type="text"
               :placeholder="t('meterAdd.notePlaceholder', 'např. Běžný měsíční odečet před zahájením topné sezóny...')"
@@ -153,6 +158,8 @@
 </template>
 
 <script setup lang="ts">
+import { DEMO_TODAY } from '../data/mockData'
+import { useDialog } from '../composables/useDialog'
 import { ref, computed, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { MeterType } from '../types'
@@ -172,7 +179,7 @@ const previousReading = computed(() => latestMeters.value[selectedType.value])
 const currentUnit = computed(() => selectedType.value === 'ELEKTŘINA' ? 'kWh' : 'm³')
 
 const newValue = ref<number>(14950)
-const date = ref(new Date().toISOString().slice(0, 10))
+const date = ref(DEMO_TODAY)
 const note = ref(t('meterAdd.noteDefault', 'Pravidelný odečet na konci měsíce'))
 
 // Sync default new value with previous reading + estimated delta
@@ -192,19 +199,23 @@ const delta = computed(() => {
 })
 
 const isInputValid = computed(() => {
-  if (!previousReading.value) return (newValue.value || 0) > 0
+  if (!Number.isFinite(newValue.value) || !date.value || date.value > DEMO_TODAY || (previousReading.value && date.value < previousReading.value.date)) return false
+  if (!previousReading.value) return newValue.value >= 0
   return (newValue.value || 0) >= previousReading.value.value
 })
 
 const handleSubmit = () => {
   if (!isInputValid.value) return
 
-  addMeterReading({
+  const saved = addMeterReading({
     type: selectedType.value,
     date: date.value,
     value: newValue.value,
     note: note.value
   })
+  if (saved) closeModal()
 }
+const dialogPanel = ref<HTMLElement | null>(null)
+useDialog(dialogPanel, closeModal)
 </script>
 

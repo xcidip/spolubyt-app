@@ -17,3 +17,6 @@ src-tauri/target
 *.sln
 *.sw?
 
+
+# Generated per-platform Tauri schemas
+src-tauri/gen/schemas/

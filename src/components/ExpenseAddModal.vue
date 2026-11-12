@@ -6,9 +6,12 @@
       aria-modal="true"
       aria-labelledby="modal-add-title"
       @keydown.esc="closeModal"
+      @click.self="closeModal"
     >
       <div 
         class="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-8"
+        ref="dialogPanel"
+        tabindex="-1"
         @click.stop
       >
         <!-- Modal Header -->
@@ -21,7 +24,7 @@
               {{ t('expenseAdd.subtitle', 'Systém automaticky rozpočítá náklad a aktualizuje dlužné pohledávky spolubydlících.') }}
             </p>
           </div>
-          <button 
+          <button type="button"
             @click="closeModal"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             :aria-label="t('expenseAdd.close', 'Zavřít')"
@@ -43,10 +46,10 @@
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1.5">
+              <label for="expenseaddmodal-field-1" class="block text-xs font-medium text-slate-300 mb-1.5">
                 {{ t('expenseAdd.labelTitle', 'Název výdaje či služby *') }}
               </label>
-              <input
+              <input id="expenseaddmodal-field-1"
                 v-model="form.title"
                 type="text"
                 required
@@ -57,11 +60,11 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                <label for="expenseaddmodal-field-2" class="block text-xs font-medium text-slate-300 mb-1.5">
                   {{ t('expenseAdd.labelAmount', 'Celková finanční částka *') }}
                 </label>
                 <div class="relative">
-                  <input
+                  <input id="expenseaddmodal-field-2"
                     v-model.number="form.totalAmount"
                     type="number"
                     min="1"
@@ -75,10 +78,10 @@
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                <label for="expenseaddmodal-field-3" class="block text-xs font-medium text-slate-300 mb-1.5">
                   {{ t('expenseAdd.labelDate', 'Datum úhrady *') }}
                 </label>
-                <input
+                <input id="expenseaddmodal-field-3"
                   v-model="form.date"
                   type="date"
                   required
@@ -89,10 +92,10 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                <label for="expenseaddmodal-field-4" class="block text-xs font-medium text-slate-300 mb-1.5">
                   {{ t('expenseAdd.labelCategory', 'Věcná kategorie *') }}
                 </label>
-                <select
+                <select id="expenseaddmodal-field-4"
                   v-model="form.category"
                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:outline-none transition-colors"
                 >
@@ -106,10 +109,10 @@
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                <label for="expenseaddmodal-field-5" class="block text-xs font-medium text-slate-300 mb-1.5">
                   {{ t('expenseAdd.labelPayer', 'Kdo výdaj zaplatil (Plátce) *') }}
                 </label>
-                <select
+                <select id="expenseaddmodal-field-5"
                   v-model="form.payerId"
                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:outline-none transition-colors"
                 >
@@ -129,7 +132,8 @@
             </div>
 
             <!-- Key radio buttons -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <fieldset class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <legend class="sr-only">Kalkulační klíč výdaje</legend>
               <label 
                 class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
                 :class="form.calculationKey === 'EQUAL' ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-200' : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800'"
@@ -151,7 +155,7 @@
                   <div class="text-slate-400 text-xs">{{ t('expenseAdd.byAreaDesc', 'Dle podlahové plochy z nastavení bytu') }}</div>
                 </div>
               </label>
-            </div>
+            </fieldset>
 
             <!-- Roommate selection and live calculated shares -->
             <div class="space-y-2 bg-slate-850 p-4 rounded-xl border border-slate-800">
@@ -286,15 +290,17 @@
 </template>
 
 <script setup lang="ts">
+import { DEMO_TODAY } from '../data/mockData'
+import { useDialog } from '../composables/useDialog'
 import { reactive, ref, computed, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CalculationKey, ExpenseCategory, ExpenseShare } from '../types'
 import { t } from '../i18n'
 import { roundMoney, splitAmount } from '../utils/money'
 
-const { roommates, currentUser, expensePrefill, closeModal, addExpense } = useSpolubyt()
+const { roommates, currentUser, expensePrefill, closeModal, addExpense, settings } = useSpolubyt()
 
-const todayStr = new Date().toISOString().slice(0, 10)
+const todayStr = DEMO_TODAY
 
 const form = reactive({
   title: expensePrefill.value?.title || '',
@@ -304,6 +310,11 @@ const form = reactive({
   payerId: currentUser.value.id,
   calculationKey: 'EQUAL' as CalculationKey
 })
+
+watch(() => form.category, category => {
+  form.calculationKey = category === 'Bydlení' ? settings.value.rules.rentKey
+    : category === 'Energie' ? settings.value.rules.energyKey : settings.value.rules.suppliesKey
+}, { immediate: true })
 
 // Reactively update form fields when expensePrefill changes
 watch(
@@ -330,7 +341,7 @@ const participantMap = reactive<Record<string, boolean>>(
   Object.fromEntries(roommates.value.map(r => [r.id, true]))
 )
 
-const hasUploadedReceipt = ref(true)
+const hasUploadedReceipt = ref(false)
 const receiptFilename = ref('uctenka_nakup_' + todayStr + '.jpg')
 
 const toggleSimulatedReceipt = () => {
@@ -370,7 +381,7 @@ const handleSubmit = () => {
     }
   })
 
-  addExpense({
+  const saved = addExpense({
     title: form.title,
     category: form.category,
     payerId: form.payerId,
@@ -380,9 +391,13 @@ const handleSubmit = () => {
     calculationKey: form.calculationKey,
     shares,
     receiptName: hasUploadedReceipt.value ? receiptFilename.value : undefined,
-    receiptType: 'JPG',
+    receiptType: hasUploadedReceipt.value ? 'JPG' : undefined,
+    receiptItems: expensePrefill.value?.items,
     status: shares.every(share => share.status === 'PLÁTCE' || share.status === 'UHRAZENO') ? 'UHRAZENO' : 'ČÁSTEČNĚ'
-  })
+  }, { cartItemIds: expensePrefill.value?.cartItemIds ?? (expensePrefill.value?.cartItemId ? [expensePrefill.value.cartItemId] : []) })
+  if (saved) closeModal()
 }
+const dialogPanel = ref<HTMLElement | null>(null)
+useDialog(dialogPanel, closeModal)
 </script>
 

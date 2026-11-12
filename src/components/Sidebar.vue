@@ -4,6 +4,7 @@
     :class="isSidebarCollapsed ? 'w-16' : 'w-72'"
   >
     <!-- Main nav links -->
+    <nav aria-label="Hlavní navigace" class="flex flex-col justify-between min-h-full">
     <div :class="isSidebarCollapsed ? 'p-2 space-y-2' : 'p-3 space-y-1'">
       <!-- Header with title & minimize button -->
       <div 
@@ -16,7 +17,7 @@
         >
           {{ t('nav.menu', 'Hlavní menu') }}
         </span>
-        <button
+        <button type="button"
           @click="toggleSidebar"
           class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           :title="isSidebarCollapsed ? t('sidebar.expand', 'Rozbalit postranní panel') : t('sidebar.collapse', 'Minimalizovat panel')"
@@ -35,8 +36,9 @@
       </div>
 
       <!-- Dashboard -->
-      <button
+      <button type="button"
         @click="navigateTo('DASH')"
+        :aria-current="currentPage === 'DASH' ? 'page' : undefined"
         class="w-full flex items-center rounded-xl text-sm font-medium transition-colors relative group"
         :class="[
           isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
@@ -53,8 +55,9 @@
       </button>
 
       <!-- Expenses -->
-      <button
+      <button type="button"
         @click="navigateTo('EXPENSES')"
+        :aria-current="currentPage === 'EXPENSES' ? 'page' : undefined"
         class="w-full flex items-center rounded-xl text-sm font-medium transition-colors relative group"
         :class="[
           isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
@@ -77,8 +80,9 @@
       </button>
 
       <!-- Settlements -->
-      <button
+      <button type="button"
         @click="navigateTo('SETTLEMENT')"
+        :aria-current="currentPage === 'SETTLEMENT' ? 'page' : undefined"
         class="w-full flex items-center rounded-xl text-sm font-medium transition-colors relative group"
         :class="[
           isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
@@ -127,8 +131,9 @@
       </button>
 
       <!-- Energy -->
-      <button
+      <button type="button"
         @click="navigateTo('ENERGY')"
+        :aria-current="currentPage === 'ENERGY' ? 'page' : undefined"
         class="w-full flex items-center rounded-xl text-sm font-medium transition-colors relative group"
         :class="[
           isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
@@ -151,8 +156,9 @@
       </button>
 
       <!-- Shared Cart / Nákupní seznam -->
-      <button
+      <button type="button"
         @click="navigateTo('CART')"
+        :aria-current="currentPage === 'CART' ? 'page' : undefined"
         class="w-full flex items-center rounded-xl text-sm font-medium transition-colors relative group"
         :class="[
           isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
@@ -182,8 +188,9 @@
       </button>
 
       <!-- Cleaning Shifts / Úklidové směny -->
-      <button
+      <button type="button"
         @click="navigateTo('CLEANING')"
+        :aria-current="currentPage === 'CLEANING' ? 'page' : undefined"
         class="w-full flex items-center rounded-xl text-sm font-medium transition-colors relative group"
         :class="[
           isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
@@ -226,8 +233,9 @@
       </button>
 
       <!-- Settings -->
-      <button
+      <button type="button"
         @click="navigateTo('SETTINGS')"
+        :aria-current="currentPage === 'SETTINGS' ? 'page' : undefined"
         class="w-full flex items-center rounded-xl text-sm font-medium transition-colors relative group"
         :class="[
           isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5 text-left',
@@ -270,7 +278,7 @@
       <div v-if="!isSidebarCollapsed" class="text-xs text-slate-400 space-y-1">
         <div class="flex items-center justify-between">
           <span>{{ t('sidebar.version', 'Verze prototypu:') }}</span>
-          <span class="font-mono text-slate-400">1.1.1</span>
+          <span class="font-mono text-slate-400">2.0.0</span>
         </div>
         <div class="flex items-center justify-between">
           <span>{{ t('sidebar.subject', 'Předmět:') }}</span>
@@ -282,6 +290,7 @@
         </div>
       </div>
     </div>
+    </nav>
   </aside>
 </template>
 

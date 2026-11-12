@@ -2,12 +2,17 @@
  * Milestone 1 Empirical Challenger Harness
  * Thoroughly stress-tests:
  * 1. Cart purchased toggle & expense conversion flow
- * 2. Auto-removal of converted cart items upon addExpense
+ * 2. Explicit cart transfer on addExpense with caller-controlled modal closing
  * 3. Shift swap state machine (request -> pending -> accept -> assigned / reject / cancel)
  * 4. Dynamic reactivity of annualEnergyPrediction across utility rates & consumption parameters
  */
 
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
+import { createServer } from 'vite'
+
+// Run this file with Node; --stress also loads the TypeScript harness through Vite.
+const projectRoot = fileURLToPath(new URL('../', import.meta.url))
+const createHarnessServer = () => createServer({ root: projectRoot, server: { middlewareMode: true, hmr: false, ws: false } })
 
 // Minimal DOM / storage mocks for Node runtime
 class LocalStorageMock {
@@ -71,6 +76,15 @@ async function runTest(name, fn) {
 }
 
 export async function runM1Challenger() {
+  const viteServer = await createHarnessServer()
+  try {
+    return await runM1ChallengerTests(viteServer)
+  } finally {
+    await viteServer.close()
+  }
+}
+
+async function runM1ChallengerTests(viteServer) {
   passedTests = 0
   failedTests = 0
   failures.length = 0
@@ -79,7 +93,7 @@ export async function runM1Challenger() {
   console.log('       MILESTONE 1 EMPIRICAL VERIFICATION & STRESS HARNESS       ');
   console.log('================================================================\n');
 
-  const { useSpolubyt } = await import('../src/composables/useSpolubyt.ts')
+  const { useSpolubyt } = await viteServer.ssrLoadModule('/src/composables/useSpolubyt.ts')
   const store = useSpolubyt()
 
   function resetState() {
@@ -104,7 +118,7 @@ export async function runM1Challenger() {
         { roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: 75, status: 'PLÁTCE' },
         { roommateId: 'user-jakub', roommateName: 'Jakub Kovář', amount: 75, status: 'DLUŽÍ' },
         { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 75, status: 'DLUŽÍ' },
-        { roommateId: 'user-martin', roommateName: 'Martin Kučera', amount: 75, status: 'DLUŽÍ' }
+        { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 75, status: 'DLUŽÍ' }
       ],
       status: 'ČÁSTEČNĚ',
       ...overrides
@@ -182,9 +196,9 @@ export async function runM1Challenger() {
     assertEqual(store.expensePrefill.value, null, 'expensePrefill must be null after closeModal')
   })
 
-  console.log('\n--- CATEGORY 2: Auto-removal of Converted Cart Items upon addExpense ---');
+  console.log('\n--- CATEGORY 2: Explicit Cart Transfers upon addExpense ---');
 
-  await runTest('2.1 addExpense removes the converted cart item referenced by expensePrefill.cartItemId', async () => {
+  await runTest('2.1 addExpense removes only explicitly transferred cart items; caller closes modal', async () => {
     resetState()
     const initialCount = store.cartItems.value.length
     const targetItem = store.cartItems.value.find(i => i.id === 'cart-1')
@@ -194,7 +208,9 @@ export async function runM1Challenger() {
     assertEqual(store.expensePrefill.value.cartItemId, 'cart-1')
 
     const exp = makeDummyExpense({ title: targetItem.name, totalAmount: targetItem.unitPrice * targetItem.qty })
-    store.addExpense(exp)
+    assertEqual(store.addExpense(exp, { cartItemIds: [targetItem.id] }), true)
+    assertEqual(store.activeModal.value, 'EXP_ADD', 'Store leaves closing the UI to the caller')
+    store.closeModal()
 
     // Item must be removed from cart
     assertEqual(store.cartItems.value.length, initialCount - 1)
@@ -215,6 +231,15 @@ export async function runM1Challenger() {
     store.addExpense(exp)
 
     assertEqual(store.cartItems.value.length, initialCartCount, 'Cart items must remain unchanged')
+  })
+
+  await runTest('2.2b Manual expense with active conversion prefill does not delete cart items', async () => {
+    resetState()
+    const initialIds = store.cartItems.value.map(item => item.id)
+    store.convertCartItemToExpense(store.cartItems.value[0])
+    store.addExpense(makeDummyExpense())
+    assertEqual(JSON.stringify(store.cartItems.value.map(item => item.id)), JSON.stringify(initialIds))
+    assertEqual(store.activeModal.value, 'EXP_ADD')
   })
 
   await runTest('2.3 Conversion opened, cancelled, then manual expense added does NOT remove cart item', async () => {
@@ -250,7 +275,8 @@ export async function runM1Challenger() {
 
     // Submitting expense now must not throw error
     const exp = makeDummyExpense()
-    store.addExpense(exp)
+    store.addExpense(exp, { cartItemIds: [targetItem.id] })
+    store.closeModal()
     assertEqual(store.expensePrefill.value, null)
   })
 
@@ -258,11 +284,13 @@ export async function runM1Challenger() {
     resetState()
     const item1 = store.cartItems.value[0]
     store.convertCartItemToExpense(item1)
-    store.addExpense(makeDummyExpense({ title: item1.name }))
+    store.addExpense(makeDummyExpense({ title: item1.name }), { cartItemIds: [item1.id] })
+    store.closeModal()
 
     const item2 = store.cartItems.value[0]
     store.convertCartItemToExpense(item2)
-    store.addExpense(makeDummyExpense({ title: item2.name }))
+    store.addExpense(makeDummyExpense({ title: item2.name }), { cartItemIds: [item2.id] })
+    store.closeModal()
 
     assert(!store.cartItems.value.some(i => i.id === item1.id))
     assert(!store.cartItems.value.some(i => i.id === item2.id))
@@ -498,6 +526,9 @@ export async function runM1Challenger() {
     store.setCurrentUser('user-jakub')
     store.requestShiftSwap(shiftJakub.id, 'user-eliska', 'Jakub note')
 
+    // Reopen the completed shift before requesting its transfer.
+    store.setCurrentUser('user-tomas')
+    store.toggleShiftStatus(shiftTomas.id)
     // Tomáš requests to Martin
     store.setCurrentUser('user-tomas')
     store.requestShiftSwap(shiftTomas.id, 'user-martin', 'Tomas note')
@@ -527,12 +558,14 @@ export async function runM1Challenger() {
     store.requestShiftSwap(shift.id, 'user-eliska', '     ')
     assertEqual(shift.swapRequest.note, undefined)
 
+    // Cancel the first request before sending a different note.
+    store.cancelShiftSwap(shift.id)
     // Emoji and quotes note
     store.requestShiftSwap(shift.id, 'user-eliska', 'Díky moc! 🙏 "Vezmu ti to příště"')
     assertEqual(shift.swapRequest.note, 'Díky moc! 🙏 "Vezmu ti to příště"')
   })
 
-  await runTest('5.3 Overwriting a pending swap request with a new one updates target and note cleanly', async () => {
+  await runTest('5.3 Pending request cannot be overwritten; cancellation allows a new target', async () => {
     resetState()
     const shift = store.cleaningShifts.value.find(s => s.weekNumber === 45 && s.roommateId === 'user-jakub')
     assert(shift)
@@ -541,7 +574,11 @@ export async function runM1Challenger() {
     store.requestShiftSwap(shift.id, 'user-eliska', 'První pokus')
     assertEqual(shift.swapRequest.targetRoommateId, 'user-eliska')
 
-    // Re-request to Martin
+    // Re-request must preserve the pending request.
+    store.requestShiftSwap(shift.id, 'user-martin', 'Změna na Martina')
+    assertEqual(shift.swapRequest.targetRoommateId, 'user-eliska')
+    assertEqual(shift.swapRequest.note, 'První pokus')
+    store.cancelShiftSwap(shift.id)
     store.requestShiftSwap(shift.id, 'user-martin', 'Změna na Martina')
     assertEqual(shift.swapRequest.targetRoommateId, 'user-martin')
     assertEqual(shift.swapRequest.targetRoommateName, 'Martin Pospíšil')
@@ -549,12 +586,12 @@ export async function runM1Challenger() {
     assertEqual(shift.swapRequest.note, 'Změna na Martina')
   })
 
-  await runTest('5.4 Extreme monthlyUtilities: 0 falls back to 8600; large value handles low drawdown', async () => {
+  await runTest('5.4 Zero monthly utilities rejected; large valid value handles low drawdown', async () => {
     resetState()
-    // 0 falls back to default 8600
-    store.settings.value.monthlyUtilities = 0
+    assertEqual(store.saveApartmentSettings({ ...store.settings.value, monthlyUtilities: 0 }), false)
+    assertEqual(store.settings.value.monthlyUtilities, 8600)
     let pred = store.annualEnergyPrediction.value
-    assertEqual(pred.annualAdvances, 103200, '0 falls back to 8600 * 12 = 103200')
+    assertEqual(pred.annualAdvances, 103200, 'Rejected zero leaves annual advances unchanged')
     assertEqual(pred.drawdownPct, 99)
 
     // 50 000 CZK / mo
@@ -572,7 +609,7 @@ export async function runM1Challenger() {
 
     // Manually force an invalid cartItemId in prefill
     store.openModal('EXP_ADD', { title: 'Ghost item', cartItemId: 'nonexistent-cart-999' })
-    store.addExpense(makeDummyExpense({ title: 'Ghost item' }))
+    store.addExpense(makeDummyExpense({ title: 'Ghost item' }), { cartItemIds: ['nonexistent-cart-999'] })
 
     const remainingIds = store.cartItems.value.map(i => i.id)
     assertEqual(JSON.stringify(remainingIds), JSON.stringify(initialIds), 'Cart items must not be altered')
@@ -620,9 +657,20 @@ export async function runM1Challenger() {
   return true
 }
 
+async function runStressHarness() {
+  const viteServer = await createHarnessServer()
+  try {
+    const { runAllTests } = await viteServer.ssrLoadModule('/tests/m1-stress-harness.ts')
+    return await runAllTests()
+  } finally {
+    await viteServer.close()
+  }
+}
+
 // Auto-run if executed directly
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  runM1Challenger().then(success => {
+  const run = process.argv.includes('--stress') ? runStressHarness : runM1Challenger
+  run().then(success => {
     process.exit(success ? 0 : 1)
   }).catch(err => {
     console.error('Fatal test error:', err)

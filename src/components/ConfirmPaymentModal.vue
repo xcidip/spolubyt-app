@@ -6,9 +6,12 @@
       aria-modal="true"
       aria-labelledby="modal-confirm-pay-title"
       @keydown.esc="closeModal"
+      @click.self="closeModal"
     >
       <div 
         class="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-6 text-slate-100"
+        ref="dialogPanel"
+        tabindex="-1"
         @click.stop
       >
         <!-- Modal Header -->
@@ -21,7 +24,7 @@
               {{ t('confirmPayment.subtitle', 'Spárování došlé platby a vyrovnání dlužného závazku spolubydlícího.') }}
             </p>
           </div>
-          <button 
+          <button type="button"
             @click="closeModal"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             :aria-label="t('confirmPayment.close', 'Zavřít')"
@@ -64,10 +67,10 @@
           <div class="space-y-3 text-xs">
             
             <div>
-              <label class="block font-medium text-slate-300 mb-1">
+              <label for="confirmpaymentmodal-field-1" class="block font-medium text-slate-300 mb-1">
                 {{ t('confirmPayment.dateLabel', 'Reálné datum připsání na účet *') }}
               </label>
-              <input
+              <input id="confirmpaymentmodal-field-1"
                 v-model="date"
                 type="date"
                 required
@@ -76,10 +79,10 @@
               />
             </div>
 
-            <div>
-              <label class="block font-medium text-slate-300 mb-1">
+            <fieldset>
+              <legend class="block font-medium text-slate-300 mb-1">
                 {{ t('confirmPayment.methodLabel', 'Forma úhrady *') }}
-              </label>
+              </legend>
               <div class="grid grid-cols-2 gap-3">
                 <label 
                   class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-colors"
@@ -96,13 +99,13 @@
                   <span>{{ t('confirmPayment.cash', 'Hotovost') }}</span>
                 </label>
               </div>
-            </div>
+            </fieldset>
 
             <div>
-              <label class="block font-medium text-slate-300 mb-1">
+              <label for="confirmpaymentmodal-field-2" class="block font-medium text-slate-300 mb-1">
                 {{ t('confirmPayment.noteLabel', 'Doplňující poznámka (volitelné)') }}
               </label>
-              <input
+              <input id="confirmpaymentmodal-field-2"
                 v-model="note"
                 type="text"
                 :placeholder="t('confirmPayment.notePlaceholder', 'např. Okamžitá platba z účtu Air Bank bez poplatku...')"
@@ -158,6 +161,8 @@
 </template>
 
 <script setup lang="ts">
+import { DEMO_TODAY } from '../data/mockData'
+import { useDialog } from '../composables/useDialog'
 import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { t } from '../i18n'
@@ -165,7 +170,7 @@ import { t } from '../i18n'
 const { selectedSettlement, closeModal, confirmPayment } = useSpolubyt()
 
 const settlement = computed(() => selectedSettlement.value!)
-const todayStr = new Date().toISOString().slice(0, 10)
+const todayStr = DEMO_TODAY
 
 const date = ref(todayStr)
 const method = ref<'BANK' | 'CASH'>('BANK')
@@ -180,5 +185,7 @@ const handleConfirm = () => {
     notifyMember: notifyMember.value
   })
 }
+const dialogPanel = ref<HTMLElement | null>(null)
+useDialog(dialogPanel, closeModal)
 </script>
 

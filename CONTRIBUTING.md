@@ -37,7 +37,7 @@ Pro návrh nové funkčnosti využijte šablonu **Feature request**. Uveďte:
 Aplikace je postavena na stacku **Vue 3 (Composition API)**, **TypeScript**, **Tailwind CSS**, **Vite** a **Tauri 2**.
 
 ### Požadavky
-- **Node.js** v20.x nebo novější
+- **Node.js** 22 nebo novější; verze projektu je v `.nvmrc` (`nvm install && nvm use`)
 - **npm** v10.x nebo novější
 - *(Volitelné pro Tauri)* Rust a systémové závislosti Tauri dle [dokumentace Tauri](https://tauri.app/start/)
 

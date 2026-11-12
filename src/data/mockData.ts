@@ -9,13 +9,15 @@ import {
   CleaningShift
 } from '../types'
 
+export const DEMO_TODAY = '2026-11-12'
+
 export const INITIAL_ROOMMATES: Roommate[] = [
   {
     id: 'user-tomas',
     name: 'Tomáš Beránek',
     role: 'Správce',
-    email: 'tomas.beranek@email.cz',
-    phone: '+420 777 123 456',
+    email: 'tomas.beranek@example.com',
+    phone: 'Demo – bez telefonu',
     roomName: 'Pokoj 4 (Pracovna)',
     roomAreaM2: 15.0,
     areaSharePct: 20.0,
@@ -28,8 +30,8 @@ export const INITIAL_ROOMMATES: Roommate[] = [
     id: 'user-jakub',
     name: 'Jakub Kovář',
     role: 'Člen',
-    email: 'jakub.kovar@seznam.cz',
-    phone: '+420 608 456 789',
+    email: 'jakub.kovar@example.com',
+    phone: 'Demo – bez telefonu',
     roomName: 'Pokoj 1 (Rohový)',
     roomAreaM2: 22.0,
     areaSharePct: 29.3,
@@ -40,8 +42,8 @@ export const INITIAL_ROOMMATES: Roommate[] = [
     id: 'user-eliska',
     name: 'Eliška Malá',
     role: 'Člen',
-    email: 'eliska.mala@centrum.cz',
-    phone: '+420 721 987 654',
+    email: 'eliska.mala@example.com',
+    phone: 'Demo – bez telefonu',
     roomName: 'Pokoj 2 (Balkón)',
     roomAreaM2: 20.0,
     areaSharePct: 26.7,
@@ -52,8 +54,8 @@ export const INITIAL_ROOMMATES: Roommate[] = [
     id: 'user-martin',
     name: 'Martin Pospíšil',
     role: 'Člen',
-    email: 'martin.pospisil@gmail.com',
-    phone: '+420 732 112 233',
+    email: 'martin.pospisil@example.com',
+    phone: 'Demo – bez telefonu',
     roomName: 'Pokoj 3 (Střední)',
     roomAreaM2: 18.0,
     areaSharePct: 24.0,
@@ -86,9 +88,9 @@ export const INITIAL_SETTLEMENTS: DebtSettlement[] = [
     areaSharePct: 29.3,
     totalDebt: 9850,
     breakdown: {
-      rent: 7200,
-      energy: 2150,
-      wifi: 500
+      rent: 8204,
+      energy: 1521,
+      other: 125
     },
     dueDate: '2026-11-10',
     daysOverdue: 0,
@@ -102,9 +104,9 @@ export const INITIAL_SETTLEMENTS: DebtSettlement[] = [
     areaSharePct: 26.7,
     totalDebt: 4500,
     breakdown: {
-      rent: 3800,
+      rent: 3790,
       energy: 400,
-      drogerie: 300
+      drogerie: 310
     },
     dueDate: '2026-11-01',
     daysOverdue: 4,
@@ -173,7 +175,7 @@ export const INITIAL_EXPENSES: Expense[] = [
     calculationKey: 'EQUAL',
     shares: [
       { roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: 125, status: 'PLÁTCE' },
-      { roommateId: 'user-jakub', roommateName: 'Jakub Kovář', amount: 125, status: 'UHRAZENO', settledDate: '03. 11. 2026' },
+      { roommateId: 'user-jakub', roommateName: 'Jakub Kovář', amount: 125, status: 'DLUŽÍ' },
       { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 125, status: 'UHRAZENO', settledDate: '03. 11. 2026' },
       { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 125, status: 'UHRAZENO', settledDate: '02. 11. 2026' }
     ],
@@ -183,22 +185,22 @@ export const INITIAL_EXPENSES: Expense[] = [
       createdBy: 'Tomáš Beránek',
       createdAt: '02. 11. 2026 10:15'
     },
-    status: 'UHRAZENO'
+    status: 'ČÁSTEČNĚ'
   },
   {
     id: 'exp-3',
     code: 'VYD-2026-11-01',
-    title: 'Nájemné majiteli (Listopad 2026)',
+    title: 'Nájemné majiteli (Listopad 2026) – zbývající část',
     category: 'Bydlení',
     payerId: 'user-tomas',
     payerName: 'Tomáš Beránek',
     date: '2026-11-01',
-    totalAmount: 28000,
-    calculationKey: 'BY_AREA',
+    totalAmount: 24314,
+    calculationKey: 'CUSTOM',
     shares: [
       { roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: 5600, status: 'PLÁTCE' },
       { roommateId: 'user-jakub', roommateName: 'Jakub Kovář', amount: 8204, status: 'DLUŽÍ' },
-      { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 7476, status: 'PO_SPLATNOSTI' },
+      { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 3790, status: 'PO_SPLATNOSTI' },
       { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 6720, status: 'UHRAZENO', settledDate: '01. 11. 2026' }
     ],
     receiptName: 'najemni_smlouva_potvrzeni_11.pdf',
@@ -281,7 +283,7 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     id: 'exp-7',
-    code: 'VYD-2026-10-15',
+    code: 'VYD-2026-10-007',
     title: 'Měsíční záloha na plyn (innogy)',
     category: 'Energie',
     payerId: 'user-tomas',
@@ -443,7 +445,7 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     id: 'exp-14',
-    code: 'VYD-2026-10-01',
+    code: 'VYD-2026-10-014',
     title: 'Nájemné majiteli (Říjen 2026)',
     category: 'Bydlení',
     payerId: 'user-tomas',
@@ -465,6 +467,39 @@ export const INITIAL_EXPENSES: Expense[] = [
     },
     status: 'UHRAZENO'
   }
+  ,{
+    id: 'exp-15',
+    code: 'VYD-2026-11-015',
+    title: 'Zálohy na energie – listopad 2026',
+    category: 'Energie',
+    payerId: 'user-tomas',
+    payerName: 'Tomáš Beránek',
+    date: '2026-11-01',
+    totalAmount: 8600,
+    calculationKey: 'CUSTOM',
+    shares: [
+      { roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: 4529, status: 'PLÁTCE' },
+      { roommateId: 'user-jakub', roommateName: 'Jakub Kovář', amount: 1521, status: 'DLUŽÍ' },
+      { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 400, status: 'PO_SPLATNOSTI' },
+      { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 2150, status: 'UHRAZENO', settledDate: '01. 11. 2026' },
+    ],
+    audit: { createdBy: 'Tomáš Beránek', createdAt: '01. 11. 2026 08:31' },
+    status: 'ČÁSTEČNĚ',
+  },
+  {
+    id: 'exp-16',
+    code: 'VYD-2026-11-016',
+    title: 'Nájemné listopad – již uhrazená část Elišky',
+    category: 'Bydlení',
+    payerId: 'user-tomas',
+    payerName: 'Tomáš Beránek',
+    date: '2026-11-01',
+    totalAmount: 3686,
+    calculationKey: 'CUSTOM',
+    shares: [{ roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 3686, status: 'UHRAZENO', settledDate: '01. 11. 2026' }],
+    audit: { createdBy: 'Tomáš Beránek', createdAt: '01. 11. 2026 08:32' },
+    status: 'UHRAZENO',
+  },
 ]
 
 export const INITIAL_METERS: MeterReading[] = [

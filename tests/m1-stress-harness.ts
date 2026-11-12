@@ -4,27 +4,16 @@
  * Scope: Independent stress, concurrency, authorization, and edge-case testing
  */
 
-// Set up globals BEFORE any imports of the composable
-globalThis.localStorage = {
-  _store: {} as Record<string, string>,
-  getItem(key: string) { return this._store[key] || null },
-  setItem(key: string, val: string) { this._store[key] = String(val) },
-  removeItem(key: string) { delete this._store[key] },
-  clear() { this._store = {} }
-} as any
-
-globalThis.window = {
-  scrollTo: () => {}
-} as any
-
-import type { Expense, CartItem, ShiftSwapRequest } from '../src/types/index'
+// Run with: node tests/m1-challenger.mjs --stress
+// The Node entry initializes browser mocks and loads this module via Vite SSR.
+import type { Expense, CartItem } from '../src/types/index'
 
 interface TestResult {
   name: string
   category: string
   status: 'PASS' | 'FAIL'
   details: string
-  error?: any
+  error?: unknown
 }
 
 const results: TestResult[] = []
@@ -39,7 +28,8 @@ function assert(condition: boolean, testName: string, category: string, details:
   }
 }
 
-async function runAllTests() {
+export async function runAllTests(): Promise<boolean> {
+  results.length = 0
   console.log('===============================================================')
   console.log('   M1 ADVERSARIAL STRESS & EDGE-CASE CHALLENGE HARNESS')
   console.log('===============================================================\n')
@@ -119,18 +109,20 @@ async function runAllTests() {
     payerId: 'user-tomas',
     payerName: 'Tomáš Beránek',
     status: 'ČÁSTEČNĚ',
-    splitType: 'EQUAL',
+    calculationKey: 'EQUAL',
     shares: [
       { roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: 80, status: 'PLÁTCE' },
-      { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 80, status: 'ČEKÁ' },
-      { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 80, status: 'ČEKÁ' }
+      { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: 80, status: 'DLUŽÍ' },
+      { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: 80, status: 'DLUŽÍ' }
     ]
   }
 
   // Should succeed without throw even though cart-dummy-999 is not in cartItems.value
   let addExpError = null
   try {
-    store.addExpense(dummyExpense)
+    store.addExpense(dummyExpense, { cartItemIds: ['cart-dummy-999'] })
+    assert(store.activeModal.value === 'EXP_ADD', '1.3.0 store preserves modal', 'Cart', 'Caller controls modal close')
+    store.closeModal()
   } catch (e) {
     addExpError = e
   }
@@ -185,9 +177,10 @@ async function runAllTests() {
     payerId: 'user-tomas',
     payerName: 'Tomáš Beránek',
     status: 'ČÁSTEČNĚ',
-    splitType: 'EQUAL',
-    shares: []
-  })
+    calculationKey: 'EQUAL',
+    shares: [{ roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: itemToConvert.unitPrice * itemToConvert.qty, status: 'PLÁTCE' }]
+  }, { cartItemIds: [targetId] })
+  store.closeModal()
   const itemStillInCart = store.cartItems.value.some(i => i.id === targetId)
   assert(!itemStillInCart, '1.5.2 converted item removed from cart', 'Cart', `Item ${targetId} removed from cartItems`)
   assert(store.cartItems.value.length === initialCartCount - 1, '1.5.3 cart length decremented', 'Cart', `Length is now ${initialCartCount - 1}`)
@@ -224,10 +217,11 @@ async function runAllTests() {
   assert(!!shiftWeek45, '2.2.0 find week 45 shift for user-tomas', 'ShiftSwap', `Found shift ${shiftWeek45.id}`)
 
   store.setCurrentUser('user-tomas') // role: Správce
+  store.toggleShiftStatus(shiftWeek45.id) // Reopen the completed shift before requesting a transfer.
   store.requestShiftSwap(shiftWeek45.id, 'user-tomas')
   assert(shiftWeek45.swapRequest === undefined, '2.2.1 cannot swap shift with self', 'ShiftSwap', 'swapRequest not created')
-  const selfSwapToast = store.toasts.value.find(t => t.message.includes('sám se sebou'))
-  assert(!!selfSwapToast, '2.2.2 warning toast on self swap', 'ShiftSwap', 'Toast emitted: Nelze vyměnit směnu sám se sebou')
+  const selfSwapToast = store.toasts.value.at(-1)
+  assert(selfSwapToast?.type === 'warning', '2.2.2 warning toast on self swap', 'ShiftSwap', 'Self-takeover is rejected with a warning')
 
   // 2.3 Swap Request targeting Non-Existent User
   store.requestShiftSwap(shiftWeek45.id, 'user-ghost-404')
@@ -250,6 +244,7 @@ async function runAllTests() {
   // 2.5 Unauthorized Acceptance / Rejection / Cancellation by Third Party
   // Now legitimate request created: Martin requests swap with Eliška
   store.setCurrentUser('user-martin')
+  store.toggleShiftStatus(martinShift.id) // Reopen Martin's completed shift.
   store.requestShiftSwap(martinShift.id, 'user-eliska', 'Nestíhám kvůli zkoušce')
   assert(martinShift.swapRequest?.status === 'PENDING', '2.5.1 legitimate swap request created', 'ShiftSwap', 'status is PENDING')
   assert(martinShift.swapRequest?.targetRoommateId === 'user-eliska', '2.5.2 target is Eliška', 'ShiftSwap', 'target is user-eliska')
@@ -436,43 +431,15 @@ async function runAllTests() {
   assert(predExtreme.drawdownPct === 1, '3.7.7 extreme surplus drawdownPct', 'Energy', `drawdownPct = 1%`)
   assert(!isNaN(predExtreme.drawdownPct) && !isNaN(predExtreme.netDelta), '3.7.8 no NaN in extreme calculations', 'Energy', 'Numeric values stable')
 
-  // 3.8 Zero Monthly Utilities / Zero Advances Edge Case
-  // In useSpolubyt.ts line 703: `const annualAdvances = (settings.value.monthlyUtilities || 8600) * 12`
-  // Note: 0 || 8600 coerces 0 to 8600 due to JavaScript truthiness.
-  store.settings.value.monthlyUtilities = 0
-  const predZero = store.annualEnergyPrediction.value
-  console.log('    [EMPIRICAL NOTE 3.8] When monthlyUtilities = 0:', {
-    annualAdvances: predZero.annualAdvances,
-    projectedAnnualCost: predZero.projectedAnnualCost,
-    drawdownPct: predZero.drawdownPct,
-    riskLevel: predZero.riskLevel
-  })
-  assert(
-    predZero.annualAdvances === 103200,
-    '3.8.1 zero utilities fallback behavior',
-    'Energy',
-    '0 is treated as falsy and safely defaults to 8600 * 12 = 103200'
-  )
-  assert(!isNaN(predZero.drawdownPct), '3.8.2 drawdownPct is not NaN on zero input', 'Energy', 'drawdownPct is valid number')
-
-  // 3.9 Undefined / Null / NaN Monthly Utilities
-  ;(store.settings.value as any).monthlyUtilities = undefined
-  const predUndef = store.annualEnergyPrediction.value
-  assert(predUndef.annualAdvances === 103200, '3.9.1 undefined utilities defaults safely', 'Energy', 'Defaults to 8600 * 12 = 103200')
-  assert(predUndef.drawdownPct === 99, '3.9.2 undefined utilities drawdownPct stable', 'Energy', 'Stable 99%')
-
-  ;(store.settings.value as any).monthlyUtilities = null
-  const predNull = store.annualEnergyPrediction.value
-  assert(predNull.annualAdvances === 103200, '3.9.3 null utilities defaults safely', 'Energy', 'Defaults to 8600 * 12 = 103200')
-
-  // 3.10 Negative Monthly Utilities
-  store.settings.value.monthlyUtilities = -5000
-  const predNeg = store.annualEnergyPrediction.value
-  assert(predNeg.annualAdvances === -60000, '3.10.1 negative utilities preserved', 'Energy', `annualAdvances = -60000`)
-  // line 742: annualAdvances > 0 ? ... : 100
-  assert(predNeg.drawdownPct === 100, '3.10.2 negative advances defaults drawdownPct to 100', 'Energy', `drawdownPct = ${predNeg.drawdownPct}`)
-  assert(predNeg.isSurplus === false, '3.10.3 negative advances isSurplus false', 'Energy', `isSurplus = false`)
-  assert(!isNaN(predNeg.drawdownPct), '3.10.4 negative advances no NaN', 'Energy', 'drawdownPct is valid number')
+  // 3.8–3.10 Invalid advances must be rejected by the settings operation.
+  resetStore()
+  const settingsBefore = JSON.stringify(store.settings.value)
+  for (const value of [0, -5000, NaN, Infinity]) {
+    const saved = store.saveApartmentSettings({ ...store.settings.value, monthlyUtilities: value })
+    assert(saved === false, `3.8 invalid advances rejected (${value})`, 'Energy', 'saveApartmentSettings returns false')
+    assert(JSON.stringify(store.settings.value) === settingsBefore, `3.9 settings unchanged (${value})`, 'Energy', 'Invalid input does not mutate settings')
+    assert(store.annualEnergyPrediction.value.annualAdvances === 103200, `3.10 prediction stable (${value})`, 'Energy', 'Rejected input preserves valid prediction')
+  }
 
   // =========================================================================
   // SUITE 4: Randomized Fuzzing & Type Invariance Stress Test (1000 ops)
@@ -530,7 +497,7 @@ async function runAllTests() {
         case 6: {
           // Random settings utility mutation
           const randUtilities = [0, -100, 1000, 8600, 25000, 500000, 101750 / 12][Math.floor(Math.random() * 7)]
-          store.settings.value.monthlyUtilities = randUtilities
+          store.saveApartmentSettings({ ...store.settings.value, monthlyUtilities: randUtilities })
           // Read prediction to trigger computed reactivity
           const p = store.annualEnergyPrediction.value
           if (isNaN(p.drawdownPct) || isNaN(p.netDelta) || !p.formattedDelta) {
@@ -548,7 +515,7 @@ async function runAllTests() {
             payerId: randomUser,
             payerName: 'Fuzz User',
             status: 'ČÁSTEČNĚ',
-            splitType: 'EQUAL',
+            calculationKey: 'EQUAL',
             shares: []
           })
           break
@@ -582,14 +549,9 @@ async function runAllTests() {
 
   if (failedTests > 0) {
     console.error(`\nVerdict: REJECT / REQUEST_CHANGES (${failedTests} tests failed)`)
-    process.exit(1)
+    return false
   } else {
     console.log(`\nVerdict: APPROVE (All ${passedTests} test scenarios PASSED with 0 exceptions)`)
-    process.exit(0)
+    return true
   }
 }
-
-runAllTests().catch(err => {
-  console.error('Fatal test harness runner crash:', err)
-  process.exit(1)
-})

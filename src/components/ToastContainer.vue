@@ -1,6 +1,8 @@
 <template>
   <div 
     class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2.5 max-w-md w-full pointer-events-none px-4 sm:px-0"
+    aria-live="polite"
+    aria-relevant="additions"
     role="region" 
     :aria-label="t('toast.aria', 'Uživatelská oznámení')"
   >
@@ -15,6 +17,7 @@
       <div
         v-for="toast in toasts"
         :key="toast.id"
+          :role="toast.type === 'error' || toast.type === 'warning' ? 'alert' : 'status'"
         class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-xl backdrop-blur-md transition-all"
         :class="[
           toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-100' :
@@ -46,7 +49,7 @@
         </div>
 
         <!-- Close button -->
-        <button
+        <button type="button"
           @click="removeToast(toast.id)"
           class="shrink-0 p-1 rounded-md opacity-60 hover:opacity-100 hover:bg-white/10 transition-colors"
           :aria-label="t('toast.dismiss', 'Zavřít notifikaci')"
