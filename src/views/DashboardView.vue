@@ -35,7 +35,7 @@
             <div class="text-[10px] font-semibold text-slate-400 flex items-center gap-1.5">
               <span>Úklid tento týden:</span>
               <span 
-                class="font-bold text-[10px] px-1.5 py-0.5 rounded"
+                class="font-bold text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap shrink-0"
                 :class="myCurrentCleaningShift?.isCompleted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'"
               >
                 {{ myCurrentCleaningShift?.isCompleted ? 'Splněno ✓' : 'Čeká na vás' }}
