@@ -5,10 +5,10 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-extrabold text-white tracking-tight">
-          Energie a odečty měřidel
+          {{ t('energy.title', 'Energie a odečty měřidel') }}
         </h1>
         <p class="text-xs text-slate-400 mt-0.5">
-          Zúčtovací rok: <strong class="text-slate-200">2026</strong> • Poslední odečet: <strong class="text-slate-200">{{ lastReadingDate }}</strong>
+          {{ t('energy.yearLabel', 'Zúčtovací rok:') }} <strong class="text-slate-200">2026</strong> • {{ t('energy.lastReadingLabel', 'Poslední odečet:') }} <strong class="text-slate-200">{{ lastReadingDate }}</strong>
         </p>
       </div>
 
@@ -20,7 +20,7 @@
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
           </svg>
-          <span>Zadat nový odečet</span>
+          <span>{{ t('energy.addReading', 'Zadat nový odečet') }}</span>
         </button>
       </div>
     </div>
@@ -33,14 +33,14 @@
         class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden"
       >
         <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span class="font-bold">{{ meter.label }} ({{ meter.unit }})</span>
+          <span class="font-bold">{{ t('meterTypes.' + meter.type, meter.label) }} ({{ meter.unit }})</span>
           <span :class="meter.color" class="font-bold">{{ meter.icon }}</span>
         </div>
         <div class="text-2xl font-mono font-extrabold text-white">
           {{ latestMeters[meter.type]?.value.toLocaleString('cs-CZ') || '—' }} {{ meter.unit }}
         </div>
         <div class="text-xs text-emerald-400 mt-2 flex items-center justify-between font-mono">
-          <span>{{ latestMeters[meter.type] ? `+${latestMeters[meter.type].delta} ${meter.unit} za měsíc` : 'Bez odečtu' }}</span>
+          <span>{{ latestMeters[meter.type] ? t('energy.deltaPerMonth', '+{delta} {unit} za měsíc', { delta: latestMeters[meter.type].delta, unit: meter.unit }) : t('energy.noReading', 'Bez odečtu') }}</span>
           <span class="text-xs text-slate-400 font-sans">{{ latestMeters[meter.type] ? formatDate(latestMeters[meter.type].date) : '—' }}</span>
         </div>
       </div>
@@ -55,11 +55,11 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-800">
           <div>
             <h2 class="text-sm font-bold text-slate-100">
-              Monitoring spotřeby v čase (měsíční trendy)
+              {{ t('energy.chartTitle', 'Monitoring spotřeby v čase (měsíční trendy)') }}
             </h2>
             <p class="text-xs text-slate-400">
-              Porovnání reálné spotřeby vůči fixní hranici měsíčních záloh
-              <span class="text-slate-300 font-mono">({{ currentConfig.allowance }} {{ currentConfig.unit }}/měs.)</span>
+              {{ t('energy.chartSubtitle', 'Porovnání reálné spotřeby vůči fixní hranici měsíčních záloh') }}
+              <span class="text-slate-300 font-mono">({{ currentConfig.allowance }} {{ currentConfig.unit }}{{ t('energy.perMonth', '/měs.') }})</span>
             </p>
           </div>
 
@@ -72,7 +72,7 @@
               class="px-2.5 py-1 rounded-lg transition-colors"
               :class="activeChartMedium === med ? 'bg-slate-900 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
             >
-              {{ med }}
+              {{ mediumLabel(med) }}
             </button>
           </div>
         </div>
@@ -101,7 +101,7 @@
               :style="{ bottom: `${(currentConfig.allowance / currentConfig.maxScale) * 100}%` }"
             >
               <span class="text-xs font-mono font-bold text-amber-300 bg-slate-900/80 px-2 py-0.5 rounded border border-amber-400/50 shadow-md backdrop-blur-sm whitespace-nowrap">
-                Zálohová hranice: {{ currentConfig.allowance }} {{ currentConfig.unit }}
+                {{ t('energy.allowanceLine', 'Zálohová hranice: {allowance} {unit}', { allowance: currentConfig.allowance, unit: currentConfig.unit }) }}
               </span>
             </div>
 
@@ -134,9 +134,9 @@
           </div>
 
           <table class="sr-only">
-            <caption>Měsíční spotřeba – {{ activeChartMedium }} ({{ currentConfig.unit }})</caption>
+            <caption>{{ t('energy.chartCaption', 'Měsíční spotřeba – {medium} ({unit})', { medium: mediumLabel(activeChartMedium), unit: currentConfig.unit }) }}</caption>
             <thead>
-              <tr><th>Měsíc</th><th>Spotřeba</th><th>Zálohová hranice</th></tr>
+              <tr><th>{{ t('energy.thMonth', 'Měsíc') }}</th><th>{{ t('energy.thUsage', 'Spotřeba') }}</th><th>{{ t('energy.thAllowance', 'Zálohová hranice') }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="bar in chartData" :key="bar.month">
@@ -152,15 +152,15 @@
           <div class="flex items-center gap-3">
             <span class="flex items-center gap-1.5">
               <span class="w-3 h-3 rounded bg-emerald-500"></span>
-              <span>Pod zálohovou hranicí</span>
+              <span>{{ t('energy.belowAllowance', 'Pod zálohovou hranicí') }}</span>
             </span>
             <span class="flex items-center gap-1.5">
               <span class="w-3 h-3 rounded bg-amber-500"></span>
-              <span>Nad zálohovou hranicí</span>
+              <span>{{ t('energy.aboveAllowance', 'Nad zálohovou hranicí') }}</span>
             </span>
           </div>
           <span class="font-mono text-xs text-slate-400">
-            Záloha: <strong class="text-amber-300 font-semibold">{{ currentConfig.allowance }} {{ currentConfig.unit }}</strong> • Jednotky: {{ currentConfig.unit }}
+            {{ t('energy.allowanceShort', 'Záloha:') }} <strong class="text-amber-300 font-semibold">{{ currentConfig.allowance }} {{ currentConfig.unit }}</strong> • {{ t('energy.unitsLabel', 'Jednotky:') }} {{ currentConfig.unit }}
           </span>
         </div>
 
@@ -172,7 +172,7 @@
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-bold text-slate-100">
-              Predikce ročního vyúčtování
+              {{ t('energy.predictionTitle', 'Predikce ročního vyúčtování') }}
             </h2>
             <span 
               class="text-xs px-2 py-0.5 rounded-full font-bold border"
@@ -184,35 +184,35 @@
                     : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
               ]"
             >
-              {{ annualEnergyPrediction.riskLevel }}
+              {{ t('risk.' + annualEnergyPrediction.riskLevel, annualEnergyPrediction.riskLevel) }}
             </span>
           </div>
 
           <p class="text-xs text-slate-400 leading-relaxed">
             {{ annualEnergyPrediction.isSurplus 
-                ? `Na základě dosavadního vývoje spotřeby v roce 2026 kryjí nastavené měsíční zálohy (${Math.round(annualEnergyPrediction.annualAdvances / 12).toLocaleString('cs-CZ')} CZK/měsíc) reálnou spotřebu domácnosti.`
-                : `Pozor: Aktuální predikce indikuje překročení záloh (${Math.round(annualEnergyPrediction.annualAdvances / 12).toLocaleString('cs-CZ')} CZK/měsíc). Zvažte navýšení záloh pro topnou sezónu.`
+                ? t('energy.surplusText', 'Na základě dosavadního vývoje spotřeby v roce 2026 kryjí nastavené měsíční zálohy ({amount} CZK/měsíc) reálnou spotřebu domácnosti.', { amount: Math.round(annualEnergyPrediction.annualAdvances / 12).toLocaleString('cs-CZ') })
+                : t('energy.deficitText', 'Pozor: Aktuální predikce indikuje překročení záloh ({amount} CZK/měsíc). Zvažte navýšení záloh pro topnou sezónu.', { amount: Math.round(annualEnergyPrediction.annualAdvances / 12).toLocaleString('cs-CZ') })
             }}
           </p>
 
           <!-- Expected Outcome Card -->
           <div class="p-4 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
-            <div class="text-xs text-slate-400">Očekávaný stav k 31. 12. 2026:</div>
+            <div class="text-xs text-slate-400">{{ t('energy.expectedState', 'Očekávaný stav k 31. 12. 2026:') }}</div>
             <div 
               class="text-xl font-mono font-extrabold"
               :class="annualEnergyPrediction.isSurplus ? 'text-emerald-400' : 'text-rose-400'"
             >
-              {{ annualEnergyPrediction.isSurplus ? 'ODHADOVANÝ PŘEPLATEK' : 'ODHADOVANÝ NEDOPLATEK' }} {{ annualEnergyPrediction.formattedDelta }}
+              {{ annualEnergyPrediction.isSurplus ? t('energy.estimatedSurplus', 'ODHADOVANÝ PŘEPLATEK') : t('energy.estimatedDeficit', 'ODHADOVANÝ NEDOPLATEK') }} {{ annualEnergyPrediction.formattedDelta }}
             </div>
             <div class="text-xs text-slate-400">
-              {{ annualEnergyPrediction.isSurplus ? 'Předpokládaná vratka na účet správce bytu.' : 'Předpokládaný nedoplatek k rozpočítání mezi spolubydlící.' }}
+              {{ annualEnergyPrediction.isSurplus ? t('energy.surplusHint', 'Předpokládaná vratka na účet správce bytu.') : t('energy.deficitHint', 'Předpokládaný nedoplatek k rozpočítání mezi spolubydlící.') }}
             </div>
           </div>
 
           <!-- Drawdown Progress Bar -->
           <div class="space-y-1.5 pt-1">
             <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 font-medium">Čerpání rozpočtu záloh:</span>
+              <span class="text-slate-400 font-medium">{{ t('energy.drawdownLabel', 'Čerpání rozpočtu záloh:') }}</span>
               <span class="font-mono font-bold" :class="annualEnergyPrediction.isSurplus ? 'text-emerald-400' : 'text-amber-400'">
                 {{ annualEnergyPrediction.drawdownPct }} %
               </span>
@@ -228,23 +228,23 @@
 
           <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1.5 text-slate-300">
             <div class="flex justify-between">
-              <span class="text-slate-400">Fixní roční zálohy (12 měsíců):</span>
+              <span class="text-slate-400">{{ t('energy.fixedAnnualAdvances', 'Fixní roční zálohy (12 měsíců):') }}</span>
               <span class="font-mono font-semibold">{{ annualEnergyPrediction.annualAdvances.toLocaleString('cs-CZ') }} CZK</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-slate-400">Projektované roční náklady:</span>
+              <span class="text-slate-400">{{ t('energy.projectedAnnualCost', 'Projektované roční náklady:') }}</span>
               <span class="font-mono">{{ annualEnergyPrediction.projectedAnnualCost.toLocaleString('cs-CZ') }} CZK</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-slate-400">Zúčtovací perioda:</span>
+              <span class="text-slate-400">{{ t('energy.settlementPeriod', 'Zúčtovací perioda:') }}</span>
               <span class="font-mono">01.01. – 31.12.2026</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-slate-400">Dodavatel elektřiny:</span>
+              <span class="text-slate-400">{{ t('energy.electricitySupplier', 'Dodavatel elektřiny:') }}</span>
               <span>ČEZ Prodej a.s.</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-slate-400">Dodavatel plynu:</span>
+              <span class="text-slate-400">{{ t('energy.gasSupplier', 'Dodavatel plynu:') }}</span>
               <span>innogy Energie</span>
             </div>
           </div>
@@ -257,7 +257,7 @@
           <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          <span>Zadat nový odečet měřidla</span>
+          <span>{{ t('energy.addReadingDetailed', 'Zadat nový odečet měřidla') }}</span>
         </button>
 
       </div>
@@ -268,28 +268,28 @@
     <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-sm font-bold text-slate-100">
-          Historie zaznamenaných odečtů měřidel
+          {{ t('energy.historyTitle', 'Historie zaznamenaných odečtů měřidel') }}
         </h2>
-        <span class="text-xs text-slate-400">Archiv fyzických stavů počítadel</span>
+        <span class="text-xs text-slate-400">{{ t('energy.historySubtitle', 'Archiv fyzických stavů počítadel') }}</span>
       </div>
 
-      <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" aria-label="Historie odečtů měřidel">
-        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
+      <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" :aria-label="t('energy.historyAria', 'Historie odečtů měřidel')">
+        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">{{ t('energy.scrollHint', 'Tabulku lze posouvat vodorovně →') }}</p>
         <table class="w-full min-w-[760px] text-left text-xs">
           <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
             <tr>
-              <th class="py-2.5 px-3">Datum odečtu</th>
-              <th class="py-2.5 px-3">Médium</th>
-              <th class="py-2.5 px-3">Stav počítadla</th>
-              <th class="py-2.5 px-3">Rozdíl / Spotřeba</th>
-              <th class="py-2.5 px-3">Zapsal</th>
-              <th class="py-2.5 px-3">Poznámka</th>
+              <th class="py-2.5 px-3">{{ t('energy.thDate', 'Datum odečtu') }}</th>
+              <th class="py-2.5 px-3">{{ t('energy.thMedium', 'Médium') }}</th>
+              <th class="py-2.5 px-3">{{ t('energy.thMeterValue', 'Stav počítadla') }}</th>
+              <th class="py-2.5 px-3">{{ t('energy.thDelta', 'Rozdíl / Spotřeba') }}</th>
+              <th class="py-2.5 px-3">{{ t('energy.thRecordedBy', 'Zapsal') }}</th>
+              <th class="py-2.5 px-3">{{ t('energy.thNote', 'Poznámka') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-800">
             <tr v-for="m in meters" :key="m.id" class="hover:bg-slate-800/60 transition-colors">
               <td class="py-2.5 px-3 font-mono text-slate-400">{{ formatDate(m.date) }}</td>
-              <td class="py-2.5 px-3 font-semibold text-slate-200">{{ METER_TYPE_LABELS[m.type] }}</td>
+              <td class="py-2.5 px-3 font-semibold text-slate-200">{{ t('meterTypes.' + m.type, METER_TYPE_LABELS[m.type]) }}</td>
               <td class="py-2.5 px-3 font-mono font-bold text-slate-100">
                 {{ m.value.toLocaleString('cs-CZ') }} {{ m.unit }}
               </td>
@@ -302,8 +302,8 @@
             <tr v-if="meters.length === 0">
               <td colspan="6" class="py-10 text-center text-slate-400">
                 <div class="space-y-2">
-                  <p class="font-medium text-slate-300">Zatím nejsou zaznamenány žádné odečty.</p>
-                  <button @click="openModal('METER_ADD')" class="text-xs text-emerald-400 underline font-semibold">Zadat první odečet</button>
+                  <p class="font-medium text-slate-300">{{ t('energy.emptyTitle', 'Zatím nejsou zaznamenány žádné odečty.') }}</p>
+                  <button @click="openModal('METER_ADD')" class="text-xs text-emerald-400 underline font-semibold">{{ t('energy.addFirstReading', 'Zadat první odečet') }}</button>
                 </div>
               </td>
             </tr>
@@ -320,10 +320,19 @@ import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { ENERGY_MONTHLY_HISTORY } from '../data/mockData'
 import { METER_TYPE_LABELS } from '../utils/labels'
+import { t } from '../i18n'
 
 const { meters, latestMeters, openModal, annualEnergyPrediction } = useSpolubyt()
 
 const activeChartMedium = ref('Elektřina')
+
+const MEDIUM_LABEL_KEYS: Record<string, string> = {
+  'Elektřina': 'energy.medium.electricity',
+  'Plyn': 'energy.medium.gas',
+  'Voda': 'energy.medium.water'
+}
+
+const mediumLabel = (medium: string) => t(MEDIUM_LABEL_KEYS[medium] || 'energy.medium.electricity', medium)
 
 const meterCards = computed(() => [
   { type: 'ELEKTŘINA' as const, label: 'Elektřina', unit: 'kWh', icon: '⚡', color: 'text-amber-400' },
@@ -398,7 +407,7 @@ const chartAriaLabel = computed(() => {
   const values = chartData.value
     .map(bar => `${bar.month}: ${bar.value} ${currentConfig.value.unit}`)
     .join(', ')
-  return `Měsíční spotřeba ${activeChartMedium.value} v ${currentConfig.value.unit}. Zálohová hranice ${currentConfig.value.allowance} ${currentConfig.value.unit}. Hodnoty: ${values}.`
+  return t('energy.chartAria', 'Měsíční spotřeba {medium} v {unit}. Zálohová hranice {allowance} {unit}. Hodnoty: {values}.', { medium: mediumLabel(activeChartMedium.value), unit: currentConfig.value.unit, allowance: currentConfig.value.allowance, values })
 })
 
 const formatDate = (dateStr: string) => {

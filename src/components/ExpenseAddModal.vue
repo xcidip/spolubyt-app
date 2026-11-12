@@ -15,16 +15,16 @@
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-850">
           <div>
             <h2 id="modal-add-title" class="text-lg font-bold text-white tracking-tight">
-              Zaevidovat nový výdaj domácnosti
+              {{ t('expenseAdd.title', 'Zaevidovat nový výdaj domácnosti') }}
             </h2>
             <p class="text-xs text-slate-400">
-              Systém automaticky rozpočítá náklad a aktualizuje dlužné pohledávky spolubydlících.
+              {{ t('expenseAdd.subtitle', 'Systém automaticky rozpočítá náklad a aktualizuje dlužné pohledávky spolubydlících.') }}
             </p>
           </div>
           <button 
             @click="closeModal"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-            aria-label="Zavřít"
+            :aria-label="t('expenseAdd.close', 'Zavřít')"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -39,18 +39,18 @@
           <div class="space-y-4">
             <div class="flex items-center gap-2 pb-1 border-b border-slate-800">
               <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">1</span>
-              <h3 class="text-sm font-semibold text-slate-200">Základní parametry transakce</h3>
+              <h3 class="text-sm font-semibold text-slate-200">{{ t('expenseAdd.sectionBasic', 'Základní parametry transakce') }}</h3>
             </div>
 
             <div>
               <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                Název výdaje či služby *
+                {{ t('expenseAdd.labelTitle', 'Název výdaje či služby *') }}
               </label>
               <input
                 v-model="form.title"
                 type="text"
                 required
-                placeholder="např. Nákup čistících prostředků, internet, oprava myčky..."
+                :placeholder="t('expenseAdd.placeholderTitle', 'např. Nákup čistících prostředků, internet, oprava myčky...')"
                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:outline-none transition-colors"
               />
             </div>
@@ -58,7 +58,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                  Celková finanční částka *
+                  {{ t('expenseAdd.labelAmount', 'Celková finanční částka *') }}
                 </label>
                 <div class="relative">
                   <input
@@ -76,7 +76,7 @@
 
               <div>
                 <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                  Datum úhrady *
+                  {{ t('expenseAdd.labelDate', 'Datum úhrady *') }}
                 </label>
                 <input
                   v-model="form.date"
@@ -90,31 +90,31 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                  Věcná kategorie *
+                  {{ t('expenseAdd.labelCategory', 'Věcná kategorie *') }}
                 </label>
                 <select
                   v-model="form.category"
                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:outline-none transition-colors"
                 >
-                  <option value="Drogerie">Drogerie a úklid</option>
-                  <option value="Bydlení">Bydlení a nájem</option>
-                  <option value="Energie">Energie a voda</option>
-                  <option value="Služby">Služby a internet</option>
-                  <option value="Údržba">Údržba a opravy</option>
-                  <option value="Jídlo">Společné jídlo a káva</option>
+                  <option value="Drogerie">{{ t('expenseAdd.categoryDrogerie', 'Drogerie a úklid') }}</option>
+                  <option value="Bydlení">{{ t('expenseAdd.categoryBydleni', 'Bydlení a nájem') }}</option>
+                  <option value="Energie">{{ t('expenseAdd.categoryEnergie', 'Energie a voda') }}</option>
+                  <option value="Služby">{{ t('expenseAdd.categorySluzby', 'Služby a internet') }}</option>
+                  <option value="Údržba">{{ t('expenseAdd.categoryUdrzba', 'Údržba a opravy') }}</option>
+                  <option value="Jídlo">{{ t('expenseAdd.categoryJidlo', 'Společné jídlo a káva') }}</option>
                 </select>
               </div>
 
               <div>
                 <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                  Kdo výdaj zaplatil (Plátce) *
+                  {{ t('expenseAdd.labelPayer', 'Kdo výdaj zaplatil (Plátce) *') }}
                 </label>
                 <select
                   v-model="form.payerId"
                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:outline-none transition-colors"
                 >
                   <option v-for="r in roommates" :key="r.id" :value="r.id">
-                    {{ r.name }} ({{ r.role }})
+                    {{ r.name }} ({{ t('roles.' + r.role, r.role) }})
                   </option>
                 </select>
               </div>
@@ -125,7 +125,7 @@
           <div class="space-y-4">
             <div class="flex items-center gap-2 pb-1 border-b border-slate-800">
               <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">2</span>
-              <h3 class="text-sm font-semibold text-slate-200">Kalkulační klíč a zúčastněné osoby</h3>
+              <h3 class="text-sm font-semibold text-slate-200">{{ t('expenseAdd.sectionCalc', 'Kalkulační klíč a zúčastněné osoby') }}</h3>
             </div>
 
             <!-- Key radio buttons -->
@@ -136,8 +136,8 @@
               >
                 <input type="radio" v-model="form.calculationKey" value="EQUAL" class="text-emerald-500 focus:ring-emerald-400" />
                 <div class="text-xs">
-                  <div class="font-semibold">Rovným dílem</div>
-                  <div class="text-slate-400 text-xs">Stejná částka mezi vybrané členy</div>
+                  <div class="font-semibold">{{ t('expenseAdd.equalTitle', 'Rovným dílem') }}</div>
+                  <div class="text-slate-400 text-xs">{{ t('expenseAdd.equalDesc', 'Stejná částka mezi vybrané členy') }}</div>
                 </div>
               </label>
 
@@ -147,8 +147,8 @@
               >
                 <input type="radio" v-model="form.calculationKey" value="BY_AREA" class="text-emerald-500 focus:ring-emerald-400" />
                 <div class="text-xs">
-                  <div class="font-semibold">Poměrem dle m² pokoje</div>
-                  <div class="text-slate-400 text-xs">Dle podlahové plochy z nastavení bytu</div>
+                  <div class="font-semibold">{{ t('expenseAdd.byAreaTitle', 'Poměrem dle m² pokoje') }}</div>
+                  <div class="text-slate-400 text-xs">{{ t('expenseAdd.byAreaDesc', 'Dle podlahové plochy z nastavení bytu') }}</div>
                 </div>
               </label>
             </div>
@@ -156,7 +156,7 @@
             <!-- Roommate selection and live calculated shares -->
             <div class="space-y-2 bg-slate-850 p-4 rounded-xl border border-slate-800">
               <div class="text-xs font-medium text-slate-400 mb-2">
-                Zúčastnění spolubydlící (vyškrtněte, koho se nákup netýká):
+                {{ t('expenseAdd.participantsHint', 'Zúčastnění spolubydlící (vyškrtněte, koho se nákup netýká):') }}
               </div>
 
               <div 
@@ -180,7 +180,7 @@
                     <div>
                       <div class="text-xs font-medium text-slate-200">
                         {{ r.name }}
-                        <span v-if="r.id === form.payerId" class="text-xs text-emerald-400 font-semibold ml-1">[Plátce]</span>
+                        <span v-if="r.id === form.payerId" class="text-xs text-emerald-400 font-semibold ml-1">{{ t('expenseAdd.payerBadge', '[Plátce]') }}</span>
                       </div>
                       <div class="text-xs text-slate-400">{{ r.roomName }} ({{ r.roomAreaM2 }} m²)</div>
                     </div>
@@ -190,10 +190,10 @@
                 <!-- Calculated share -->
                 <div class="text-right">
                   <div class="text-xs font-mono font-bold text-slate-100">
-                    {{ participantMap[r.id] ? Math.round(computedShares[r.id] || 0).toLocaleString('cs-CZ') + ' CZK' : 'Vyloučen' }}
+                    {{ participantMap[r.id] ? Math.round(computedShares[r.id] || 0).toLocaleString('cs-CZ') + ' CZK' : t('expenseAdd.excluded', 'Vyloučen') }}
                   </div>
                   <div v-if="participantMap[r.id]" class="text-xs text-slate-400">
-                    {{ form.calculationKey === 'BY_AREA' ? `${r.areaSharePct} % plochy` : 'Rovný podíl' }}
+                    {{ form.calculationKey === 'BY_AREA' ? t('expenseAdd.areaShare', '{pct} % plochy', { pct: r.areaSharePct }) : t('expenseAdd.equalShare', 'Rovný podíl') }}
                   </div>
                 </div>
               </div>
@@ -201,15 +201,15 @@
               <!-- Checksum status bar -->
               <div class="flex items-center justify-between pt-3 mt-2 border-t border-slate-800 text-xs">
                 <span class="text-slate-400">
-                  Kontrolní součet podílů: 
-                  <strong class="font-mono text-slate-200">{{ Math.round(totalAllocatedShares).toLocaleString('cs-CZ') }} CZK</strong> z 
+                  {{ t('expenseAdd.checksumLabel', 'Kontrolní součet podílů:') }}
+                  <strong class="font-mono text-slate-200">{{ Math.round(totalAllocatedShares).toLocaleString('cs-CZ') }} CZK</strong> {{ t('expenseAdd.of', 'z') }}
                   <strong class="font-mono text-slate-200">{{ (form.totalAmount || 0).toLocaleString('cs-CZ') }} CZK</strong>
                 </span>
                 <span 
                   class="font-semibold px-2 py-0.5 rounded text-xs"
                   :class="isShareSumValid ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'"
                 >
-                  {{ isShareSumValid ? '✓ Součet je v pořádku' : '⚠ Zvolte alespoň 1 osobu' }}
+                  {{ isShareSumValid ? t('expenseAdd.sumValid', '✓ Součet je v pořádku') : t('expenseAdd.sumInvalid', '⚠ Zvolte alespoň 1 osobu') }}
                 </span>
               </div>
             </div>
@@ -219,7 +219,7 @@
           <div class="space-y-3">
             <div class="flex items-center gap-2 pb-1 border-b border-slate-800">
               <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">3</span>
-              <h3 class="text-sm font-semibold text-slate-200">Příloha / Doklad o nákupu</h3>
+              <h3 class="text-sm font-semibold text-slate-200">{{ t('expenseAdd.sectionReceipt', 'Příloha / Doklad o nákupu') }}</h3>
             </div>
 
             <!-- Dropzone simulator -->
@@ -236,14 +236,14 @@
                 </div>
                 <div class="text-left">
                   <div class="text-xs font-semibold text-emerald-300">{{ receiptFilename }}</div>
-                  <div class="text-xs text-slate-400">Digitalizovaný daňový doklad připojen (JPG, 412 KB)</div>
+                  <div class="text-xs text-slate-400">{{ t('expenseAdd.receiptAttached', 'Digitalizovaný daňový doklad připojen (JPG, 412 KB)') }}</div>
                 </div>
                 <button 
                   type="button" 
                   @click.stop="hasUploadedReceipt = false"
                   class="ml-auto text-xs text-rose-400 hover:text-rose-300 p-1"
                 >
-                  Odebrat
+                  {{ t('expenseAdd.remove', 'Odebrat') }}
                 </button>
               </div>
 
@@ -252,10 +252,10 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <div class="text-xs font-medium text-slate-300">
-                  Přetáhněte sem soubor účtenky nebo <span class="text-emerald-400 font-semibold underline">vyberte z disku</span>
+                  {{ t('expenseAdd.dropPrefix', 'Přetáhněte sem soubor účtenky nebo ') }}<span class="text-emerald-400 font-semibold underline">{{ t('expenseAdd.browse', 'vyberte z disku') }}</span>
                 </div>
                 <div class="text-xs text-slate-400">
-                  Podporované formáty: PDF, JPG, PNG (max. 10 MB)
+                  {{ t('expenseAdd.formats', 'Podporované formáty: PDF, JPG, PNG (max. 10 MB)') }}
                 </div>
               </div>
             </div>
@@ -268,14 +268,14 @@
               @click="closeModal"
               class="px-4 py-2.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 rounded-xl border border-slate-700 transition-colors"
             >
-              Zrušit / Zavřít
+              {{ t('expenseAdd.cancel', 'Zrušit / Zavřít') }}
             </button>
             <button
               type="submit"
               :disabled="!isShareSumValid || form.totalAmount <= 0"
               class="px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl shadow-lg shadow-emerald-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:ring-2 focus:ring-emerald-400 focus:outline-none"
             >
-              Uložit a rozpočítat výdaj
+              {{ t('expenseAdd.submit', 'Uložit a rozpočítat výdaj') }}
             </button>
           </div>
 
@@ -289,6 +289,7 @@
 import { reactive, ref, computed, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CalculationKey, ExpenseCategory, ExpenseShare } from '../types'
+import { t } from '../i18n'
 
 const { roommates, currentUser, expensePrefill, closeModal, addExpense } = useSpolubyt()
 

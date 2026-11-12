@@ -15,16 +15,16 @@
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-850">
           <div>
             <h2 id="modal-confirm-pay-title" class="text-lg font-bold text-white tracking-tight">
-              Potvrdit přijetí finanční úhrady
+              {{ t('confirmPayment.title', 'Potvrdit přijetí finanční úhrady') }}
             </h2>
             <p class="text-xs text-slate-400">
-              Spárování došlé platby a vyrovnání dlužného závazku spolubydlícího.
+              {{ t('confirmPayment.subtitle', 'Spárování došlé platby a vyrovnání dlužného závazku spolubydlícího.') }}
             </p>
           </div>
           <button 
             @click="closeModal"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-            aria-label="Zavřít"
+            :aria-label="t('confirmPayment.close', 'Zavřít')"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -38,22 +38,22 @@
           <!-- Rekapitulace pohledávky -->
           <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <div class="text-xs font-bold text-slate-400">
-              Rekapitulace pohledávky k zaúčtování:
+              {{ t('confirmPayment.recapTitle', 'Rekapitulace pohledávky k zaúčtování:') }}
             </div>
             <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400">Plátce dluhu:</span>
+              <span class="text-slate-400">{{ t('confirmPayment.debtor', 'Plátce dluhu:') }}</span>
               <span class="font-bold text-slate-200">{{ settlement.roommateName }} ({{ settlement.roomName }})</span>
             </div>
             <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400">Párovaná položka:</span>
-              <span class="text-slate-300">Nájemné & zálohy (Listopad 2026)</span>
+              <span class="text-slate-400">{{ t('confirmPayment.matchedItem', 'Párovaná položka:') }}</span>
+              <span class="text-slate-300">{{ t('confirmPayment.matchedItemValue', 'Nájemné & zálohy (Listopad 2026)') }}</span>
             </div>
             <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400">Variabilní symbol:</span>
+              <span class="text-slate-400">{{ t('confirmPayment.variableSymbol', 'Variabilní symbol:') }}</span>
               <span class="font-mono text-slate-300">20261101</span>
             </div>
             <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-sm">
-              <span class="font-bold text-slate-300">Potvrzovaná částka:</span>
+              <span class="font-bold text-slate-300">{{ t('confirmPayment.confirmedAmount', 'Potvrzovaná částka:') }}</span>
               <span class="font-mono font-extrabold text-emerald-400 text-base">
                 {{ settlement.totalDebt.toLocaleString('cs-CZ') }} CZK
               </span>
@@ -65,7 +65,7 @@
             
             <div>
               <label class="block font-medium text-slate-300 mb-1">
-                Reálné datum připsání na účet *
+                {{ t('confirmPayment.dateLabel', 'Reálné datum připsání na účet *') }}
               </label>
               <input
                 v-model="date"
@@ -78,7 +78,7 @@
 
             <div>
               <label class="block font-medium text-slate-300 mb-1">
-                Forma úhrady *
+                {{ t('confirmPayment.methodLabel', 'Forma úhrady *') }}
               </label>
               <div class="grid grid-cols-2 gap-3">
                 <label 
@@ -86,26 +86,26 @@
                   :class="method === 'BANK' ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-200' : 'bg-slate-850 border-slate-700 text-slate-300'"
                 >
                   <input type="radio" v-model="method" value="BANK" class="text-emerald-500" />
-                  <span>Bankovní převod</span>
+                  <span>{{ t('confirmPayment.bankTransfer', 'Bankovní převod') }}</span>
                 </label>
                 <label 
                   class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-colors"
                   :class="method === 'CASH' ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-200' : 'bg-slate-850 border-slate-700 text-slate-300'"
                 >
                   <input type="radio" v-model="method" value="CASH" class="text-emerald-500" />
-                  <span>Hotovost</span>
+                  <span>{{ t('confirmPayment.cash', 'Hotovost') }}</span>
                 </label>
               </div>
             </div>
 
             <div>
               <label class="block font-medium text-slate-300 mb-1">
-                Doplňující poznámka (volitelné)
+                {{ t('confirmPayment.noteLabel', 'Doplňující poznámka (volitelné)') }}
               </label>
               <input
                 v-model="note"
                 type="text"
-                placeholder="např. Okamžitá platba z účtu Air Bank bez poplatku..."
+                :placeholder="t('confirmPayment.notePlaceholder', 'např. Okamžitá platba z účtu Air Bank bez poplatku...')"
                 class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
               />
             </div>
@@ -118,7 +118,7 @@
                 class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400 border-slate-700 bg-slate-900"
               />
               <span class="text-xs text-slate-300 leading-tight">
-                Odeslat uživateli <strong>{{ settlement.roommateName }}</strong> automatické potvrzení o zaúčtování platby (in-app notifikace a e-mail).
+                {{ t('confirmPayment.notifyPrefix', 'Odeslat uživateli') }} <strong>{{ settlement.roommateName }}</strong> {{ t('confirmPayment.notifySuffix', 'automatické potvrzení o zaúčtování platby (in-app notifikace a e-mail).') }}
               </span>
             </label>
 
@@ -130,7 +130,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <span>
-              <strong>Upozornění:</strong> Potvrzením bude otevřený dluh označen jako vyrovnaný a částka se okamžitě promítne do celkové likvidity bytu.
+              <strong>{{ t('confirmPayment.warningLabel', 'Upozornění:') }}</strong> {{ t('confirmPayment.warningText', 'Potvrzením bude otevřený dluh označen jako vyrovnaný a částka se okamžitě promítne do celkové likvidity bytu.') }}
             </span>
           </div>
 
@@ -141,13 +141,13 @@
               @click="closeModal"
               class="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 rounded-xl border border-slate-700 transition-colors"
             >
-              Zrušit / Storno
+              {{ t('confirmPayment.cancel', 'Zrušit / Storno') }}
             </button>
             <button
               type="submit"
               class="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all shadow-lg shadow-emerald-950/40 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
             >
-              Potvrdit přijetí {{ settlement.totalDebt.toLocaleString('cs-CZ') }} CZK
+              {{ t('confirmPayment.confirmButton', 'Potvrdit přijetí {amount} CZK', { amount: settlement.totalDebt.toLocaleString('cs-CZ') }) }}
             </button>
           </div>
 
@@ -160,6 +160,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
+import { t } from '../i18n'
 
 const { selectedSettlement, closeModal, confirmPayment } = useSpolubyt()
 
@@ -168,7 +169,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
 
 const date = ref(todayStr)
 const method = ref<'BANK' | 'CASH'>('BANK')
-const note = ref('Okamžitá platba přes QR kód')
+const note = ref(t('confirmPayment.noteDefault', 'Okamžitá platba přes QR kód'))
 const notifyMember = ref(true)
 
 const handleConfirm = () => {

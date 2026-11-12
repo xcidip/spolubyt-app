@@ -27,6 +27,7 @@ import {
   INITIAL_CLEANING_SHIFTS,
   CLEANING_TASK_DEFS
 } from '../data/mockData'
+import { t } from '../i18n'
 
 const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v1_'
 
@@ -128,8 +129,8 @@ export function useSpolubyt() {
     const found = roommates.value.find(r => r.id === userId)
     if (found) {
       showToast(
-        'Změna aktivního uživatele',
-        `Nyní prohlížíte aplikaci jako ${found.name} (${found.role}).`,
+        t('toasts.userChanged.title', 'Změna aktivního uživatele'),
+        t('toasts.userChanged.message', 'Nyní prohlížíte aplikaci jako {name} ({role}).', { name: found.name, role: found.role }),
         'info'
       )
     }
@@ -169,8 +170,8 @@ export function useSpolubyt() {
       isOpen: true,
       title: options.title,
       message: options.message,
-      confirmLabel: options.confirmLabel || 'Potvrdit',
-      cancelLabel: options.cancelLabel || 'Zrušit',
+      confirmLabel: options.confirmLabel || t('confirm.default.confirm', 'Potvrdit'),
+      cancelLabel: options.cancelLabel || t('confirm.default.cancel', 'Zrušit'),
       isDestructive: options.isDestructive ?? false,
       onConfirm: () => {
         confirmModal.value.isOpen = false
@@ -364,7 +365,7 @@ export function useSpolubyt() {
       sortBy: 'date',
       sortOrder: 'desc'
     }
-    showToast('Filtry vyresetovány', 'Zobrazen kompletní chronologický seznam výdajů.', 'info')
+    showToast(t('toasts.filtersReset.title', 'Filtry vyresetovány'), t('toasts.filtersReset.message', 'Zobrazen kompletní chronologický seznam výdajů.'), 'info')
   }
 
   // Add Expense
@@ -408,8 +409,8 @@ export function useSpolubyt() {
     expenses.value.unshift(expense)
     closeModal()
     showToast(
-      'Výdaj úspěšně zaevidován',
-      `Položka „${expense.title}“ (${expense.totalAmount.toLocaleString('cs-CZ')} Kč) byla rozpočítána a uložena.`,
+      t('toasts.expenseAdded.title', 'Výdaj úspěšně zaevidován'),
+      t('toasts.expenseAdded.message', 'Položka „{title}“ ({amount} Kč) byla rozpočítána a uložena.', { title: expense.title, amount: expense.totalAmount.toLocaleString('cs-CZ') }),
       'success'
     )
   }
@@ -420,10 +421,10 @@ export function useSpolubyt() {
     if (!exp) return
 
     requestConfirmation({
-      title: 'Smazat výdaj',
-      message: `Opravdu si přejete trvale odstranit záznam „${exp.title}“ v částce ${exp.totalAmount.toLocaleString('cs-CZ')} Kč? Tato akce přepočítá bilanci bytu.`,
-      confirmLabel: 'Trvale smazat',
-      cancelLabel: 'Ponechat',
+      title: t('confirm.deleteExpense.title', 'Smazat výdaj'),
+      message: t('confirm.deleteExpense.message', 'Opravdu si přejete trvale odstranit záznam „{title}“ v částce {amount} Kč? Tato akce přepočítá bilanci bytu.', { title: exp.title, amount: exp.totalAmount.toLocaleString('cs-CZ') }),
+      confirmLabel: t('confirm.deleteExpense.confirm', 'Trvale smazat'),
+      cancelLabel: t('confirm.deleteExpense.cancel', 'Ponechat'),
       isDestructive: true,
       onConfirm: () => {
         // Rollback shares in debts
@@ -441,7 +442,7 @@ export function useSpolubyt() {
         if (selectedExpense.value?.id === expenseId) {
           closeModal()
         }
-        showToast('Výdaj odstraněn', `Záznam „${exp.title}“ byl úspěšně smazán.`, 'info')
+        showToast(t('toasts.expenseDeleted.title', 'Výdaj odstraněn'), t('toasts.expenseDeleted.message', 'Záznam „{title}“ byl úspěšně smazán.', { title: exp.title }), 'info')
       }
     })
   }
@@ -486,8 +487,8 @@ export function useSpolubyt() {
 
     closeModal()
     showToast(
-      'Platba byla spárována a zaúčtována',
-      `Úhrada ${paidAmount.toLocaleString('cs-CZ')} Kč od ${s.roommateName} byla potvrzena. Bilance bytu je vyrovnaná.`,
+      t('toasts.paymentConfirmed.title', 'Platba byla spárována a zaúčtována'),
+      t('toasts.paymentConfirmed.message', 'Úhrada {amount} Kč od {name} byla potvrzena. Bilance bytu je vyrovnaná.', { amount: paidAmount.toLocaleString('cs-CZ'), name: s.roommateName }),
       'success',
       4500
     )
@@ -499,12 +500,12 @@ export function useSpolubyt() {
     if (!s) return
 
     const now = new Date()
-    const dateStr = `${String(now.getDate()).padStart(2, '0')}. ${String(now.getMonth() + 1).padStart(2, '0')}. v ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} e-mailem a push notifikací`
+    const dateStr = `${String(now.getDate()).padStart(2, '0')}. ${String(now.getMonth() + 1).padStart(2, '0')}. ${t('toasts.reminderSent.at', 'v {hh}:{mm} e-mailem a push notifikací', { hh: String(now.getHours()).padStart(2, '0'), mm: String(now.getMinutes()).padStart(2, '0') })}`
     s.lastReminderSent = dateStr
 
     showToast(
-      'Upomínka odeslána',
-      `Diskrétní notifikace o nedoplatku ${s.totalDebt.toLocaleString('cs-CZ')} Kč byla doručena spolubydlícímu: ${s.roommateName}.`,
+      t('toasts.reminderSent.title', 'Upomínka odeslána'),
+      t('toasts.reminderSent.message', 'Diskrétní notifikace o nedoplatku {amount} Kč byla doručena spolubydlícímu: {name}.', { amount: s.totalDebt.toLocaleString('cs-CZ'), name: s.roommateName }),
       'info'
     )
   }
@@ -544,7 +545,7 @@ export function useSpolubyt() {
 
   const addCartItem = (item: { name: string; category: ExpenseCategory; unitPrice: number; qty: number }) => {
     if (!item.name.trim() || item.unitPrice <= 0 || item.qty <= 0) {
-      showToast('Neplatné údaje', 'Vyplňte prosím název položky a kladnou cenu.', 'warning')
+      showToast(t('toasts.invalidData.title', 'Neplatné údaje'), t('toasts.invalidData.message', 'Vyplňte prosím název položky a kladnou cenu.'), 'warning')
       return
     }
 
@@ -555,13 +556,13 @@ export function useSpolubyt() {
       unitPrice: Math.round(item.unitPrice),
       qty: Math.max(1, Math.round(item.qty)),
       addedBy: currentUser.value.name,
-      addedAt: 'Právě teď'
+      addedAt: t('common.now', 'Právě teď')
     }
 
     cartItems.value.push(newItem)
     showToast(
-      'Položka přidána do košíku',
-      `„${newItem.name}“ (${newItem.qty}× ${newItem.unitPrice} Kč) byla zařazena do společného nákupního seznamu.`,
+      t('toasts.cartItemAdded.title', 'Položka přidána do košíku'),
+      t('toasts.cartItemAdded.message', '„{name}“ ({qty}× {price} Kč) byla zařazena do společného nákupního seznamu.', { name: newItem.name, qty: newItem.qty, price: newItem.unitPrice }),
       'success'
     )
   }
@@ -583,13 +584,13 @@ export function useSpolubyt() {
     if (!item) return
 
     requestConfirmation({
-      title: 'Odebrat položku z košíku',
-      message: `Přejete si odstranit položku „${item.name}“ ze společného nákupního košíku?`,
-      confirmLabel: 'Odebrat',
+      title: t('confirm.removeCartItem.title', 'Odebrat položku z košíku'),
+      message: t('confirm.removeCartItem.message', 'Přejete si odstranit položku „{name}“ ze společného nákupního košíku?', { name: item.name }),
+      confirmLabel: t('confirm.removeCartItem.confirm', 'Odebrat'),
       isDestructive: true,
       onConfirm: () => {
         cartItems.value = cartItems.value.filter(i => i.id !== itemId)
-        showToast('Položka odebrána', `Položka „${item.name}“ byla smazána.`, 'info')
+        showToast(t('toasts.cartItemRemoved.title', 'Položka odebrána'), t('toasts.cartItemRemoved.message', 'Položka „{name}“ byla smazána.', { name: item.name }), 'info')
       }
     })
   }
@@ -597,13 +598,13 @@ export function useSpolubyt() {
   const clearCart = () => {
     if (cartItems.value.length === 0) return
     requestConfirmation({
-      title: 'Vysypat společný košík',
-      message: 'Opravdu si přejete smazat všechny položky ze společného nákupního seznamu?',
-      confirmLabel: 'Vysypat košík',
+      title: t('confirm.clearCart.title', 'Vysypat společný košík'),
+      message: t('confirm.clearCart.message', 'Opravdu si přejete smazat všechny položky ze společného nákupního seznamu?'),
+      confirmLabel: t('confirm.clearCart.confirm', 'Vysypat košík'),
       isDestructive: true,
       onConfirm: () => {
         cartItems.value = []
-        showToast('Košík vyprázdněn', 'Nákupní seznam byl vymazán.', 'info')
+        showToast(t('toasts.cartCleared.title', 'Košík vyprázdněn'), t('toasts.cartCleared.message', 'Nákupní seznam byl vymazán.'), 'info')
       }
     })
   }
@@ -615,18 +616,18 @@ export function useSpolubyt() {
     item.isPurchased = !item.isPurchased
     if (item.isPurchased) {
       item.purchasedBy = currentUser.value.name
-      item.purchasedAt = 'Právě teď'
+      item.purchasedAt = t('common.now', 'Právě teď')
       showToast(
-        'Položka označena jako koupená',
-        `„${item.name}“ je připravena k převodu do výdajů.`,
+        t('toasts.cartItemPurchased.title', 'Položka označena jako koupená'),
+        t('toasts.cartItemPurchased.message', '„{name}“ je připravena k převodu do výdajů.', { name: item.name }),
         'success'
       )
     } else {
       item.purchasedBy = undefined
       item.purchasedAt = undefined
       showToast(
-        'Stav položky změněn',
-        `„${item.name}“ byla vrácena mezi nepořízené položky.`,
+        t('toasts.cartItemUnpurchased.title', 'Stav položky změněn'),
+        t('toasts.cartItemUnpurchased.message', '„{name}“ byla vrácena mezi nepořízené položky.', { name: item.name }),
         'info'
       )
     }
@@ -653,7 +654,7 @@ export function useSpolubyt() {
   // Convert Cart to Expense
   const openCartConversion = (items: CartItem[], title: string) => {
     if (items.length === 0) {
-      showToast('Košík je prázdný', 'Nejsou k dispozici žádné položky k převodu.', 'warning')
+      showToast(t('toasts.cartEmpty.title', 'Košík je prázdný'), t('toasts.cartEmpty.message', 'Nejsou k dispozici žádné položky k převodu.'), 'warning')
       return
     }
 
@@ -675,14 +676,14 @@ export function useSpolubyt() {
   const convertCartToExpense = () => {
     openCartConversion(
       cartItems.value,
-      'Společný nákup ze seznamu (drogerie a úklid)'
+      t('cart.convertTitle', 'Společný nákup ze seznamu (drogerie a úklid)')
     )
   }
 
   const convertRemainingCartToExpense = () => {
     openCartConversion(
       unpurchasedCartItems.value,
-      'Společný nákup ze seznamu (zbývá nakoupit)'
+      t('cart.convertRemainingTitle', 'Společný nákup ze seznamu (zbývá nakoupit)')
     )
   }
 
@@ -707,8 +708,8 @@ export function useSpolubyt() {
     const prev = latestMeters.value[data.type]
     if (prev && data.value < prev.value) {
       showToast(
-        'Neplatná hodnota měřidla',
-        `Nový stav (${data.value}) nesmí být nižší než předchozí zaznamenaný stav (${prev.value} ${prev.unit})!`,
+        t('toasts.invalidMeter.title', 'Neplatná hodnota měřidla'),
+        t('toasts.invalidMeter.message', 'Nový stav ({value}) nesmí být nižší než předchozí zaznamenaný stav ({prev} {unit})!', { value: data.value, prev: prev.value, unit: prev.unit }),
         'error'
       )
       return false
@@ -730,8 +731,8 @@ export function useSpolubyt() {
     meters.value.unshift(newReading)
     closeModal()
     showToast(
-      'Odečet byl uložen',
-      `Nový stav měřidla ${data.type} (${data.value} ${newReading.unit}) byl úspěšně zaevidován s přírůstkem +${delta} ${newReading.unit}.`,
+      t('toasts.meterSaved.title', 'Odečet byl uložen'),
+      t('toasts.meterSaved.message', 'Nový stav měřidla {type} ({value} {unit}) byl úspěšně zaevidován s přírůstkem +{delta} {unit}.', { type: data.type, value: data.value, unit: newReading.unit, delta }),
       'success'
     )
     return true
@@ -818,13 +819,13 @@ export function useSpolubyt() {
 
     const fmtDayMonth = (d: Date) => `${d.getDate()}. ${d.getMonth() + 1}.`
     const fmtIso = (d: Date) => `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`
-    const weekLabel = `Týden ${targetWeek} (${fmtDayMonth(startDateObj)} – ${fmtDayMonth(endDateObj)} ${endDateObj.getFullYear()})`
+    const weekLabel = t('cleaning.weekLabel', 'Týden {week} ({start} – {end} {year})', { week: targetWeek, start: fmtDayMonth(startDateObj), end: fmtDayMonth(endDateObj), year: endDateObj.getFullYear() })
 
     const tasksOrder: { key: import('../types').CleaningTaskKey; title: string }[] = [
-      { key: 'KITCHEN', title: 'Uklízení kuchyně a myčky' },
-      { key: 'BATHROOM', title: 'Koupelna a toaleta' },
-      { key: 'CORRIDOR', title: 'Chodba a vysávání' },
-      { key: 'TRASH', title: 'Odpadky a třídění' }
+      { key: 'KITCHEN', title: t('cleaning.task.kitchen', 'Uklízení kuchyně a myčky') },
+      { key: 'BATHROOM', title: t('cleaning.task.bathroom', 'Koupelna a toaleta') },
+      { key: 'CORRIDOR', title: t('cleaning.task.corridor', 'Chodba a vysávání') },
+      { key: 'TRASH', title: t('cleaning.task.trash', 'Odpadky a třídění') }
     ]
 
     tasksOrder.forEach((task, taskIdx) => {
@@ -865,8 +866,8 @@ export function useSpolubyt() {
 
     if (!canConfirmShift(shift)) {
       showToast(
-        'Přístup odepřen',
-        `Tuto směnu může potvrdit pouze ${shift.roommateName} nebo správce bytu.`,
+        t('toasts.accessDenied.title', 'Přístup odepřen'),
+        t('toasts.accessDenied.confirmShift', 'Tuto směnu může potvrdit pouze {name} nebo správce bytu.', { name: shift.roommateName }),
         'warning'
       )
       return false
@@ -893,12 +894,12 @@ export function useSpolubyt() {
       } catch (e) {}
 
       const actingNote = (isMasterTenant.value && shift.roommateId !== currentUserId.value)
-        ? ` (potvrzeno správcem bytu za spolubydlícího ${shift.roommateName})`
+        ? t('toasts.cleaningDone.managerNote', ' (potvrzeno správcem bytu za spolubydlícího {name})', { name: shift.roommateName })
         : ''
 
       showToast(
-        'Úklidová směna splněna 🎉',
-        `Směna "${shift.taskTitle}" byla úspěšně označena jako splněná${actingNote}.`,
+        t('toasts.cleaningDone.title', 'Úklidová směna splněna 🎉'),
+        t('toasts.cleaningDone.message', 'Směna "{task}" byla úspěšně označena jako splněná{note}.', { task: shift.taskTitle, note: actingNote }),
         'success'
       )
     } else {
@@ -906,8 +907,8 @@ export function useSpolubyt() {
       shift.completedAt = undefined
       shift.completedBy = undefined
       showToast(
-        'Stav směny změněn',
-        `Směna "${shift.taskTitle}" byla vrácena do stavu "Čeká na splnění".`,
+        t('toasts.cleaningReopened.title', 'Stav směny změněn'),
+        t('toasts.cleaningReopened.message', 'Směna "{task}" byla vrácena do stavu "Čeká na splnění".', { task: shift.taskTitle }),
         'info'
       )
     }
@@ -919,8 +920,8 @@ export function useSpolubyt() {
     if (!shift) return
 
     showToast(
-      'Připomínka úklidu odeslána',
-      `Spolubydlícímu ${shift.roommateName} byla odeslána notifikace k povinnosti "${shift.taskTitle}".`,
+      t('toasts.cleaningReminder.title', 'Připomínka úklidu odeslána'),
+      t('toasts.cleaningReminder.message', 'Spolubydlícímu {name} byla odeslána notifikace k povinnosti "{task}".', { name: shift.roommateName, task: shift.taskTitle }),
       'info'
     )
   }
@@ -932,8 +933,8 @@ export function useSpolubyt() {
 
     if (!isMasterTenant.value && shift.roommateId !== currentUserId.value) {
       showToast(
-        'Přístup odepřen',
-        'O výměnu směny může požádat pouze přiřazený spolubydlící nebo správce bytu.',
+        t('toasts.accessDenied.title', 'Přístup odepřen'),
+        t('toasts.accessDenied.requestSwap', 'O výměnu směny může požádat pouze přiřazený spolubydlící nebo správce bytu.'),
         'warning'
       )
       return
@@ -941,12 +942,12 @@ export function useSpolubyt() {
 
     const target = roommates.value.find(r => r.id === targetRoommateId)
     if (!target) {
-      showToast('Chyba', 'Cílový spolubydlící nebyl nalezen.', 'error')
+      showToast(t('toasts.error.title', 'Chyba'), t('toasts.error.targetNotFound', 'Cílový spolubydlící nebyl nalezen.'), 'error')
       return
     }
 
     if (target.id === shift.roommateId) {
-      showToast('Upozornění', 'Nelze vyměnit směnu sám se sebou.', 'warning')
+      showToast(t('toasts.warning.title', 'Upozornění'), t('toasts.warning.selfSwap', 'Nelze vyměnit směnu sám se sebou.'), 'warning')
       return
     }
 
@@ -969,8 +970,8 @@ export function useSpolubyt() {
 
     shift.swapRequest = swapReq
     showToast(
-      'Žádost o výměnu odeslána',
-      `Žádost o převzetí směny „${shift.taskTitle}“ byla doručena spolubydlícímu: ${target.name}.`,
+      t('toasts.swapRequested.title', 'Žádost o výměnu odeslána'),
+      t('toasts.swapRequested.message', 'Žádost o převzetí směny „{task}“ byla doručena spolubydlícímu: {name}.', { task: shift.taskTitle, name: target.name }),
       'info'
     )
   }
@@ -981,8 +982,8 @@ export function useSpolubyt() {
 
     if (!isMasterTenant.value && currentUserId.value !== shift.swapRequest.targetRoommateId) {
       showToast(
-        'Přístup odepřen',
-        'Výměnu může schválit pouze oslovený spolubydlící nebo správce bytu.',
+        t('toasts.accessDenied.title', 'Přístup odepřen'),
+        t('toasts.accessDenied.acceptSwap', 'Výměnu může schválit pouze oslovený spolubydlící nebo správce bytu.'),
         'warning'
       )
       return
@@ -1004,8 +1005,8 @@ export function useSpolubyt() {
     } catch (e) {}
 
     showToast(
-      'Výměna směny byla potvrzena 🎉',
-      `Směna „${shift.taskTitle}“ byla úspěšně převedena na: ${newRoommateName}.`,
+      t('toasts.swapAccepted.title', 'Výměna směny byla potvrzena 🎉'),
+      t('toasts.swapAccepted.message', 'Směna „{task}“ byla úspěšně převedena na: {name}.', { task: shift.taskTitle, name: newRoommateName }),
       'success'
     )
   }
@@ -1016,8 +1017,8 @@ export function useSpolubyt() {
 
     if (!isMasterTenant.value && currentUserId.value !== shift.swapRequest.targetRoommateId) {
       showToast(
-        'Přístup odepřen',
-        'Výměnu může odmítnout pouze oslovený spolubydlící nebo správce bytu.',
+        t('toasts.accessDenied.title', 'Přístup odepřen'),
+        t('toasts.accessDenied.rejectSwap', 'Výměnu může odmítnout pouze oslovený spolubydlící nebo správce bytu.'),
         'warning'
       )
       return
@@ -1025,8 +1026,8 @@ export function useSpolubyt() {
 
     shift.swapRequest.status = 'REJECTED'
     showToast(
-      'Žádost o výměnu byla odmítnuta',
-      `Směna „${shift.taskTitle}“ zůstává přiřazena původnímu spolubydlícímu (${shift.roommateName}).`,
+      t('toasts.swapRejected.title', 'Žádost o výměnu byla odmítnuta'),
+      t('toasts.swapRejected.message', 'Směna „{task}“ zůstává přiřazena původnímu spolubydlícímu ({name}).', { task: shift.taskTitle, name: shift.roommateName }),
       'info'
     )
   }
@@ -1037,8 +1038,8 @@ export function useSpolubyt() {
 
     if (!isMasterTenant.value && currentUserId.value !== shift.swapRequest.requestedByRoommateId) {
       showToast(
-        'Přístup odepřen',
-        'Žádost může zrušit pouze ten, kdo o ni požádal, nebo správce bytu.',
+        t('toasts.accessDenied.title', 'Přístup odepřen'),
+        t('toasts.accessDenied.cancelSwap', 'Žádost může zrušit pouze ten, kdo o ni požádal, nebo správce bytu.'),
         'warning'
       )
       return
@@ -1046,8 +1047,8 @@ export function useSpolubyt() {
 
     shift.swapRequest.status = 'CANCELLED'
     showToast(
-      'Žádost o výměnu byla zrušena',
-      `Žádost o výměnu směny „${shift.taskTitle}“ byla úspěšně odvolána.`,
+      t('toasts.swapCancelled.title', 'Žádost o výměnu byla zrušena'),
+      t('toasts.swapCancelled.message', 'Žádost o výměnu směny „{task}“ byla úspěšně odvolána.', { task: shift.taskTitle }),
       'info'
     )
   }
@@ -1076,8 +1077,8 @@ export function useSpolubyt() {
   const saveApartmentSettings = (newSettings: ApartmentSettings): boolean => {
     if (!isMasterTenant.value) {
       showToast(
-        'Přístup odepřen',
-        'Kmenové údaje bytu a bankovní spojení může upravit pouze správce bytu.',
+        t('toasts.accessDenied.title', 'Přístup odepřen'),
+        t('toasts.accessDenied.saveSettings', 'Kmenové údaje bytu a bankovní spojení může upravit pouze správce bytu.'),
         'warning'
       )
       return false
@@ -1085,8 +1086,8 @@ export function useSpolubyt() {
 
     settings.value = { ...newSettings }
     showToast(
-      'Nastavení uloženo',
-      'Kmenové údaje bytu, bankovní spojení a zálohy byly úspěšně aktualizovány.',
+      t('toasts.settingsSaved.title', 'Nastavení uloženo'),
+      t('toasts.settingsSaved.message', 'Kmenové údaje bytu, bankovní spojení a zálohy byly úspěšně aktualizovány.'),
       'success'
     )
     return true
@@ -1095,8 +1096,8 @@ export function useSpolubyt() {
   const updateRoommateArea = (roomId: string, newArea: number): boolean => {
     if (!isMasterTenant.value) {
       showToast(
-        'Přístup odepřen',
-        'Podlahovou výměru pokojů může upravit pouze správce bytu.',
+        t('toasts.accessDenied.title', 'Přístup odepřen'),
+        t('toasts.accessDenied.updateArea', 'Podlahovou výměru pokojů může upravit pouze správce bytu.'),
         'warning'
       )
       return false
@@ -1113,8 +1114,8 @@ export function useSpolubyt() {
     })
 
     showToast(
-      'Výměra pokoje upravena',
-      `Pokoj uživatele ${target.name} má nyní ${newArea} m² (${target.areaSharePct} % plochy bytu).`,
+      t('toasts.areaUpdated.title', 'Výměra pokoje upravena'),
+      t('toasts.areaUpdated.message', 'Pokoj uživatele {name} má nyní {area} m² ({pct} % plochy bytu).', { name: target.name, area: newArea, pct: target.areaSharePct }),
       'info'
     )
     return true
@@ -1123,9 +1124,9 @@ export function useSpolubyt() {
   // Reset demo data
   const resetDemoData = () => {
     requestConfirmation({
-      title: 'Resetovat všechna data',
-      message: 'Opravdu chcete obnovit výchozí stav prototypu? Veškeré úpravy, nově zadané výdaje a odečty budou přepsány výchozími daty.',
-      confirmLabel: 'Obnovit výchozí data',
+      title: t('confirm.reset.title', 'Resetovat všechna data'),
+      message: t('confirm.reset.message', 'Opravdu chcete obnovit výchozí stav prototypu? Veškeré úpravy, nově zadané výdaje a odečty budou přepsány výchozími daty.'),
+      confirmLabel: t('confirm.reset.confirm', 'Obnovit výchozí data'),
       isDestructive: true,
       onConfirm: () => {
         roommates.value = JSON.parse(JSON.stringify(INITIAL_ROOMMATES))
@@ -1140,14 +1141,22 @@ export function useSpolubyt() {
         currentPage.value = 'DASH'
         expensePrefill.value = null
         closeModal()
-        showToast('Výchozí stav obnoven', 'Prototyp je připraven na nové uživatelské testování.', 'success')
+        showToast(t('toasts.resetDone.title', 'Výchozí stav obnoven'), t('toasts.resetDone.message', 'Prototyp je připraven na nové uživatelské testování.'), 'success')
       }
     })
   }
 
   // Export CSV
   const exportExpensesCsv = () => {
-    const headers = ['Kód', 'Datum', 'Název', 'Kategorie', 'Plátce', 'Celkem CZK', 'Stav']
+    const headers = [
+      t('csv.code', 'Kód'),
+      t('csv.date', 'Datum'),
+      t('csv.title', 'Název'),
+      t('csv.category', 'Kategorie'),
+      t('csv.payer', 'Plátce'),
+      t('csv.total', 'Celkem CZK'),
+      t('csv.status', 'Stav')
+    ]
     const rows = filteredExpenses.value.map(e => [
       e.code,
       e.date,
@@ -1165,7 +1174,7 @@ export function useSpolubyt() {
     link.download = `spolubyt_vypis_vydaju_${new Date().toISOString().slice(0, 10)}.csv`
     link.click()
 
-    showToast('Export dokončen', 'Soubor CSV byl stažen do vašeho zařízení.', 'success')
+    showToast(t('toasts.exportDone.title', 'Export dokončen'), t('toasts.exportDone.message', 'Soubor CSV byl stažen do vašeho zařízení.'), 'success')
   }
 
   return {

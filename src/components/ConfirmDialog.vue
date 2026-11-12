@@ -34,7 +34,7 @@
               <h3 id="confirm-title" class="text-lg font-bold text-slate-100 tracking-tight">
                 {{ confirmModal.title }}
               </h3>
-              <span class="text-xs text-slate-400">Bezpečnostní konfirmace akce</span>
+              <span class="text-xs text-slate-400">{{ t('confirm.security', 'Bezpečnostní konfirmace akce') }}</span>
             </div>
           </div>
 
@@ -71,6 +71,7 @@
 
 <script setup lang="ts">
 import { useSpolubyt } from '../composables/useSpolubyt'
+import { t } from '../i18n'
 
 const { confirmModal, closeConfirmation } = useSpolubyt()
 </script>

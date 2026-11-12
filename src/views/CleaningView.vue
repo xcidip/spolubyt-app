@@ -6,16 +6,16 @@
       <div>
         <div class="flex items-center gap-2 text-xs font-semibold mb-1" :class="isMasterTenant ? 'text-emerald-400' : 'text-sky-400'">
           <span class="w-2 h-2 rounded-full animate-pulse" :class="isMasterTenant ? 'bg-emerald-500' : 'bg-sky-500'"></span>
-          <span>{{ isMasterTenant ? 'Správa úklidových směn (Správce bytu)' : `Úklidové směny spolubydlícího (${currentUser.role})` }}</span>
+          <span>{{ isMasterTenant ? t('cleaning.headerAdmin', 'Správa úklidových směn (Správce bytu)') : t('cleaning.headerMember', 'Úklidové směny spolubydlícího ({role})', { role: t('roles.' + currentUser.role, currentUser.role) }) }}</span>
         </div>
         <h1 class="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-          <span>Úklidové směny a rotace</span>
+          <span>{{ t('cleaning.title', 'Úklidové směny a rotace') }}</span>
           <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold font-mono">
-            {{ cleaningTaskDefs.length }} zóny • {{ roommates.length }} spolubydlící
+            {{ t('cleaning.zoneCount', '{zones} zóny • {members} spolubydlící', { zones: cleaningTaskDefs.length, members: roommates.length }) }}
           </span>
         </h1>
         <p class="text-xs text-slate-400 mt-1">
-          Férová týdenní rotace povinností ve společných prostorách. Každá akce se dokončuje týdně a role se postupně střídají.
+          {{ t('cleaning.subtitle', 'Férová týdenní rotace povinností ve společných prostorách. Každá akce se dokončuje týdně a role se postupně střídají.') }}
         </p>
       </div>
     </div>
@@ -34,15 +34,15 @@
       </div>
       <div class="text-xs space-y-1">
         <div class="font-bold text-xs">
-          {{ isMasterTenant ? 'Oprávnění správce bytu (plný přístup)' : 'Oprávnění člena bytu (omezený přístup)' }}
+          {{ isMasterTenant ? t('cleaning.permAdmin', 'Oprávnění správce bytu (plný přístup)') : t('cleaning.permMember', 'Oprávnění člena bytu (omezený přístup)') }}
         </div>
         <p v-if="isMasterTenant" class="text-slate-300">
-          Jste přihlášen jako <strong>{{ currentUser.name }} (Správce bytu)</strong>. Můžete potvrdit, schválit nebo zrušit 
-          <strong>libovolnou úklidovou směnu</strong> kteréhokoli spolubydlícího.
+          {{ t('cleaning.signedInAs', 'Jste přihlášen jako') }} <strong>{{ currentUser.name }} ({{ t('cleaning.roleAdmin', 'Správce bytu') }})</strong>. {{ t('cleaning.permAdminCan', 'Můžete potvrdit, schválit nebo zrušit') }}
+          <strong>{{ t('cleaning.permAdminAny', 'libovolnou úklidovou směnu') }}</strong> {{ t('cleaning.permAdminOf', 'kteréhokoli spolubydlícího.') }}
         </p>
         <p v-else class="text-slate-300">
-          Jste přihlášen jako <strong>{{ currentUser.name }} (Člen)</strong>. Podle domovního řádu máte oprávnění 
-          <strong>potvrdit pouze svoji vlastní směnu</strong>. U směn ostatních spolubydlících je potvrzení uzamčeno (můžete jim pouze poslat připomínku).
+          {{ t('cleaning.signedInAs', 'Jste přihlášen jako') }} <strong>{{ currentUser.name }} ({{ t('cleaning.roleMember', 'Člen') }})</strong>. {{ t('cleaning.permMemberRules', 'Podle domovního řádu máte oprávnění') }}
+          <strong>{{ t('cleaning.permMemberOnly', 'potvrdit pouze svoji vlastní směnu') }}</strong>. {{ t('cleaning.permMemberLocked', 'U směn ostatních spolubydlících je potvrzení uzamčeno (můžete jim pouze poslat připomínku).') }}
         </p>
       </div>
     </div>
@@ -54,7 +54,7 @@
     >
       <div class="flex items-center gap-2 text-xs font-bold text-purple-300">
         <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse"></span>
-        <span>Žádost o výměnu směny k vyřízení</span>
+        <span>{{ t('cleaning.incomingSwapTitle', 'Žádost o výměnu směny k vyřízení') }}</span>
       </div>
       <div 
         v-for="shift in pendingIncomingSwaps" 
@@ -64,9 +64,9 @@
         <div class="space-y-0.5">
           <div class="text-sm font-bold text-white flex items-center gap-2">
             <span>{{ shift.swapRequest?.requestedByRoommateName }}</span>
-            <span class="text-xs text-purple-300 font-normal">tě žádá o převzetí směny:</span>
+            <span class="text-xs text-purple-300 font-normal">{{ t('cleaning.swapAsksYou', 'tě žádá o převzetí směny:') }}</span>
             <span class="text-xs font-semibold text-white px-2 py-0.5 rounded bg-purple-500/20 border border-purple-500/30">
-              {{ shift.taskTitle }} ({{ shift.weekLabel }})
+              {{ t('cleaning.task.' + shift.taskKey.toLowerCase(), shift.taskTitle) }} ({{ shift.weekLabel }})
             </span>
           </div>
           <div v-if="shift.swapRequest?.note" class="text-xs text-slate-300 italic">
@@ -81,13 +81,13 @@
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
             </svg>
-            <span>Přijmout výměnu</span>
+            <span>{{ t('cleaning.acceptSwap', 'Přijmout výměnu') }}</span>
           </button>
           <button
             @click="rejectShiftSwap(shift.id)"
             class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-colors"
           >
-            Odmítnout
+            {{ t('cleaning.reject', 'Odmítnout') }}
           </button>
         </div>
       </div>
@@ -101,7 +101,7 @@
           <button
             @click="selectCleaningWeek(selectedCleaningWeek - 1)"
             class="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 transition-colors"
-            title="Předchozí týden"
+            :title="t('cleaning.prevWeek', 'Předchozí týden')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
@@ -122,14 +122,14 @@
                     : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
               ]"
             >
-              {{ selectedCleaningWeek === currentWeekNumber ? 'Aktuální týden' : (selectedCleaningWeek < currentWeekNumber ? 'Minulý týden' : 'Budoucí rozpis') }}
+              {{ selectedCleaningWeek === currentWeekNumber ? t('cleaning.currentWeek', 'Aktuální týden') : (selectedCleaningWeek < currentWeekNumber ? t('cleaning.pastWeek', 'Minulý týden') : t('cleaning.futurePlan', 'Budoucí rozpis')) }}
             </span>
           </div>
 
           <button
             @click="selectCleaningWeek(selectedCleaningWeek + 1)"
             class="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 transition-colors"
-            title="Další týden"
+            :title="t('cleaning.nextWeek', 'Další týden')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
@@ -141,7 +141,7 @@
             @click="selectCleaningWeek(currentWeekNumber)"
             class="text-xs px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-400 border border-slate-700 font-medium transition-colors ml-1"
           >
-            Dnes / Tento týden
+            {{ t('cleaning.todayWeek', 'Dnes / Tento týden') }}
           </button>
         </div>
 
@@ -149,14 +149,14 @@
         <div class="flex items-center gap-3">
           <div class="text-right">
             <div class="text-xs font-semibold text-slate-300">
-              Splněno: <span class="text-white font-mono font-bold">{{ completedCount }}/{{ activeShifts.length }}</span> směn
+              {{ t('cleaning.completedLabel', 'Splněno') }}: <span class="text-white font-mono font-bold">{{ completedCount }}/{{ activeShifts.length }}</span> {{ t('cleaning.shiftsUnit', 'směn') }}
             </div>
             <div class="text-xs text-slate-400">
               {{ activeShifts.length === 0
-                ? 'Pro tento týden nejsou naplánované směny.'
+                ? t('cleaning.noShiftsPlanned', 'Pro tento týden nejsou naplánované směny.')
                 : (completedCount === activeShifts.length
-                  ? 'Všechny zóny uklizeny 👏'
-                  : `${activeShifts.length - completedCount} zón zbývá uklidit`) }}
+                  ? t('cleaning.allZonesDone', 'Všechny zóny uklizeny 👏')
+                  : t('cleaning.zonesLeft', '{count} zón zbývá uklidit', { count: activeShifts.length - completedCount })) }}
             </div>
           </div>
           <div class="w-24 sm:w-32 bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700/60 p-0.5">
@@ -199,10 +199,10 @@
               </div>
               <div class="min-w-0">
                 <div class="text-xs font-bold" :class="getTitleColor(taskDef.key)">
-                  {{ taskDef.shortTitle }}
+                  {{ t('cleaning.taskShort.' + taskDef.key.toLowerCase(), taskDef.shortTitle) }}
                 </div>
                 <h3 class="text-base font-bold text-white tracking-tight truncate">
-                  {{ taskDef.title }}
+                  {{ t('cleaning.task.' + taskDef.key.toLowerCase(), taskDef.title) }}
                 </h3>
               </div>
             </div>
@@ -216,28 +216,28 @@
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                 </svg>
-                <span>Splněno</span>
+                <span>{{ t('cleaning.doneBadge', 'Splněno') }}</span>
               </span>
               <span 
                 v-else-if="getShiftForTask(taskDef.key)?.swapRequest?.status === 'PENDING'"
                 class="text-xs px-2.5 py-1 rounded-full font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1.5 shadow-sm"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-                <span>čekající žádost</span>
+                <span>{{ t('cleaning.pendingBadge', 'čekající žádost') }}</span>
               </span>
               <span 
                 v-else
                 class="text-xs px-2.5 py-1 rounded-full font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/25 flex items-center gap-1.5"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                <span>Čeká na splnění</span>
+                <span>{{ t('cleaning.waitingBadge', 'Čeká na splnění') }}</span>
               </span>
             </div>
           </div>
 
           <!-- Description -->
           <p class="text-xs text-slate-400 mt-2.5 leading-relaxed">
-            {{ taskDef.description }}
+            {{ t('cleaning.taskDescription.' + taskDef.key.toLowerCase(), taskDef.description) }}
           </p>
         </div>
 
@@ -269,12 +269,12 @@
                     v-if="isMyShift(getShiftForTask(taskDef.key))"
                     class="text-xs font-bold px-2 py-0.5 rounded bg-amber-500 text-slate-950"
                   >
-                    Moje směna
+                    {{ t('cleaning.myShift', 'Moje směna') }}
                   </span>
                 </div>
                 <div class="text-xs text-slate-400">
                   {{ getRoommate(getShiftForTask(taskDef.key)?.roommateId)?.roomName }} • 
-                  {{ getRoommate(getShiftForTask(taskDef.key)?.roommateId)?.role }}
+                  {{ t('roles.' + getRoommate(getShiftForTask(taskDef.key)?.roommateId)?.role, getRoommate(getShiftForTask(taskDef.key)?.roommateId)?.role || '') }}
                 </div>
               </div>
             </div>
@@ -285,7 +285,7 @@
                 {{ getShiftForTask(taskDef.key)?.completedAt }}
               </div>
               <div v-else class="text-xs text-slate-400">
-                Termín: <strong class="text-slate-300">Do neděle</strong>
+                {{ t('cleaning.dueLabel', 'Termín:') }} <strong class="text-slate-300">{{ t('cleaning.dueValue', 'Do neděle') }}</strong>
               </div>
             </div>
           </div>
@@ -303,25 +303,25 @@
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 text-xs font-bold text-purple-300">
                 <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-                <span>Čekající žádost: výměna s {{ getShiftForTask(taskDef.key)?.swapRequest?.targetRoommateName }}</span>
+                <span>{{ t('cleaning.pendingSwapWith', 'Čekající žádost: výměna s {name}', { name: getShiftForTask(taskDef.key)?.swapRequest?.targetRoommateName }) }}</span>
               </div>
               <button
                 v-if="canCancelSwap(getShiftForTask(taskDef.key))"
                 @click="cancelShiftSwap(getShiftForTask(taskDef.key)!.id)"
                 class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-                title="Odvolat žádost o výměnu směny"
+                :title="t('cleaning.cancelSwapTitle', 'Odvolat žádost o výměnu směny')"
               >
-                Zrušit žádost
+                {{ t('cleaning.cancelRequest', 'Zrušit žádost') }}
               </button>
             </div>
             
             <div v-if="getShiftForTask(taskDef.key)?.swapRequest?.note" class="text-xs text-slate-300 italic">
-              Poznámka: "{{ getShiftForTask(taskDef.key)?.swapRequest?.note }}"
+              {{ t('cleaning.noteLabel', 'Poznámka:') }} "{{ getShiftForTask(taskDef.key)?.swapRequest?.note }}"
             </div>
             <div class="text-xs text-slate-400 flex items-center gap-2">
-              <span>Žadatel: <strong class="text-slate-200">{{ getShiftForTask(taskDef.key)?.swapRequest?.requestedByRoommateName }}</strong></span>
+              <span>{{ t('cleaning.requesterLabel', 'Žadatel:') }} <strong class="text-slate-200">{{ getShiftForTask(taskDef.key)?.swapRequest?.requestedByRoommateName }}</strong></span>
               <span>•</span>
-              <span>Podáno: {{ getShiftForTask(taskDef.key)?.swapRequest?.createdAt }}</span>
+              <span>{{ t('cleaning.submittedLabel', 'Podáno:') }} {{ getShiftForTask(taskDef.key)?.swapRequest?.createdAt }}</span>
             </div>
 
             <!-- Recipient Action inside card -->
@@ -336,13 +336,13 @@
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                 </svg>
-                <span>Přijmout výměnu</span>
+                <span>{{ t('cleaning.acceptSwap', 'Přijmout výměnu') }}</span>
               </button>
               <button
                 @click="rejectShiftSwap(getShiftForTask(taskDef.key)!.id)"
                 class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-colors"
               >
-                Odmítnout
+                {{ t('cleaning.reject', 'Odmítnout') }}
               </button>
             </div>
           </div>
@@ -350,7 +350,7 @@
           <!-- Subtasks Checklist -->
           <div class="space-y-1.5 pt-1">
             <div class="text-xs font-bold text-slate-400">
-              Doporučený kontrolní seznam:
+              {{ t('cleaning.checklistTitle', 'Doporučený kontrolní seznam:') }}
             </div>
             <ul class="space-y-1 text-xs text-slate-300">
               <li 
@@ -378,8 +378,8 @@
             class="text-xs text-slate-300 bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-1"
           >
             <div class="flex items-center gap-1.5">
-              <span class="text-emerald-400 font-bold">✓ Splněno</span>
-              <span>— potvrdil(a): <strong class="text-white">{{ getShiftForTask(taskDef.key)?.completedBy }}</strong></span>
+              <span class="text-emerald-400 font-bold">✓ {{ t('cleaning.doneBadge', 'Splněno') }}</span>
+              <span>— {{ t('cleaning.confirmedBy', 'potvrdil(a):') }} <strong class="text-white">{{ getShiftForTask(taskDef.key)?.completedBy }}</strong></span>
             </div>
             <div v-if="getShiftForTask(taskDef.key)?.completedAt" class="text-emerald-300 font-mono text-xs">
               {{ getShiftForTask(taskDef.key)?.completedAt }}
@@ -411,7 +411,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
               </svg>
               <span>
-                {{ isMyShift(getShiftForTask(taskDef.key)) ? 'Potvrdit hotový úklid' : `Potvrdit za spolubydlícího (Správce)` }}
+                {{ isMyShift(getShiftForTask(taskDef.key)) ? t('cleaning.confirmDone', 'Potvrdit hotový úklid') : t('cleaning.confirmForOther', 'Potvrdit za spolubydlícího (Správce)') }}
               </span>
             </button>
 
@@ -424,7 +424,7 @@
               <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>Zrušit potvrzení (vrátit zpět)</span>
+              <span>{{ t('cleaning.revertConfirm', 'Zrušit potvrzení (vrátit zpět)') }}</span>
             </button>
 
           </template>
@@ -436,12 +436,12 @@
               <button
                 disabled
                 class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800/40 text-slate-400 text-xs font-medium border border-slate-800 cursor-not-allowed"
-                :title="`Tuto směnu smí potvrdit pouze ${getShiftForTask(taskDef.key)?.roommateName} nebo správce bytu.`"
+                :title="t('cleaning.lockedTitle', 'Tuto směnu smí potvrdit pouze {name} nebo správce bytu.', { name: getShiftForTask(taskDef.key)?.roommateName })"
               >
                 <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <span>Uzamčeno (pouze pro {{ getShiftForTask(taskDef.key)?.roommateName.split(' ')[0] }})</span>
+                <span>{{ t('cleaning.lockedLabel', 'Uzamčeno (pouze pro {name})', { name: getShiftForTask(taskDef.key)?.roommateName.split(' ')[0] }) }}</span>
               </button>
 
               <!-- Reminder Button if not completed -->
@@ -449,12 +449,12 @@
                 v-if="!getShiftForTask(taskDef.key)?.isCompleted"
                 @click="sendCleaningReminder(getShiftForTask(taskDef.key)!.id)"
                 class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-sky-300 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 shrink-0"
-                title="Poslat spolubydlícímu přátelské upozornění na blížící se termín"
+                :title="t('cleaning.remindTitle', 'Poslat spolubydlícímu přátelské upozornění na blížící se termín')"
               >
                 <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                <span>Připomenout</span>
+                <span>{{ t('cleaning.remind', 'Připomenout') }}</span>
               </button>
             </div>
           </template>
@@ -464,9 +464,9 @@
             v-if="!getShiftForTask(taskDef.key)?.isCompleted && getShiftForTask(taskDef.key)?.swapRequest?.status !== 'PENDING'"
             @click="openSwapModal(getShiftForTask(taskDef.key)!)"
             class="px-3.5 py-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/40 text-purple-300 hover:text-purple-200 text-xs font-semibold border border-purple-500/30 transition-all flex items-center gap-1.5 shrink-0"
-            title="Zažádat o výměnu směny se spolubydlícím"
+            :title="t('cleaning.swapTitle', 'Zažádat o výměnu směny se spolubydlícím')"
           >
-            <span>Výměna směny ⇄</span>
+            <span>{{ t('cleaning.swapShort', 'Výměna směny ⇄') }}</span>
           </button>
 
         </div>
@@ -476,14 +476,14 @@
     <div v-else class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg text-center space-y-3">
       <div class="text-3xl">🧹</div>
       <div class="space-y-1">
-        <p class="text-sm font-semibold text-slate-200">Pro vybraný týden nejsou k dispozici žádné úklidové směny.</p>
-        <p class="text-xs text-slate-400">Zkuste zvolit aktuální týden nebo posunout rozpis na další týden.</p>
+        <p class="text-sm font-semibold text-slate-200">{{ t('cleaning.emptyTitle', 'Pro vybraný týden nejsou k dispozici žádné úklidové směny.') }}</p>
+        <p class="text-xs text-slate-400">{{ t('cleaning.emptyHint', 'Zkuste zvolit aktuální týden nebo posunout rozpis na další týden.') }}</p>
       </div>
       <button
         @click="selectCleaningWeek(currentWeekNumber)"
         class="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-400 border border-slate-700 font-medium transition-colors"
       >
-        Zobrazit aktuální týden
+        {{ t('cleaning.showCurrentWeek', 'Zobrazit aktuální týden') }}
       </button>
     </div>
 
@@ -492,22 +492,22 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
         <div>
           <h2 class="text-sm font-bold text-white flex items-center gap-2">
-            <span>Harmonogram rotace na 4 týdny</span>
-            <span class="text-xs text-emerald-400 font-normal">Posun každé pondělí o 1 zónu</span>
+            <span>{{ t('cleaning.rotationTitle', 'Harmonogram rotace na 4 týdny') }}</span>
+            <span class="text-xs text-emerald-400 font-normal">{{ t('cleaning.rotationSubtitle', 'Posun každé pondělí o 1 zónu') }}</span>
           </h2>
           <p class="text-xs text-slate-400 mt-0.5">
-            Přehled toho, kdo má jakou povinnost v jednotlivých týdnech. Všichni spolubydlící tak vystřídají každou zónu právě jednou za měsíc.
+            {{ t('cleaning.rotationHint', 'Přehled toho, kdo má jakou povinnost v jednotlivých týdnech. Všichni spolubydlící tak vystřídají každou zónu právě jednou za měsíc.') }}
           </p>
         </div>
       </div>
 
       <!-- Rotation Matrix Table -->
-      <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" aria-label="Harmonogram rotace úklidu">
-        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
+      <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" :aria-label="t('cleaning.rotationAriaLabel', 'Harmonogram rotace úklidu')">
+        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">{{ t('cleaning.scrollHint', 'Tabulku lze posouvat vodorovně →') }}</p>
         <table class="w-full min-w-[720px] text-left text-xs whitespace-nowrap">
           <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
             <tr>
-              <th class="p-3.5 font-bold">Úklidová zóna</th>
+              <th class="p-3.5 font-bold">{{ t('cleaning.zoneColumn', 'Úklidová zóna') }}</th>
               <th 
                 v-for="w in rotationWeeks" 
                 :key="w.number"
@@ -520,7 +520,7 @@
                     v-if="w.number === currentWeekNumber"
                     class="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                   >
-                    Dnes
+                    {{ t('cleaning.todayBadge', 'Dnes') }}
                   </span>
                 </div>
                 <div class="text-xs text-slate-400 font-normal">{{ w.dates }}</div>
@@ -540,8 +540,8 @@
                     {{ task.key === 'KITCHEN' ? '🍳' : task.key === 'BATHROOM' ? '🚿' : task.key === 'CORRIDOR' ? '🧹' : '♻️' }}
                   </span>
                   <div>
-                    <div>{{ task.title }}</div>
-                    <div class="text-xs text-slate-400">{{ task.shortTitle }}</div>
+                    <div>{{ t('cleaning.task.' + task.key.toLowerCase(), task.title) }}</div>
+                    <div class="text-xs text-slate-400">{{ t('cleaning.taskShort.' + task.key.toLowerCase(), task.shortTitle) }}</div>
                   </div>
                 </div>
               </td>
@@ -572,7 +572,7 @@
                     v-if="getAssignedRoommateFor(task.key, w.number)?.id === currentUser.id"
                     class="text-xs bg-amber-500 text-slate-950 px-1 rounded font-extrabold"
                   >
-                    Ty
+                    {{ t('cleaning.youBadge', 'Ty') }}
                   </span>
                 </div>
               </td>
@@ -585,37 +585,37 @@
     <!-- House Agreement & Rules -->
     <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
       <h2 class="text-sm font-bold text-white flex items-center gap-2">
-        <span>Domovní dohoda a pravidla úklidu</span>
-        <span class="text-xs text-slate-400 font-normal">Schváleno všemi spolubydlícími</span>
+        <span>{{ t('cleaning.rulesTitle', 'Domovní dohoda a pravidla úklidu') }}</span>
+        <span class="text-xs text-slate-400 font-normal">{{ t('cleaning.rulesSubtitle', 'Schváleno všemi spolubydlícími') }}</span>
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300 pt-1">
         <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-1">
           <div class="font-bold text-white flex items-center gap-1.5">
             <span>🛡️</span>
-            <span>Oprávnění a potvrzování</span>
+            <span>{{ t('cleaning.rulePermissionsTitle', 'Oprávnění a potvrzování') }}</span>
           </div>
           <p class="text-slate-400 leading-relaxed">
-            Každý spolubydlící smí označit jako hotovou výhradně <strong>svoji přidělenou povinnost</strong>. Správce bytu má oprávnění potvrdit či zkontrolovat směnu kohokoli.
+            {{ t('cleaning.rulePermissionsText', 'Každý spolubydlící smí označit jako hotovou výhradně') }} <strong>{{ t('cleaning.rulePermissionsStrong', 'svoji přidělenou povinnost') }}</strong>. {{ t('cleaning.rulePermissionsRest', 'Správce bytu má oprávnění potvrdit či zkontrolovat směnu kohokoli.') }}
           </p>
         </div>
 
         <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-1">
           <div class="font-bold text-white flex items-center gap-1.5">
             <span>📅</span>
-            <span>Týdenní periodicita</span>
+            <span>{{ t('cleaning.ruleWeeklyTitle', 'Týdenní periodicita') }}</span>
           </div>
           <p class="text-slate-400 leading-relaxed">
-            Úklid každé zóny musí být dokončen do neděle 23:59 daného týdne. V pondělí 00:00 se povinnosti automaticky posouvají na dalšího spolubydlícího.
+            {{ t('cleaning.ruleWeeklyText', 'Úklid každé zóny musí být dokončen do neděle 23:59 daného týdne. V pondělí 00:00 se povinnosti automaticky posouvají na dalšího spolubydlícího.') }}
           </p>
         </div>
 
         <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 space-y-1">
           <div class="font-bold text-white flex items-center gap-1.5">
             <span>🧼</span>
-            <span>Společné čistící pomůcky</span>
+            <span>{{ t('cleaning.ruleSuppliesTitle', 'Společné čistící pomůcky') }}</span>
           </div>
           <p class="text-slate-400 leading-relaxed">
-            Pytle na odpadky, saponáty a tablety do myčky jsou hrazeny společně. V případě potřeby je přidejte do <strong>Společného nákupního košíku</strong>.
+            {{ t('cleaning.ruleSuppliesText', 'Pytle na odpadky, saponáty a tablety do myčky jsou hrazeny společně. V případě potřeby je přidejte do') }} <strong>{{ t('cleaning.ruleSuppliesStrong', 'Společného nákupního košíku') }}</strong>.
           </p>
         </div>
       </div>
@@ -639,36 +639,36 @@
       >
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div>
-            <div class="text-xs font-bold text-purple-400 mb-0.5">Výměna úklidu</div>
+            <div class="text-xs font-bold text-purple-400 mb-0.5">{{ t('cleaning.swapModalKicker', 'Výměna úklidu') }}</div>
             <h3 id="swap-modal-title" class="text-lg font-bold text-white tracking-tight">
-              Žádost o výměnu směny ⇄
+              {{ t('cleaning.swapModalTitle', 'Žádost o výměnu směny ⇄') }}
             </h3>
           </div>
           <button 
             ref="swapCloseButton"
             @click="closeSwapModal"
             class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
-            aria-label="Zavřít dialog výměny směny"
+            :aria-label="t('cleaning.closeSwapDialog', 'Zavřít dialog výměny směny')"
           >
             ✕
           </button>
         </div>
 
         <div id="swap-modal-description" class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 text-xs space-y-1">
-          <div class="text-slate-400">Převáděná směna:</div>
+          <div class="text-slate-400">{{ t('cleaning.transferringShift', 'Převáděná směna:') }}</div>
           <div class="text-sm font-bold text-white flex items-center gap-2">
-            <span>{{ shiftToSwap.taskTitle }}</span>
+            <span>{{ t('cleaning.task.' + shiftToSwap.taskKey.toLowerCase(), shiftToSwap.taskTitle) }}</span>
             <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">{{ shiftToSwap.weekLabel }}</span>
           </div>
           <div class="text-slate-400 text-xs pt-1">
-            Současný řešitel: <strong class="text-slate-200">{{ shiftToSwap.roommateName }}</strong>
+            {{ t('cleaning.currentAssignee', 'Současný řešitel:') }} <strong class="text-slate-200">{{ shiftToSwap.roommateName }}</strong>
           </div>
         </div>
 
         <div class="space-y-4 text-xs">
           <div>
             <label class="block text-slate-300 font-medium mb-1.5">
-              Vyber spolubydlícího pro výměnu *
+              {{ t('cleaning.pickTarget', 'Vyber spolubydlícího pro výměnu *') }}
             </label>
             <select
               v-model="selectedTargetRoommateId"
@@ -679,19 +679,19 @@
                 :key="r.id" 
                 :value="r.id"
               >
-                {{ r.name }} ({{ r.roomName }}, {{ r.role }})
+                {{ r.name }} ({{ r.roomName }}, {{ t('roles.' + r.role, r.role) }})
               </option>
             </select>
           </div>
 
           <div>
             <label class="block text-slate-300 font-medium mb-1.5">
-              Důvod výměny / zpráva pro spolubydlícího (volitelné)
+              {{ t('cleaning.reasonLabel', 'Důvod výměny / zpráva pro spolubydlícího (volitelné)') }}
             </label>
             <input
               v-model="swapNote"
               type="text"
-              placeholder="Např. Mám zkoušku / jedu domů na víkend..."
+              :placeholder="t('cleaning.reasonPlaceholder', 'Např. Mám zkoušku / jedu domů na víkend...')"
               class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-purple-500/40 focus:outline-none"
             />
           </div>
@@ -702,14 +702,14 @@
             @click="closeSwapModal"
             class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"
           >
-            Zrušit
+            {{ t('cleaning.cancel', 'Zrušit') }}
           </button>
           <button
             @click="submitSwap"
             :disabled="!selectedTargetRoommateId"
             class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-purple-950/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>Odeslat žádost o výměnu</span>
+            <span>{{ t('cleaning.sendSwapRequest', 'Odeslat žádost o výměnu') }}</span>
           </button>
         </div>
       </div>
@@ -722,6 +722,7 @@
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CleaningShift, CleaningTaskKey } from '../types'
+import { t } from '../i18n'
 
 const {
   roommates,

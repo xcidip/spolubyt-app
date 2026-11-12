@@ -2,7 +2,7 @@
   <div 
     class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2.5 max-w-md w-full pointer-events-none px-4 sm:px-0"
     role="region" 
-    aria-label="Uživatelská oznámení"
+    :aria-label="t('toast.aria', 'Uživatelská oznámení')"
   >
     <transition-group
       enter-active-class="transform ease-out duration-300 transition"
@@ -49,7 +49,7 @@
         <button
           @click="removeToast(toast.id)"
           class="shrink-0 p-1 rounded-md opacity-60 hover:opacity-100 hover:bg-white/10 transition-colors"
-          aria-label="Zavřít notifikaci"
+          :aria-label="t('toast.dismiss', 'Zavřít notifikaci')"
         >
           <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
             <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
 import { useSpolubyt } from '../composables/useSpolubyt'
+import { t } from '../i18n'
 
 const { toasts, removeToast } = useSpolubyt()
 </script>

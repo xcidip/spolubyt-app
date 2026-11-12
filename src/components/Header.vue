@@ -7,7 +7,7 @@
         <button 
           @click="navigateTo('DASH')"
           class="flex items-center gap-3 text-left group focus:outline-none"
-          title="Zpět na Nástěnku"
+          :title="t('header.backToDashboard', 'Zpět na Nástěnku')"
         >
           <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -32,9 +32,9 @@
 
         <!-- Breadcrumb / Active Page Indicator -->
         <div class="hidden md:flex items-center gap-2 text-xs text-slate-400">
-          <span class="text-slate-400">Modul:</span>
+          <span class="text-slate-400">{{ t('header.module', 'Modul:') }}</span>
           <span class="font-semibold text-slate-200 bg-slate-800 px-2.5 py-1 rounded-md border border-slate-700/60">
-            {{ pageLabels[currentPage] }}
+            {{ t(pageLabelKeys[currentPage], pageLabels[currentPage]) }}
           </span>
         </div>
       </div>
@@ -45,13 +45,35 @@
         <!-- LocalStorage Sync Status -->
         <div 
           class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300"
-          title="Všechna data se automaticky ukládají do LocalStorage"
+          :title="t('header.syncTitle', 'Všechna data se automaticky ukládají do LocalStorage')"
         >
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span class="text-xs font-mono">Sync: OK</span>
+          <span class="text-xs font-mono">{{ t('header.sync', 'Sync: OK') }}</span>
+        </div>
+
+        <!-- Language switcher -->
+        <div
+          class="flex items-center rounded-xl bg-slate-800 border border-slate-700 p-0.5"
+          role="group"
+          :aria-label="t('header.language', 'Přepnout jazyk')"
+        >
+          <button
+            type="button"
+            @click="setLocale('cs')"
+            class="px-2 py-1 rounded-lg text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+            :class="locale === 'cs' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-slate-200'"
+            :aria-pressed="locale === 'cs'"
+          >CS</button>
+          <button
+            type="button"
+            @click="setLocale('en')"
+            class="px-2 py-1 rounded-lg text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+            :class="locale === 'en' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-slate-200'"
+            :aria-pressed="locale === 'en'"
+          >EN</button>
         </div>
 
         <!-- User Persona Switcher -->
@@ -61,7 +83,7 @@
             class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 transition-colors focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
             aria-haspopup="listbox"
             :aria-expanded="isUserMenuOpen"
-            title="Přepnout aktivního uživatele / personu"
+            :title="t('header.switchUser', 'Přepnout aktivního uživatele / personu')"
           >
             <!-- Avatar -->
             <div 
@@ -75,7 +97,7 @@
                 {{ currentUser.name }}
               </div>
               <div class="text-xs text-slate-400 leading-tight mt-0.5">
-                {{ currentUser.role }} ({{ currentUser.roomName.split(' ')[0] }})
+                {{ t('roles.' + currentUser.role, currentUser.role) }} ({{ currentUser.roomName.split(' ')[0] }})
               </div>
             </div>
             <!-- Chevron -->
@@ -91,7 +113,7 @@
             role="listbox"
           >
             <div class="px-2.5 py-1.5 text-xs font-semibold text-slate-400">
-              Testovat jako persona:
+              {{ t('header.testAs', 'Testovat jako persona:') }}
             </div>
             <div class="space-y-1">
               <button
@@ -109,14 +131,14 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="font-medium truncate">{{ r.name }}</div>
-                  <div class="text-xs text-slate-400">{{ r.role }} • {{ r.roomName }}</div>
+                  <div class="text-xs text-slate-400">{{ t('roles.' + r.role, r.role) }} • {{ r.roomName }}</div>
                 </div>
                 <span v-if="r.id === currentUser.id" class="text-emerald-400 text-xs">✓</span>
               </button>
             </div>
             
             <div class="mt-2 pt-2 border-t border-slate-800 text-xs text-slate-400 px-2">
-              Umožňuje testovat pohled správce i dlužníka.
+              {{ t('header.testHint', 'Umožňuje testovat pohled správce i dlužníka.') }}
             </div>
           </div>
         </div>
@@ -125,8 +147,8 @@
         <button
           @click="resetDemoData"
           class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl transition-colors border border-transparent hover:border-slate-700"
-          title="Obnovit výchozí testovací data"
-          aria-label="Obnovit výchozí testovací data"
+          :title="t('header.reset', 'Obnovit výchozí testovací data')"
+          :aria-label="t('header.reset', 'Obnovit výchozí testovací data')"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -141,7 +163,7 @@
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
           </svg>
-          <span>Nový výdaj</span>
+          <span>{{ t('header.newExpense', 'Nový výdaj') }}</span>
         </button>
 
       </div>
@@ -153,6 +175,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
+import { t, locale, setLocale } from '../i18n'
 
 const { 
   currentPage, 
@@ -178,6 +201,16 @@ const pageLabels: Record<string, string> = {
   CART: 'Společný nákupní košík',
   CLEANING: 'Úklidové směny a rotace',
   SETTINGS: 'Nastavení bytu a členů'
+}
+
+const pageLabelKeys: Record<string, string> = {
+  DASH: 'page.dash',
+  EXPENSES: 'page.expenses',
+  SETTLEMENT: 'page.settlement',
+  ENERGY: 'page.energy',
+  CART: 'page.cart',
+  CLEANING: 'page.cleaning',
+  SETTINGS: 'page.settings'
 }
 
 const selectPersona = (id: string) => {

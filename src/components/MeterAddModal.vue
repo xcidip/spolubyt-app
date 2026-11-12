@@ -15,16 +15,16 @@
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-850">
           <div>
             <h2 id="modal-meter-title" class="text-lg font-bold text-white tracking-tight">
-              Zadat nový odečet měřidla energií
+              {{ t('meterAdd.title', 'Zadat nový odečet měřidla energií') }}
             </h2>
             <p class="text-xs text-slate-400">
-              Pravidelný měsíční odečet pro monitoring spotřeby a prevenci nedoplatků.
+              {{ t('meterAdd.subtitle', 'Pravidelný měsíční odečet pro monitoring spotřeby a prevenci nedoplatků.') }}
             </p>
           </div>
           <button 
             @click="closeModal"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-            aria-label="Zavřít"
+            :aria-label="t('meterAdd.close', 'Zavřít')"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -38,7 +38,7 @@
           <!-- Section 1: Medium selection -->
           <div>
             <label class="block text-xs font-bold text-slate-400 mb-2">
-              1. Zvolte měřené médium:
+              {{ t('meterAdd.mediumLabel', '1. Zvolte měřené médium:') }}
             </label>
             <div class="grid grid-cols-2 gap-2 text-xs">
               <label 
@@ -48,7 +48,7 @@
                 :class="selectedType === m.type ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-200' : 'bg-slate-850 border-slate-800 text-slate-300 hover:bg-slate-800'"
               >
                 <input type="radio" v-model="selectedType" :value="m.type" class="text-emerald-500" />
-                <span class="font-medium">{{ m.label }} ({{ m.unit }})</span>
+                <span class="font-medium">{{ t('meterTypes.' + m.type, m.label) }} ({{ m.unit }})</span>
               </label>
             </div>
           </div>
@@ -58,16 +58,16 @@
             
             <!-- Reference box -->
             <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-800">
-              <span class="text-slate-400">Předchozí zapsaný stav:</span>
+              <span class="text-slate-400">{{ t('meterAdd.previousReading', 'Předchozí zapsaný stav:') }}</span>
               <span class="font-mono font-bold text-slate-200">
-                {{ previousReading ? `${previousReading.value.toLocaleString('cs-CZ')} ${previousReading.unit}` : 'Žádný záznam' }}
+                {{ previousReading ? `${previousReading.value.toLocaleString('cs-CZ')} ${previousReading.unit}` : t('meterAdd.noRecord', 'Žádný záznam') }}
               </span>
             </div>
 
             <!-- New value input -->
             <div>
               <label class="block text-xs font-medium text-slate-300 mb-1">
-                Aktuální stav číselníku z počítadla *
+                {{ t('meterAdd.currentValueLabel', 'Aktuální stav číselníku z počítadla *') }}
               </label>
               <div class="relative">
                 <input
@@ -86,24 +86,24 @@
 
             <!-- Calculated delta indicator -->
             <div class="flex items-center justify-between text-xs pt-1">
-              <span class="text-slate-400">Spotřeba od minulého měření:</span>
+              <span class="text-slate-400">{{ t('meterAdd.consumptionSinceLast', 'Spotřeba od minulého měření:') }}</span>
               <span 
                 class="font-mono font-bold px-2 py-0.5 rounded text-xs"
                 :class="delta >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'"
               >
-                {{ delta >= 0 ? `+${delta} ${currentUnit}` : `${delta} ${currentUnit} (Chyba!)` }}
+                {{ delta >= 0 ? `+${delta} ${currentUnit}` : `${delta} ${currentUnit} ${t('meterAdd.errorSuffix', '(Chyba!)')}` }}
               </span>
             </div>
 
             <!-- Validation Error Alert -->
             <div v-if="!isInputValid" class="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300">
-              Hodnota nesmí být nižší než předchozí stav ({{ previousReading?.value }} {{ currentUnit }})!
+              {{ t('meterAdd.validationError', 'Hodnota nesmí být nižší než předchozí stav ({value} {unit})!', { value: previousReading?.value ?? '', unit: currentUnit }) }}
             </div>
 
             <!-- Date -->
             <div>
               <label class="block text-xs font-medium text-slate-300 mb-1">
-                Datum provedení odečtu *
+                {{ t('meterAdd.dateLabel', 'Datum provedení odečtu *') }}
               </label>
               <input
                 v-model="date"
@@ -118,12 +118,12 @@
           <!-- Section 3: Note -->
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1">
-              Poznámka k odečtu (volitelné)
+              {{ t('meterAdd.noteLabel', 'Poznámka k odečtu (volitelné)') }}
             </label>
             <input
               v-model="note"
               type="text"
-              placeholder="např. Běžný měsíční odečet před zahájením topné sezóny..."
+              :placeholder="t('meterAdd.notePlaceholder', 'např. Běžný měsíční odečet před zahájením topné sezóny...')"
               class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
             />
           </div>
@@ -135,14 +135,14 @@
               @click="closeModal"
               class="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 rounded-xl border border-slate-700 transition-colors"
             >
-              Zrušit / Storno
+              {{ t('meterAdd.cancel', 'Zrušit / Storno') }}
             </button>
             <button
               type="submit"
               :disabled="!isInputValid"
               class="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-lg focus:ring-2 focus:ring-emerald-400 focus:outline-none"
             >
-              Uložit nový odečet
+              {{ t('meterAdd.submit', 'Uložit nový odečet') }}
             </button>
           </div>
 
@@ -156,6 +156,7 @@
 import { ref, computed, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { MeterType } from '../types'
+import { t } from '../i18n'
 
 const { latestMeters, closeModal, addMeterReading } = useSpolubyt()
 
@@ -172,7 +173,7 @@ const currentUnit = computed(() => selectedType.value === 'ELEKTŘINA' ? 'kWh' :
 
 const newValue = ref<number>(14950)
 const date = ref(new Date().toISOString().slice(0, 10))
-const note = ref('Pravidelný odečet na konci měsíce')
+const note = ref(t('meterAdd.noteDefault', 'Pravidelný odečet na konci měsíce'))
 
 // Sync default new value with previous reading + estimated delta
 watch(selectedType, (type) => {

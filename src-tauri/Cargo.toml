@@ -1,6 +1,6 @@
 [package]
 name = "spolubyt-app"
-version = "1.0.0"
+version = "1.1.0"
 description = "Spolubyt.cz Desktop App"
 authors = ["Tomáš Beránek"]
 edition = "2021"

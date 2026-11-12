@@ -14,7 +14,7 @@
       <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0">
         
         <!-- Mobile Bottom Nav -->
-        <nav class="md:hidden flex items-center gap-1 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" aria-label="Hlavní navigace">
+        <nav class="md:hidden flex items-center gap-1 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" :aria-label="t('nav.main', 'Hlavní navigace')">
           <button
             v-for="item in mobileNavItems"
             :key="item.id"
@@ -24,7 +24,7 @@
             :aria-current="currentPage === item.id ? 'page' : undefined"
           >
             <component :is="item.icon" class="w-4 h-4 mb-0.5" />
-            <span class="text-xs leading-tight">{{ item.label }}</span>
+            <span class="text-xs leading-tight">{{ t(item.labelKey, item.label) }}</span>
           </button>
         </nav>
 
@@ -72,6 +72,7 @@ import {
   Settings
 } from 'lucide-vue-next'
 import { useSpolubyt } from './composables/useSpolubyt'
+import { t } from './i18n'
 
 // Components
 import Header from './components/Header.vue'
@@ -117,13 +118,13 @@ const activeViewComponent = computed(() => {
 })
 
 const mobileNavItems = [
-  { id: 'DASH', label: 'Nástěnka', icon: LayoutDashboard },
-  { id: 'EXPENSES', label: 'Výdaje', icon: Receipt },
-  { id: 'SETTLEMENT', label: 'Vyrovnání', icon: Scale },
-  { id: 'ENERGY', label: 'Energie', icon: Zap },
-  { id: 'CART', label: 'Košík', icon: ShoppingCart },
-  { id: 'CLEANING', label: 'Úklid', icon: Sparkles },
-  { id: 'SETTINGS', label: 'Nastavení', icon: Settings }
+  { id: 'DASH', labelKey: 'nav.dashboard', label: 'Nástěnka', icon: LayoutDashboard },
+  { id: 'EXPENSES', labelKey: 'nav.expenses', label: 'Výdaje', icon: Receipt },
+  { id: 'SETTLEMENT', labelKey: 'nav.settlement', label: 'Vyrovnání', icon: Scale },
+  { id: 'ENERGY', labelKey: 'nav.energy', label: 'Energie', icon: Zap },
+  { id: 'CART', labelKey: 'nav.cart', label: 'Košík', icon: ShoppingCart },
+  { id: 'CLEANING', labelKey: 'nav.cleaning', label: 'Úklid', icon: Sparkles },
+  { id: 'SETTINGS', labelKey: 'nav.settings', label: 'Nastavení', icon: Settings }
 ] as const
 </script>
 

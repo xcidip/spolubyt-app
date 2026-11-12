@@ -6,14 +6,14 @@
       <div>
         <div class="flex items-center gap-2">
           <h1 class="text-2xl font-extrabold text-white tracking-tight">
-            Společný nákupní košík bytu
+            {{ t('cart.title', 'Společný nákupní košík bytu') }}
           </h1>
           <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold font-mono">
-            {{ cartRemainingCount }} ks zbývá
+            {{ t('cart.remainingBadge', '{count} ks zbývá', { count: cartRemainingCount }) }}
           </span>
         </div>
         <p class="text-xs text-slate-400 mt-0.5">
-          Společný seznam nákupů (drogerie, úklidové pomůcky, káva) s okamžitým přepočtem ceny v reálném čase.
+          {{ t('cart.subtitle', 'Společný seznam nákupů (drogerie, úklidové pomůcky, káva) s okamžitým přepočtem ceny v reálném čase.') }}
         </p>
       </div>
 
@@ -23,7 +23,7 @@
           @click="clearCart"
           class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-rose-300 text-xs font-semibold border border-slate-700 transition-colors"
         >
-          Vysypat košík
+          {{ t('cart.clearCart', 'Vysypat košík') }}
         </button>
 
         <button
@@ -34,7 +34,7 @@
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7" />
           </svg>
-          <span>Převést zbývající na výdaj ({{ cartRemainingPrice.toLocaleString('cs-CZ') }} CZK)</span>
+          <span>{{ t('cart.convertRemaining', 'Převést zbývající na výdaj ({price} CZK)', { price: cartRemainingPrice.toLocaleString('cs-CZ') }) }}</span>
         </button>
       </div>
     </div>
@@ -48,23 +48,23 @@
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-bold text-slate-100">
-              Položky v nákupním košíku
+              {{ t('cart.itemsTitle', 'Položky v nákupním košíku') }}
             </h2>
-            <span class="text-xs text-slate-400">Okamžitý přepočet součtů</span>
+            <span class="text-xs text-slate-400">{{ t('cart.instantRecalc', 'Okamžitý přepočet součtů') }}</span>
           </div>
 
           <!-- Table of items -->
-          <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" aria-label="Položky nákupního košíku">
-            <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
+          <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" :aria-label="t('cart.tableAriaLabel', 'Položky nákupního košíku')">
+            <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">{{ t('cart.scrollHint', 'Tabulku lze posouvat vodorovně →') }}</p>
             <table class="w-full min-w-[600px] text-left text-xs">
               <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
                 <tr>
-                  <th class="py-3 pl-4 pr-3 font-semibold">Položka</th>
-                  <th class="py-3 px-3 font-semibold">Kategorie</th>
-                  <th class="py-3 px-3 font-semibold text-center whitespace-nowrap">Počet kusů</th>
-                  <th class="py-3 px-3 font-semibold text-right whitespace-nowrap">Cena / ks</th>
-                  <th class="py-3 px-3 font-semibold text-right whitespace-nowrap">Mezisoučet</th>
-                  <th class="py-3 pl-3 pr-4 font-semibold text-right">Akce</th>
+                  <th class="py-3 pl-4 pr-3 font-semibold">{{ t('cart.thItem', 'Položka') }}</th>
+                  <th class="py-3 px-3 font-semibold">{{ t('cart.thCategory', 'Kategorie') }}</th>
+                  <th class="py-3 px-3 font-semibold text-center whitespace-nowrap">{{ t('cart.thQty', 'Počet kusů') }}</th>
+                  <th class="py-3 px-3 font-semibold text-right whitespace-nowrap">{{ t('cart.thUnitPrice', 'Cena / ks') }}</th>
+                  <th class="py-3 px-3 font-semibold text-right whitespace-nowrap">{{ t('cart.thSubtotal', 'Mezisoučet') }}</th>
+                  <th class="py-3 pl-3 pr-4 font-semibold text-right">{{ t('cart.thActions', 'Akce') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-800">
@@ -82,8 +82,8 @@
                         @click="toggleCartItemPurchased(item.id)"
                         class="w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0"
                         :class="item.isPurchased ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-950/40' : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700 hover:border-slate-600'"
-                        :title="item.isPurchased ? 'Zrušit označení koupeno' : 'Označit jako koupeno'"
-                        :aria-label="item.isPurchased ? 'Zrušit označení koupeno' : 'Označit jako koupeno'"
+                        :title="item.isPurchased ? t('cart.unmarkPurchased', 'Zrušit označení koupeno') : t('cart.markPurchased', 'Označit jako koupeno')"
+                        :aria-label="item.isPurchased ? t('cart.unmarkPurchased', 'Zrušit označení koupeno') : t('cart.markPurchased', 'Označit jako koupeno')"
                       >
                         <svg v-if="item.isPurchased" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
@@ -98,17 +98,17 @@
                             v-if="item.isPurchased"
                             class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold"
                           >
-                            Koupeno
+                            {{ t('cart.purchasedBadge', 'Koupeno') }}
                           </span>
                         </div>
                         <div class="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                          <span class="whitespace-nowrap">Přidal(a): {{ item.addedBy }}</span>
+                          <span class="whitespace-nowrap">{{ t('cart.addedBy', 'Přidal(a): {name}', { name: item.addedBy }) }}</span>
                           <span class="whitespace-nowrap"> • {{ item.addedAt }}</span>
                           <span
                             v-if="item.isPurchased && item.purchasedBy"
                             class="text-emerald-400 font-medium whitespace-nowrap"
                           >
-                            • Koupil(a): {{ item.purchasedBy }} ({{ item.purchasedAt || 'koupeno' }})
+                            • {{ t('cart.purchasedBy', 'Koupil(a): {name} ({date})', { name: item.purchasedBy, date: item.purchasedAt || t('cart.purchasedUnknown', 'koupeno') }) }}
                           </span>
                         </div>
                       </div>
@@ -118,7 +118,7 @@
                   <!-- Category -->
                   <td class="py-3 px-3 whitespace-nowrap">
                     <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700">
-                      {{ item.category }}
+                      {{ t('categories.' + item.category, item.category) }}
                     </span>
                   </td>
 
@@ -128,8 +128,8 @@
                       <button
                         @click="updateCartItemQty(item.id, -1)"
                         class="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 flex items-center justify-center font-bold text-xs transition-colors"
-                        title="Odebrat 1 kus"
-                        aria-label="Odebrat 1 kus"
+                        :title="t('cart.removeOne', 'Odebrat 1 kus')"
+                        :aria-label="t('cart.removeOne', 'Odebrat 1 kus')"
                       >
                         -
                       </button>
@@ -139,8 +139,8 @@
                       <button
                         @click="updateCartItemQty(item.id, 1)"
                         class="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 flex items-center justify-center font-bold text-xs transition-colors"
-                        title="Přidat 1 kus"
-                        aria-label="Přidat 1 kus"
+                        :title="t('cart.addOne', 'Přidat 1 kus')"
+                        :aria-label="t('cart.addOne', 'Přidat 1 kus')"
                       >
                         +
                       </button>
@@ -165,11 +165,11 @@
                         @click="convertCartItemToExpense(item)"
                         type="button"
                         class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all flex items-center gap-1 shrink-0 hover:bg-emerald-500/20"
-                        title="Převést tuto položku přímo do výdajů bytu"
-                        aria-label="Převést tuto položku přímo do výdajů bytu"
+                        :title="t('cart.convertItemTitle', 'Převést tuto položku přímo do výdajů bytu')"
+                        :aria-label="t('cart.convertItemTitle', 'Převést tuto položku přímo do výdajů bytu')"
                       >
-                        <span class="hidden 2xl:inline">Převést do výdajů</span>
-                        <span class="2xl:hidden">Do výdajů</span>
+                        <span class="hidden 2xl:inline">{{ t('cart.convertItem', 'Převést do výdajů') }}</span>
+                        <span class="2xl:hidden">{{ t('cart.convertItemShort', 'Do výdajů') }}</span>
                         <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
@@ -178,8 +178,8 @@
                       <button
                         @click="removeCartItem(item.id)"
                         class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0"
-                        title="Odebrat z košíku"
-                        aria-label="Odebrat z košíku"
+                        :title="t('cart.removeItem', 'Odebrat z košíku')"
+                        :aria-label="t('cart.removeItem', 'Odebrat z košíku')"
                       >
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -193,8 +193,8 @@
                 <tr v-if="cartItems.length === 0">
                   <td colspan="6" class="py-12 text-center text-slate-400">
                     <div class="space-y-2">
-                      <p class="text-sm font-semibold text-slate-300">Váš společný nákupní košík je prázdný.</p>
-                      <p class="text-xs text-slate-400">Pomocí formuláře vpravo přidejte věci, které v bytě chybí.</p>
+                      <p class="text-sm font-semibold text-slate-300">{{ t('cart.emptyTitle', 'Váš společný nákupní košík je prázdný.') }}</p>
+                      <p class="text-xs text-slate-400">{{ t('cart.emptyHint', 'Pomocí formuláře vpravo přidejte věci, které v bytě chybí.') }}</p>
                     </div>
                   </td>
                 </tr>
@@ -214,25 +214,25 @@
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">+</span>
             <h2 class="text-xs font-bold text-slate-200">
-              Přidat položku do košíku
+              {{ t('cart.addTitle', 'Přidat položku do košíku') }}
             </h2>
           </div>
 
           <form @submit.prevent="handleAddItem" class="space-y-3 text-xs">
             <div>
-              <label class="block text-slate-300 mb-1 font-medium">Název položky *</label>
+              <label class="block text-slate-300 mb-1 font-medium">{{ t('cart.nameLabel', 'Název položky *') }}</label>
               <input
                 v-model="newItem.name"
                 type="text"
                 required
-                placeholder="např. Jar na nádobí, olivový olej, žárovka..."
+                :placeholder="t('cart.namePlaceholder', 'např. Jar na nádobí, olivový olej, žárovka...')"
                 class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
               />
             </div>
 
             <div class="grid grid-cols-2 gap-2.5">
               <div>
-                <label class="block text-slate-300 mb-1 font-medium">Cena / ks *</label>
+                <label class="block text-slate-300 mb-1 font-medium">{{ t('cart.priceLabel', 'Cena / ks *') }}</label>
                 <div class="relative">
                   <input
                     v-model.number="newItem.unitPrice"
@@ -248,7 +248,7 @@
               </div>
 
               <div>
-                <label class="block text-slate-300 mb-1 font-medium">Počet kusů *</label>
+                <label class="block text-slate-300 mb-1 font-medium">{{ t('cart.qtyLabel', 'Počet kusů *') }}</label>
                 <input
                   v-model.number="newItem.qty"
                   type="number"
@@ -262,15 +262,15 @@
             </div>
 
             <div>
-              <label class="block text-slate-300 mb-1 font-medium">Kategorie</label>
+              <label class="block text-slate-300 mb-1 font-medium">{{ t('cart.categoryLabel', 'Kategorie') }}</label>
               <select
                 v-model="newItem.category"
                 class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
               >
-                <option value="Drogerie">Drogerie a úklid</option>
-                <option value="Jídlo">Potraviny a káva</option>
-                <option value="Údržba">Údržba bytu</option>
-                <option value="Služby">Služby a ostatní</option>
+                <option value="Drogerie">{{ t('cart.categoryDrogerie', 'Drogerie a úklid') }}</option>
+                <option value="Jídlo">{{ t('cart.categoryFood', 'Potraviny a káva') }}</option>
+                <option value="Údržba">{{ t('cart.categoryMaintenance', 'Údržba bytu') }}</option>
+                <option value="Služby">{{ t('cart.categoryServices', 'Služby a ostatní') }}</option>
               </select>
             </div>
 
@@ -281,7 +281,7 @@
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              <span>Vložit do nákupního košíku</span>
+              <span>{{ t('cart.submit', 'Vložit do nákupního košíku') }}</span>
             </button>
           </form>
         </div>
@@ -289,37 +289,37 @@
         <!-- Summary Card -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <h2 class="text-xs font-bold text-slate-400">
-            Rekapitulace košíku
+            {{ t('cart.summaryTitle', 'Rekapitulace košíku') }}
           </h2>
 
           <div class="space-y-2.5 text-xs">
             <div class="flex justify-between text-slate-300">
-              <span>Celkový počet kusů:</span>
-              <span class="font-mono font-bold text-slate-100">{{ cartTotalCount }} ks</span>
+              <span>{{ t('cart.totalCountLabel', 'Celkový počet kusů:') }}</span>
+              <span class="font-mono font-bold text-slate-100">{{ t('cart.countValue', '{count} ks', { count: cartTotalCount }) }}</span>
             </div>
             <div class="flex justify-between text-slate-300">
-              <span>Zbývá nakoupit:</span>
-              <span class="font-mono font-bold text-amber-300">{{ cartRemainingCount }} ks</span>
+              <span>{{ t('cart.remainingLabel', 'Zbývá nakoupit:') }}</span>
+              <span class="font-mono font-bold text-amber-300">{{ t('cart.countValue', '{count} ks', { count: cartRemainingCount }) }}</span>
             </div>
             <div class="flex justify-between text-slate-300">
-              <span>Položek celkem:</span>
-              <span class="font-mono font-bold text-slate-100">{{ cartItems.length }} druhů</span>
+              <span>{{ t('cart.itemsCountLabel', 'Položek celkem:') }}</span>
+              <span class="font-mono font-bold text-slate-100">{{ t('cart.kindsValue', '{count} druhů', { count: cartItems.length }) }}</span>
             </div>
             <div class="flex justify-between items-baseline gap-3 text-slate-300">
-              <span class="min-w-0">Odhadovaný podíl na 1 člena (zbývá):</span>
+              <span class="min-w-0">{{ t('cart.sharePerMember', 'Odhadovaný podíl na 1 člena (zbývá):') }}</span>
               <span class="font-mono font-bold text-emerald-400 whitespace-nowrap">
                 {{ Math.round(cartRemainingPrice / 4).toLocaleString('cs-CZ') }} CZK
               </span>
             </div>
             
             <div class="pt-3 border-t border-slate-800 flex justify-between items-baseline gap-3">
-              <span class="text-sm font-bold text-white min-w-0">Celková cena nákupu:</span>
+              <span class="text-sm font-bold text-white min-w-0">{{ t('cart.totalPriceLabel', 'Celková cena nákupu:') }}</span>
               <span class="text-xl font-mono font-extrabold text-slate-100 whitespace-nowrap">
                 {{ cartTotalPrice.toLocaleString('cs-CZ') }} CZK
               </span>
             </div>
             <div class="flex justify-between items-baseline gap-3">
-              <span class="text-sm font-bold text-amber-300 min-w-0">Zbývá nakoupit:</span>
+              <span class="text-sm font-bold text-amber-300 min-w-0">{{ t('cart.remainingLabel', 'Zbývá nakoupit:') }}</span>
               <span class="text-xl font-mono font-extrabold text-amber-300 whitespace-nowrap">
                 {{ cartRemainingPrice.toLocaleString('cs-CZ') }} CZK
               </span>
@@ -331,7 +331,7 @@
             :disabled="cartRemainingCount === 0"
             class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center whitespace-nowrap"
           >
-            Vytvořit společný výdaj ze zbývajícího nákupu →
+            {{ t('cart.createExpense', 'Vytvořit společný výdaj ze zbývajícího nákupu →') }}
           </button>
         </div>
 
@@ -346,6 +346,7 @@
 import { reactive } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { ExpenseCategory } from '../types'
+import { t } from '../i18n'
 
 const { 
   cartItems, 

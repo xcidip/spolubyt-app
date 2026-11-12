@@ -6,14 +6,14 @@
       <div>
         <div class="flex items-center gap-2 text-xs font-semibold mb-1" :class="isMasterTenant ? 'text-emerald-400' : 'text-sky-400'">
           <span class="w-2 h-2 rounded-full animate-pulse" :class="isMasterTenant ? 'bg-emerald-500' : 'bg-sky-500'"></span>
-          <span>{{ isMasterTenant ? 'Centrální přehled správce bytu' : `Osobní přehled spolubydlícího (${currentUser.role})` }}</span>
+          <span>{{ isMasterTenant ? t('dashboard.heroBadgeManager', 'Centrální přehled správce bytu') : t('dashboard.heroBadgeMember', 'Osobní přehled spolubydlícího ({role})', { role: t('roles.' + currentUser.role, currentUser.role) }) }}</span>
         </div>
         <h1 class="text-2xl font-extrabold text-white tracking-tight">
-          Vítej zpět, {{ currentUser.name }}
+          {{ t('dashboard.welcomeBack', 'Vítej zpět, {name}', { name: currentUser.name }) }}
         </h1>
         <p class="text-xs text-slate-400 mt-1">
-          Spravovaný byt: <strong class="text-slate-200">{{ settings.name }}</strong> • 
-          Pokoj: <strong class="text-slate-200">{{ currentUser.roomName }}</strong> ({{ currentUser.roomAreaM2 }} m², podíl {{ currentUser.areaSharePct }} %)
+          {{ t('dashboard.managedFlat', 'Spravovaný byt:') }} <strong class="text-slate-200">{{ settings.name }}</strong> • 
+          {{ t('dashboard.roomLabel', 'Pokoj:') }} <strong class="text-slate-200">{{ currentUser.roomName }}</strong> ({{ currentUser.roomAreaM2 }} m², {{ t('dashboard.shareLabel', 'podíl') }} {{ currentUser.areaSharePct }} %)
         </p>
       </div>
 
@@ -30,23 +30,23 @@
           :class="myCurrentCleaningShift?.isCompleted 
             ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20' 
             : 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20'"
-          title="Přejít na rozpis úklidu"
+          :title="t('dashboard.goToCleaningRota', 'Přejít na rozpis úklidu')"
         >
           <div class="text-lg">
             {{ myCurrentCleaningShift?.taskKey === 'KITCHEN' ? '🍳' : myCurrentCleaningShift?.taskKey === 'BATHROOM' ? '🚿' : myCurrentCleaningShift?.taskKey === 'CORRIDOR' ? '🧹' : (myCurrentCleaningShift?.taskKey === 'TRASH' ? '♻️' : '✨') }}
           </div>
           <div>
             <div class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-              <span>Úklid tento týden:</span>
+              <span>{{ t('dashboard.cleaningThisWeekLabel', 'Úklid tento týden:') }}</span>
               <span 
                 class="font-bold text-xs px-1.5 py-0.5 rounded whitespace-nowrap shrink-0"
                 :class="myCurrentCleaningShift?.isCompleted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'"
               >
-                {{ myCurrentCleaningShift?.isCompleted ? 'Splněno ✓' : 'Čeká na vás' }}
+                {{ myCurrentCleaningShift?.isCompleted ? t('dashboard.shiftDoneBadge', 'Splněno ✓') : t('dashboard.shiftWaiting', 'Čeká na vás') }}
               </span>
             </div>
             <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">
-              {{ myCurrentCleaningShift ? myCurrentCleaningShift.taskTitle : 'Nemáte přiřazen úklid' }}
+              {{ myCurrentCleaningShift ? myCurrentCleaningShift.taskTitle : t('dashboard.noShiftAssigned', 'Nemáte přiřazen úklid') }}
             </div>
           </div>
         </div>
@@ -59,7 +59,7 @@
           <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          <span>Zapsat odečet</span>
+          <span>{{ t('dashboard.logReading', 'Zapsat odečet') }}</span>
         </button>
       </div>
     </div>
@@ -72,10 +72,10 @@
         <div>
           <div class="flex items-start justify-between gap-2 flex-wrap text-xs text-slate-400 mb-2">
             <span class="font-semibold text-xs text-slate-400 min-w-0">
-              {{ isMasterTenant ? 'Měsíční náklady bytu (listopad)' : 'Můj měsíční podíl nákladů (listopad)' }}
+              {{ isMasterTenant ? t('dashboard.monthlyFlatCosts', 'Měsíční náklady bytu (listopad)') : t('dashboard.myMonthlyShare', 'Můj měsíční podíl nákladů (listopad)') }}
             </span>
             <span class="text-emerald-400 font-semibold text-xs bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0 whitespace-nowrap leading-tight">
-              {{ isMasterTenant ? '+2,4 % m/m' : `Podíl ${currentUser.areaSharePct} %` }}
+              {{ isMasterTenant ? t('dashboard.monthlyDelta', '+2,4 % m/m') : t('dashboard.shareOfTotal', 'Podíl {pct} %', { pct: currentUser.areaSharePct }) }}
             </span>
           </div>
           <div class="text-2xl font-extrabold text-white tracking-tight">
@@ -83,10 +83,10 @@
           </div>
         </div>
         <div class="text-xs text-slate-400 mt-2 flex items-center justify-between gap-2 flex-wrap">
-          <span v-if="isMasterTenant">Předchozí měsíc: {{ previousMonthTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
-          <span v-else>Celkem náklady bytu: {{ monthlyTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
+          <span v-if="isMasterTenant">{{ t('dashboard.previousMonth', 'Předchozí měsíc:') }} {{ previousMonthTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
+          <span v-else>{{ t('dashboard.totalFlatCosts', 'Celkem náklady bytu:') }} {{ monthlyTotalExpenses.toLocaleString('cs-CZ') }} CZK</span>
           <button @click="navigateTo('EXPENSES')" class="text-emerald-400 hover:underline font-medium text-xs shrink-0">
-            Výpis →
+            {{ t('dashboard.statement', 'Výpis →') }}
           </button>
         </div>
       </div>
@@ -96,7 +96,7 @@
         <div>
           <div class="flex items-start justify-between gap-2 flex-wrap text-xs text-slate-400 mb-2">
             <span class="font-semibold text-xs text-slate-400 min-w-0">
-              {{ isMasterTenant ? 'Pohledávky správce (dluží bytu)' : 'Můj aktuální nedoplatek (k úhradě)' }}
+              {{ isMasterTenant ? t('dashboard.receivablesTitle', 'Pohledávky správce (dluží bytu)') : t('dashboard.myDebtTitle', 'Můj aktuální nedoplatek (k úhradě)') }}
             </span>
             
             <!-- Badge -->
@@ -116,7 +116,7 @@
                 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
               ]"
             >
-              {{ isCurrentUserOverdue ? currentUserOverdueText : (currentUserDebt > 0 ? 'Před splatností' : 'Vyrovnáno') }}
+              {{ isCurrentUserOverdue ? currentUserOverdueText : (currentUserDebt > 0 ? t('dashboard.beforeDue', 'Před splatností') : t('dashboard.settled', 'Vyrovnáno')) }}
             </span>
           </div>
 
@@ -136,7 +136,7 @@
             {{ overdueDebtorsSubtitle }}
           </span>
           <span v-else class="min-w-0" :class="isCurrentUserOverdue ? 'text-rose-400 font-semibold' : (currentUserDebt > 0 ? 'text-amber-300' : 'text-emerald-400 font-medium')">
-            {{ isCurrentUserOverdue ? `⚠️ Splatnost vypršela ${currentUserDueDateLabel}!` : (currentUserDebt > 0 ? `Termín splatnosti: ${currentUserDueDateLabel}` : '✓ Všechny platby máte vyrovnány') }}
+            {{ isCurrentUserOverdue ? t('dashboard.overdueSince', '⚠️ Splatnost vypršela {date}!', { date: currentUserDueDateLabel }) : (currentUserDebt > 0 ? t('dashboard.dueOn', 'Termín splatnosti: {date}', { date: currentUserDueDateLabel }) : t('dashboard.allSettledCheck', '✓ Všechny platby máte vyrovnány')) }}
           </span>
 
           <button 
@@ -144,14 +144,14 @@
             @click="openModal('QR_MODAL', currentUserSettlement)"
             class="text-emerald-400 hover:underline font-bold text-xs flex items-center gap-1 shrink-0"
           >
-            Zaplatit QR →
+            {{ t('dashboard.payQr', 'Zaplatit QR →') }}
           </button>
           <button 
             v-else
             @click="navigateTo('SETTLEMENT')" 
             class="text-emerald-400 hover:underline font-medium text-xs shrink-0"
           >
-            Vyrovnání →
+            {{ t('dashboard.settlement', 'Vyrovnání →') }}
           </button>
         </div>
       </div>
@@ -161,7 +161,7 @@
         <div>
           <div class="flex items-start justify-between gap-2 flex-wrap text-xs text-slate-400 mb-2">
             <span class="font-semibold text-xs text-slate-400 min-w-0">
-              {{ isMasterTenant ? 'Nájem majiteli (splatnost)' : 'Termín mé úhrady správci' }}
+              {{ isMasterTenant ? t('dashboard.rentDueTitle', 'Nájem majiteli (splatnost)') : t('dashboard.myPaymentDueTitle', 'Termín mé úhrady správci') }}
             </span>
             <span 
               class="text-xs font-semibold px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap leading-tight"
@@ -171,7 +171,7 @@
                  (currentUserDebt > 0 ? 'text-amber-300 bg-amber-500/15 border-amber-500/30' : 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'))
               ]"
             >
-              {{ isMasterTenant ? `Termín: ${rentDueDateShortLabel}` : (isCurrentUserOverdue ? `Byl: ${currentUserDueDateShortLabel}` : (currentUserDebt > 0 ? `Termín: ${currentUserDueDateShortLabel}` : 'Uhrazeno')) }}
+              {{ isMasterTenant ? t('dashboard.duePrefix', 'Termín: {date}', { date: rentDueDateShortLabel }) : (isCurrentUserOverdue ? t('dashboard.wasDuePrefix', 'Byl: {date}', { date: currentUserDueDateShortLabel }) : (currentUserDebt > 0 ? t('dashboard.duePrefix', 'Termín: {date}', { date: currentUserDueDateShortLabel }) : t('dashboard.paid', 'Uhrazeno'))) }}
             </span>
           </div>
 
@@ -183,7 +183,7 @@
             ]"
           >
             <template v-if="isMasterTenant">
-              <span>Splatnost {{ rentDueDateLabel }}</span>
+              <span>{{ t('dashboard.dueLabel', 'Splatnost {date}', { date: rentDueDateLabel }) }}</span>
               <span class="text-xs font-normal text-slate-400">({{ settings.monthlyRent.toLocaleString('cs-CZ') }} CZK)</span>
             </template>
             <template v-else-if="isCurrentUserOverdue">
@@ -191,27 +191,27 @@
               <span class="text-xs font-normal text-slate-400">({{ currentUserDebt.toLocaleString('cs-CZ') }} CZK)</span>
             </template>
             <template v-else-if="currentUserDebt > 0">
-              <span>Termín: {{ currentUserDueDateLabel }}</span>
+              <span>{{ t('dashboard.duePrefix', 'Termín: {date}', { date: currentUserDueDateLabel }) }}</span>
               <span class="text-xs font-normal text-slate-400">({{ currentUserDebt.toLocaleString('cs-CZ') }} CZK)</span>
             </template>
             <template v-else>
-              <span>V pořádku</span>
-              <span class="text-xs font-normal text-slate-400">(0 CZK nedoplatek)</span>
+              <span>{{ t('dashboard.allGood', 'V pořádku') }}</span>
+              <span class="text-xs font-normal text-slate-400">({{ t('dashboard.zeroDebt', '0 CZK nedoplatek') }})</span>
             </template>
           </div>
         </div>
 
         <div class="text-xs text-slate-400 mt-2 flex items-center justify-between gap-2 flex-wrap">
-          <span v-if="isMasterTenant" class="text-amber-400/90 font-medium min-w-0">Čeká na doplacení podílů</span>
+          <span v-if="isMasterTenant" class="text-amber-400/90 font-medium min-w-0">{{ t('dashboard.awaitingShares', 'Čeká na doplacení podílů') }}</span>
           <span v-else-if="currentUserDebt > 0" class="min-w-0" :class="isCurrentUserOverdue ? 'text-rose-400 font-medium' : 'text-amber-400/90 font-medium'">
-            Příjemce: {{ managerRoommate.name }}
+            {{ t('dashboard.payee', 'Příjemce:') }} {{ managerRoommate.name }}
           </span>
           <span v-else class="text-emerald-400 font-medium min-w-0">
-            Platba za listopad zaúčtována
+            {{ t('dashboard.novemberPosted', 'Platba za listopad zaúčtována') }}
           </span>
 
           <span class="text-xs text-slate-400 font-medium shrink-0">
-            Účet: {{ settings.accountNumber.split(' ')[0] }}
+            {{ t('dashboard.account', 'Účet:') }} {{ settings.accountNumber.split(' ')[0] }}
           </span>
         </div>
       </div>
@@ -229,17 +229,17 @@
           <div class="flex items-center justify-between">
             <div>
               <h2 class="text-base font-bold text-slate-100 tracking-tight">
-                {{ isMasterTenant ? 'Aktuální bilance spolubydlících (pohledávky správce)' : 'Bilance plateb v bytě (můj stav & spolubydlící)' }}
+                {{ isMasterTenant ? t('dashboard.balanceTitleManager', 'Aktuální bilance spolubydlících (pohledávky správce)') : t('dashboard.balanceTitleMember', 'Bilance plateb v bytě (můj stav & spolubydlící)') }}
               </h2>
               <p class="text-xs text-slate-400">
-                {{ isMasterTenant ? 'Přehled dlužných pohledávek za nájem, energie a společné nákupy' : 'Stav vyrovnání za měsíc listopad 2026' }}
+                {{ isMasterTenant ? t('dashboard.balanceSubtitleManager', 'Přehled dlužných pohledávek za nájem, energie a společné nákupy') : t('dashboard.balanceSubtitleMember', 'Stav vyrovnání za měsíc listopad 2026') }}
               </p>
             </div>
             <button
               @click="navigateTo('SETTLEMENT')"
               class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
             >
-              <span>Celá matice</span>
+              <span>{{ t('dashboard.fullMatrix', 'Celá matice') }}</span>
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
@@ -263,7 +263,7 @@
                   <div class="flex items-center gap-2">
                     <span class="text-sm font-bold text-white">{{ currentUser.name }}</span>
                     <span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      Vy (přihlášený profil)
+                      {{ t('dashboard.youBadge', 'Vy (přihlášený profil)') }}
                     </span>
                   </div>
                   <div class="text-xs text-slate-400">{{ currentUser.roomName }} • {{ currentUser.roomAreaM2 }} m² ({{ currentUser.areaSharePct }} %)</div>
@@ -271,7 +271,7 @@
               </div>
               
               <div class="text-right">
-                <div class="text-xs text-slate-400">Váš nedoplatek:</div>
+                <div class="text-xs text-slate-400">{{ t('dashboard.yourDebt', 'Váš nedoplatek:') }}</div>
                 <div 
                   class="text-lg font-mono font-extrabold" 
                   :class="isCurrentUserOverdue ? 'text-rose-400' : (currentUserDebt > 0 ? 'text-amber-400' : 'text-emerald-400')"
@@ -284,10 +284,10 @@
             <!-- Breakdown of user's debt if any -->
             <div v-if="currentUserSettlement && currentUserSettlement.totalDebt > 0" class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
               <div class="flex flex-wrap gap-2 text-xs font-mono text-slate-300">
-                <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Nájem: {{ currentUserSettlement.breakdown.rent }} Kč</span>
-                <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Energie: {{ currentUserSettlement.breakdown.energy }} Kč</span>
+                <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownRent', 'Nájem:') }} {{ currentUserSettlement.breakdown.rent }} Kč</span>
+                <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownEnergy', 'Energie:') }} {{ currentUserSettlement.breakdown.energy }} Kč</span>
                 <span v-if="currentUserSettlement.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">WiFi: {{ currentUserSettlement.breakdown.wifi }} Kč</span>
-                <span v-if="currentUserSettlement.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Drogerie: {{ currentUserSettlement.breakdown.drogerie }} Kč</span>
+                <span v-if="currentUserSettlement.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownDrogerie', 'Drogerie:') }} {{ currentUserSettlement.breakdown.drogerie }} Kč</span>
               </div>
 
               <button
@@ -297,17 +297,17 @@
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
-                <span>Zaplatit QR kódem</span>
+                <span>{{ t('dashboard.payByQr', 'Zaplatit QR kódem') }}</span>
               </button>
             </div>
             <div v-else class="text-xs text-emerald-400/90 pt-1 border-t border-slate-800 flex items-center gap-1.5">
-              <span>✓ Všechny platby za listopad máte řádně vyrovnány. Děkujeme za včasnou úhradu!</span>
+              <span>✓ {{ t('dashboard.novemberSettled', 'Všechny platby za listopad máte řádně vyrovnány. Děkujeme za včasnou úhradu!') }}</span>
             </div>
           </div>
 
           <!-- Section label if member -->
           <div v-if="!isMasterTenant" class="text-xs font-semibold text-slate-400 pt-1">
-            Ostatní spolubydlící v bytě:
+            {{ t('dashboard.otherRoommates', 'Ostatní spolubydlící v bytě:') }}
           </div>
 
           <!-- Settlements list -->
@@ -328,7 +328,7 @@
                 <div>
                   <div class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
                     <span>{{ s.roommateName }}</span>
-                    <span v-if="s.roommateId === managerRoommate.id" class="text-xs text-emerald-400 font-normal">[Správce bytu]</span>
+                    <span v-if="s.roommateId === managerRoommate.id" class="text-xs text-emerald-400 font-normal">{{ t('dashboard.managerTag', '[Správce bytu]') }}</span>
                   </div>
                   <div class="text-xs text-slate-400">{{ s.roomName }}</div>
                 </div>
@@ -349,7 +349,7 @@
                         'bg-amber-500/20 text-amber-300'
                       ]"
                     >
-                      {{ s.status === 'PO_SPLATNOSTI' ? `Po splatnosti (${s.daysOverdue} dní)` : SETTLEMENT_STATUS_LABELS[s.status] }}
+                      {{ s.status === 'PO_SPLATNOSTI' ? t('dashboard.overdueDays', 'Po splatnosti ({days} dní)', { days: s.daysOverdue }) : t('settlementStatus.' + s.status, SETTLEMENT_STATUS_LABELS[s.status]) }}
                     </span>
                   </div>
                 </div>
@@ -360,7 +360,7 @@
                     v-if="s.totalDebt > 0"
                     @click="openModal('QR_MODAL', s)"
                     class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-1"
-                    title="Zobrazit SPAYD QR kód pro mobilní platbu"
+                    :title="t('dashboard.showSpaydQr', 'Zobrazit SPAYD QR kód pro mobilní platbu')"
                   >
                     <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -373,9 +373,9 @@
                     v-if="isMasterTenant && s.status === 'PO_SPLATNOSTI'"
                     @click="sendReminder(s.roommateId)"
                     class="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold border border-rose-500/30 transition-colors"
-                    title="Odeslat diskrétní upomínku dlužníkovi"
+                    :title="t('dashboard.sendReminderTitle', 'Odeslat diskrétní upomínku dlužníkovi')"
                   >
-                    Upomínka
+                    {{ t('dashboard.remind', 'Upomínka') }}
                   </button>
 
                   <!-- Zaplaceno only for Master Tenant -->
@@ -383,9 +383,9 @@
                     v-if="isMasterTenant && s.totalDebt > 0"
                     @click="openModal('CONFIRM_MODAL', s)"
                     class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors shadow-sm"
-                    title="Označit platbu jako zaplacenou"
+                    :title="t('dashboard.markPaidTitle', 'Označit platbu jako zaplacenou')"
                   >
-                    Zaplaceno
+                    {{ t('dashboard.markPaid', 'Zaplaceno') }}
                   </button>
                 </div>
               </div>
@@ -398,32 +398,32 @@
           <div class="flex items-center justify-between">
             <div>
               <h2 class="text-base font-bold text-slate-100 tracking-tight">
-                Poslední výdaje a nákupy
+                {{ t('dashboard.recentExpenses', 'Poslední výdaje a nákupy') }}
               </h2>
-              <p class="text-xs text-slate-400">Chronologický přehled nedávných transakcí</p>
+              <p class="text-xs text-slate-400">{{ t('dashboard.recentExpensesSubtitle', 'Chronologický přehled nedávných transakcí') }}</p>
             </div>
             <button
               @click="navigateTo('EXPENSES')"
               class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
             >
-              <span>Všechny výdaje</span>
+              <span>{{ t('dashboard.allExpenses', 'Všechny výdaje') }}</span>
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
 
-          <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" aria-label="Poslední výdaje a nákupy">
-            <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
+          <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" :aria-label="t('dashboard.recentExpenses', 'Poslední výdaje a nákupy')">
+            <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">{{ t('dashboard.scrollHint', 'Tabulku lze posouvat vodorovně →') }}</p>
             <table class="w-full min-w-[720px] text-left text-xs">
               <thead class="bg-slate-800/80 text-slate-400 border-b border-slate-700">
                 <tr>
-                  <th class="py-2.5 px-3">Datum</th>
-                  <th class="py-2.5 px-3">Název výdaje</th>
-                  <th class="py-2.5 px-3">Plátce</th>
-                  <th class="py-2.5 px-3 text-right">Částka</th>
-                  <th class="py-2.5 px-3 text-center">Stav</th>
-                  <th class="py-2.5 px-3 text-right">Akce</th>
+                  <th class="py-2.5 px-3">{{ t('dashboard.thDate', 'Datum') }}</th>
+                  <th class="py-2.5 px-3">{{ t('dashboard.thTitle', 'Název výdaje') }}</th>
+                  <th class="py-2.5 px-3">{{ t('dashboard.thPayer', 'Plátce') }}</th>
+                  <th class="py-2.5 px-3 text-right">{{ t('dashboard.thAmount', 'Částka') }}</th>
+                  <th class="py-2.5 px-3 text-center">{{ t('dashboard.thStatus', 'Stav') }}</th>
+                  <th class="py-2.5 px-3 text-right">{{ t('dashboard.thAction', 'Akce') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-800">
@@ -450,18 +450,18 @@
                       class="px-2 py-0.5 rounded text-xs font-bold"
                       :class="exp.status === 'UHRAZENO' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'"
                     >
-                      {{ EXPENSE_STATUS_LABELS[exp.status] }}
+                      {{ t('expenseStatus.' + exp.status, EXPENSE_STATUS_LABELS[exp.status]) }}
                     </span>
                   </td>
                   <td class="py-2.5 px-3 text-right">
-                    <span class="text-emerald-400 font-semibold hover:underline">Detail →</span>
+                    <span class="text-emerald-400 font-semibold hover:underline">{{ t('dashboard.detail', 'Detail →') }}</span>
                   </td>
                 </tr>
                 <tr v-if="recentExpenses.length === 0">
                   <td colspan="6" class="py-10 text-center text-slate-400">
                     <div class="space-y-2">
-                      <p class="font-medium text-slate-300">Zatím zde nejsou žádné výdaje.</p>
-                      <button @click="navigateTo('EXPENSES')" class="text-xs text-emerald-400 underline font-semibold">Zobrazit všechny výdaje</button>
+                      <p class="font-medium text-slate-300">{{ t('dashboard.noExpensesYet', 'Zatím zde nejsou žádné výdaje.') }}</p>
+                      <button @click="navigateTo('EXPENSES')" class="text-xs text-emerald-400 underline font-semibold">{{ t('dashboard.showAllExpenses', 'Zobrazit všechny výdaje') }}</button>
                     </div>
                   </td>
                 </tr>
@@ -482,25 +482,25 @@
               <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span>Energie a měřidla</span>
+              <span>{{ t('dashboard.energyAndMeters', 'Energie a měřidla') }}</span>
             </h2>
             <button
               @click="navigateTo('ENERGY')"
               class="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
             >
-              Detail →
+              {{ t('dashboard.detail', 'Detail →') }}
             </button>
           </div>
 
           <!-- Teploměr záloh (annualEnergyPrediction) -->
           <div class="space-y-1.5 p-3 rounded-xl bg-slate-850 border border-slate-800">
             <div class="flex justify-between items-center text-xs">
-              <span class="text-slate-400">Čerpání ročních záloh:</span>
+              <span class="text-slate-400">{{ t('dashboard.annualAdvanceDrawdown', 'Čerpání ročních záloh:') }}</span>
               <span 
                 class="font-bold font-mono"
                 :class="annualEnergyPrediction.drawdownPct > 100 ? 'text-amber-400' : 'text-emerald-400'"
               >
-                {{ annualEnergyPrediction.drawdownPct }} % ({{ annualEnergyPrediction.riskLevel }})
+                {{ annualEnergyPrediction.drawdownPct }} % ({{ t('risk.' + annualEnergyPrediction.riskLevel, annualEnergyPrediction.riskLevel) }})
               </span>
             </div>
             <!-- Progress bar -->
@@ -513,29 +513,29 @@
             </div>
             <div class="text-xs text-slate-400 flex justify-between gap-1">
               <span>0 %</span>
-              <span>Odhad {{ annualEnergyPrediction.isSurplus ? 'přeplatku' : 'nedoplatku' }}: <strong :class="annualEnergyPrediction.isSurplus ? 'text-emerald-400' : 'text-rose-400'">{{ annualEnergyPrediction.formattedDelta }}</strong></span>
-              <span>100 % (Zálohová hranice)</span>
+              <span>{{ annualEnergyPrediction.isSurplus ? t('dashboard.estimateSurplus', 'Odhad přeplatku:') : t('dashboard.estimateDeficit', 'Odhad nedoplatku:') }} <strong :class="annualEnergyPrediction.isSurplus ? 'text-emerald-400' : 'text-rose-400'">{{ annualEnergyPrediction.formattedDelta }}</strong></span>
+              <span>100 % ({{ t('dashboard.advanceCap', 'Zálohová hranice') }})</span>
             </div>
           </div>
 
           <!-- Latest readings summary -->
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div class="p-2.5 rounded-lg bg-slate-850 border border-slate-800">
-              <div class="text-xs text-slate-400">Elektřina (kWh)</div>
+              <div class="text-xs text-slate-400">{{ t('dashboard.electricityKwh', 'Elektřina (kWh)') }}</div>
               <div class="font-mono font-bold text-slate-200 mt-0.5">
                 {{ latestMeters['ELEKTŘINA']?.value.toLocaleString('cs-CZ') || '—' }} kWh
               </div>
               <div class="text-xs text-emerald-400">
-                {{ latestMeters['ELEKTŘINA'] ? `+${latestMeters['ELEKTŘINA'].delta} kWh` : 'Bez odečtu' }}
+                {{ latestMeters['ELEKTŘINA'] ? `+${latestMeters['ELEKTŘINA'].delta} kWh` : t('dashboard.noReading', 'Bez odečtu') }}
               </div>
             </div>
             <div class="p-2.5 rounded-lg bg-slate-850 border border-slate-800">
-              <div class="text-xs text-slate-400">Plyn (m³)</div>
+              <div class="text-xs text-slate-400">{{ t('dashboard.gasM3', 'Plyn (m³)') }}</div>
               <div class="font-mono font-bold text-slate-200 mt-0.5">
                 {{ latestMeters['PLYN']?.value.toLocaleString('cs-CZ') || '—' }} m³
               </div>
               <div class="text-xs text-emerald-400">
-                {{ latestMeters['PLYN'] ? `+${latestMeters['PLYN'].delta} m³` : 'Bez odečtu' }}
+                {{ latestMeters['PLYN'] ? `+${latestMeters['PLYN'].delta} m³` : t('dashboard.noReading', 'Bez odečtu') }}
               </div>
             </div>
           </div>
@@ -547,7 +547,7 @@
             <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            <span>Zadat stav měřidla</span>
+            <span>{{ t('dashboard.enterMeterReading', 'Zadat stav měřidla') }}</span>
           </button>
         </div>
 
@@ -558,13 +558,13 @@
               <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
-              <span>Úklid tento týden</span>
+              <span>{{ t('dashboard.cleaningThisWeek', 'Úklid tento týden') }}</span>
             </h2>
             <button
               @click="navigateTo('CLEANING')"
               class="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
             >
-              Rozpis →
+              {{ t('dashboard.cleaningRota', 'Rozpis →') }}
             </button>
           </div>
 
@@ -577,17 +577,17 @@
             <div class="flex items-start justify-between gap-2">
               <div>
                 <span class="text-xs font-bold" :class="myCurrentCleaningShift.isCompleted ? 'text-emerald-400' : 'text-amber-400'">
-                  {{ myCurrentCleaningShift.isCompleted ? '✓ Tvoje směna je splněna' : '⏳ Tvoje směna tento týden' }}
+                  {{ myCurrentCleaningShift.isCompleted ? t('dashboard.myShiftDone', '✓ Tvoje směna je splněna') : t('dashboard.myShiftThisWeek', '⏳ Tvoje směna tento týden') }}
                 </span>
                 <h3 class="text-xs font-bold text-white mt-0.5">
-                  {{ myCurrentCleaningShift.taskTitle }}
+                  {{ t('cleaning.task.' + myCurrentCleaningShift.taskKey.toLowerCase(), myCurrentCleaningShift.taskTitle) }}
                 </h3>
               </div>
               <span 
                 class="text-xs px-2 py-0.5 rounded-full font-bold whitespace-nowrap"
                 :class="myCurrentCleaningShift.isCompleted ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
               >
-                {{ myCurrentCleaningShift.isCompleted ? 'Splněno' : 'Do neděle' }}
+                {{ myCurrentCleaningShift.isCompleted ? t('dashboard.shiftDoneBadgeShort', 'Splněno') : t('dashboard.bySunday', 'Do neděle') }}
               </span>
             </div>
 
@@ -600,7 +600,7 @@
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
               </svg>
-              <span>Označit můj úklid jako hotový</span>
+              <span>{{ t('dashboard.markMyCleaningDone', 'Označit můj úklid jako hotový') }}</span>
             </button>
           </div>
 
@@ -621,7 +621,7 @@
                 class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0 font-mono"
                 :class="shift.isCompleted ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 bg-slate-800'"
               >
-                {{ shift.isCompleted ? '✓ hotovo' : 'čeká' }}
+                {{ shift.isCompleted ? t('dashboard.shiftDoneShort', '✓ hotovo') : t('dashboard.shiftWaitingShort', 'čeká') }}
               </span>
             </div>
           </div>
@@ -634,16 +634,16 @@
               <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <span>Nákupní košík bytu</span>
+              <span>{{ t('dashboard.flatCart', 'Nákupní košík bytu') }}</span>
             </h2>
             <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-bold shrink-0 whitespace-nowrap">
-              {{ cartRemainingCount }} ks zbývá
+              {{ t('dashboard.itemsLeft', '{count} ks zbývá', { count: cartRemainingCount }) }}
             </span>
           </div>
 
           <p class="text-xs text-slate-400">
-            Zbývá nakoupit: <strong>{{ cartRemainingPrice.toLocaleString('cs-CZ') }} CZK</strong>
-            <span v-if="cartTotalPrice > cartRemainingPrice" class="text-slate-400"> • Celkem {{ cartTotalPrice.toLocaleString('cs-CZ') }} CZK</span>
+            {{ t('dashboard.remainingToBuy', 'Zbývá nakoupit:') }} <strong>{{ cartRemainingPrice.toLocaleString('cs-CZ') }} CZK</strong>
+            <span v-if="cartTotalPrice > cartRemainingPrice" class="text-slate-400"> • {{ t('dashboard.total', 'Celkem') }} {{ cartTotalPrice.toLocaleString('cs-CZ') }} CZK</span>
           </p>
 
           <div class="space-y-1.5 text-xs">
@@ -656,7 +656,7 @@
               <span class="font-mono text-emerald-400 font-semibold">{{ item.qty }}× {{ item.unitPrice }} Kč</span>
             </div>
             <div v-if="unpurchasedCartItems.length === 0" class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
-              Všechny položky jsou již nakoupené.
+              {{ t('dashboard.allItemsPurchased', 'Všechny položky jsou již nakoupené.') }}
             </div>
           </div>
 
@@ -664,7 +664,7 @@
             @click="navigateTo('CART')"
             class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors text-center"
           >
-            Otevřít nákupní košík →
+            {{ t('dashboard.openCart', 'Otevřít nákupní košík →') }}
           </button>
         </div>
 
@@ -672,22 +672,22 @@
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3 text-xs">
           <div class="flex items-center justify-between gap-2">
             <h2 class="text-sm font-bold text-slate-300">
-              Oznámení domácnosti
+              {{ t('dashboard.announcements', 'Oznámení domácnosti') }}
             </h2>
             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Demo</span>
           </div>
-          <p class="text-xs text-slate-400">Ilustrační obsah prototypu – nejde o živá data domácnosti.</p>
+          <p class="text-xs text-slate-400">{{ t('dashboard.announcementsDemoNote', 'Ilustrační obsah prototypu – nejde o živá data domácnosti.') }}</p>
           <div class="space-y-2">
             <div class="p-2.5 rounded-lg bg-slate-850 border border-slate-800 flex items-start gap-2">
               <span class="text-emerald-400 font-bold">•</span>
               <div class="text-slate-300">
-                <strong>Úklid:</strong> Eliška potvrdila úklid koupelny a kuchyňské linky dle rozpisu.
+                <strong>{{ t('dashboard.announcementCleaningLabel', 'Úklid:') }}</strong> {{ t('dashboard.announcementCleaningText', 'Eliška potvrdila úklid koupelny a kuchyňské linky dle rozpisu.') }}
               </div>
             </div>
             <div class="p-2.5 rounded-lg bg-slate-850 border border-slate-800 flex items-start gap-2">
               <span class="text-amber-400 font-bold">•</span>
               <div class="text-slate-300">
-                <strong>Revize:</strong> Pravidelná revize plynového kotle v bytě proběhne 18. 11. dopoledne.
+                <strong>{{ t('dashboard.announcementInspectionLabel', 'Revize:') }}</strong> {{ t('dashboard.announcementInspectionText', 'Pravidelná revize plynového kotle v bytě proběhne 18. 11. dopoledne.') }}
               </div>
             </div>
           </div>
@@ -703,6 +703,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
+import { t } from '../i18n'
 import {
   EXPENSE_STATUS_LABELS,
   SETTLEMENT_STATUS_LABELS
@@ -745,13 +746,15 @@ const recentExpenses = computed(() => {
 })
 
 const debtorsBadgeText = computed(() => {
-  if (debtorsCount.value === 0) return 'Vše vyrovnáno'
+  if (debtorsCount.value === 0) return t('dashboard.allSettledBadge', 'Vše vyrovnáno')
   if (overdueDebtorsCount.value > 0) {
-    return overdueDebtorsCount.value === 1 ? '1 po splatnosti' : `${overdueDebtorsCount.value} po splatnosti`
+    return overdueDebtorsCount.value === 1
+      ? t('dashboard.overdueOne', '1 po splatnosti')
+      : t('dashboard.overdueMany', '{count} po splatnosti', { count: overdueDebtorsCount.value })
   }
-  if (debtorsCount.value === 1) return '1 dlužník'
-  if (debtorsCount.value >= 2 && debtorsCount.value <= 4) return `${debtorsCount.value} dlužníci`
-  return `${debtorsCount.value} dlužníků`
+  if (debtorsCount.value === 1) return t('dashboard.debtorOne', '1 dlužník')
+  if (debtorsCount.value >= 2 && debtorsCount.value <= 4) return t('dashboard.debtorsFew', '{count} dlužníci', { count: debtorsCount.value })
+  return t('dashboard.debtorsMany', '{count} dlužníků', { count: debtorsCount.value })
 })
 
 const debtorsBadgeClass = computed(() => {
@@ -762,10 +765,10 @@ const debtorsBadgeClass = computed(() => {
 
 const overdueDebtorsSubtitle = computed(() => {
   const count = overdueDebtorsCount.value
-  if (count === 0) return 'Vše před termínem splatnosti'
-  if (count === 1) return '1 člen v prodlení se splátkou'
-  if (count >= 2 && count <= 4) return `${count} členové v prodlení se splátkou`
-  return `${count} členů v prodlení se splátkou`
+  if (count === 0) return t('dashboard.noneOverdue', 'Vše před termínem splatnosti')
+  if (count === 1) return t('dashboard.overdueMemberOne', '1 člen v prodlení se splátkou')
+  if (count >= 2 && count <= 4) return t('dashboard.overdueMembersFew', '{count} členové v prodlení se splátkou', { count })
+  return t('dashboard.overdueMembersMany', '{count} členů v prodlení se splátkou', { count })
 })
 
 const otherSettlements = computed(() => {
@@ -830,9 +833,9 @@ const currentUserDaysOverdue = computed(() => {
 
 const currentUserOverdueText = computed(() => {
   const days = currentUserDaysOverdue.value
-  if (days === 1) return '1 den po splatnosti'
-  if (days >= 2 && days <= 4) return `${days} dny po splatnosti`
-  return `${days} dní po splatnosti`
+  if (days === 1) return t('dashboard.overdueDaysOne', '1 den po splatnosti')
+  if (days >= 2 && days <= 4) return t('dashboard.overdueDaysFew', '{days} dny po splatnosti', { days })
+  return t('dashboard.overdueDaysMany', '{days} dní po splatnosti', { days })
 })
 
 const rentDueDate = computed(() => {
