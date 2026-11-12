@@ -76,7 +76,7 @@ Aplikace je postavena na stacku **Vue 3 (Composition API)**, **TypeScript**, **T
 
 - **Komponenty a Vue 3:** Používejte zásadně Single File Components (SFC) s `<script setup lang="ts">`.
 - **Typová bezpečnost:** Důsledně definujte TypeScript rozhraní v `src/types/index.ts`. Vyhýbejte se typu `any`.
-- **Stylování:** Kód stylujte výhradně pomocí utility tříd **Tailwind CSS**. Dodržujte konzistentní barevnou paletu (primární modrá `#2563EB`, stavové barvy pro finance a úklid).
+- **Stylování:** Kód stylujte výhradně pomocí utility tříd **Tailwind CSS**. Dodržujte konzistentní barevnou paletu (primární smaragdová `#22C55E`, stavové barvy pro finance a úklid).
 - **Správa stavu:** Centrální aplikační logika a perzistence do `localStorage` je soustředěna v `src/composables/useSpolubyt.ts`.
 - **Přístupnost (a11y):** Dbejte na sémantické tagy (`<button>`, `<main>`, `<dialog>`), klávesové zkratky (např. zavírání modálů klávesou `Escape`) a kontrastní barvy.
 - **Formátování:** Udržujte kód čistý, čitelný a odsazený 2 mezerami.

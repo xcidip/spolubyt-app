@@ -398,10 +398,11 @@ export function useSpolubyt() {
       }
     })
 
-    // If expense originated from cart item conversion, remove it from cartItems
-    if (expensePrefill.value?.cartItemId) {
-      const transferredCartItemId = expensePrefill.value.cartItemId
-      cartItems.value = cartItems.value.filter(i => i.id !== transferredCartItemId)
+    // If the expense originated from a cart conversion, remove the transferred items
+    const transferredCartItemIds = expensePrefill.value?.cartItemIds
+      ?? (expensePrefill.value?.cartItemId ? [expensePrefill.value.cartItemId] : [])
+    if (transferredCartItemIds.length > 0) {
+      cartItems.value = cartItems.value.filter(i => !transferredCartItemIds.includes(i.id))
     }
 
     expenses.value.unshift(expense)
@@ -618,7 +619,7 @@ export function useSpolubyt() {
         {
           id: item.id,
           name: item.name,
-          price: total,
+          price: item.unitPrice,
           qty: item.qty
         }
       ]
@@ -635,13 +636,14 @@ export function useSpolubyt() {
     // Prepare payload and open EXP_ADD modal with prefilled receipt items!
     const total = cartTotalPrice.value
     openModal('EXP_ADD', {
-      prefillTitle: 'Společný nákup ze seznamu (drogerie a úklid)',
-      prefillAmount: total,
-      prefillCategory: 'Drogerie',
-      prefillItems: cartItems.value.map(i => ({
+      title: 'Společný nákup ze seznamu (drogerie a úklid)',
+      totalAmount: total,
+      category: 'Drogerie',
+      cartItemIds: cartItems.value.map(i => i.id),
+      items: cartItems.value.map(i => ({
         id: i.id,
         name: i.name,
-        price: i.unitPrice * i.qty,
+        price: i.unitPrice,
         qty: i.qty
       }))
     })

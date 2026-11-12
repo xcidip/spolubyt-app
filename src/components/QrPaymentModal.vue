@@ -38,8 +38,13 @@
           <!-- Left Column (5 cols): Rendered SPAYD QR Code -->
           <div class="sm:col-span-5 flex flex-col items-center justify-center p-4 bg-slate-950 rounded-2xl border border-slate-800 text-center">
             
-            <div class="bg-white p-3 rounded-xl shadow-lg border border-slate-300">
-              <canvas ref="qrCanvas" class="w-44 h-44"></canvas>
+            <div class="bg-white p-3 rounded-xl shadow-lg border border-slate-300 max-w-full">
+              <canvas
+                ref="qrCanvas"
+                class="block w-44 h-auto aspect-square max-w-full rounded"
+                role="img"
+                aria-label="SPAYD QR kód pro platbu"
+              ></canvas>
             </div>
 
             <div class="mt-3 space-y-1">
@@ -165,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import QRCode from 'qrcode'
 import { useSpolubyt } from '../composables/useSpolubyt'
 
@@ -202,19 +207,35 @@ const spaydString = computed(() => {
 
 const renderQrCode = async () => {
   await nextTick()
-  if (qrCanvas.value && spaydString.value) {
-    try {
-      await QRCode.toCanvas(qrCanvas.value, spaydString.value, {
-        width: 352, // 2x high-DPI resolution for crisp retina rendering in 176px (w-44) box
-        margin: 1,
-        color: {
-          dark: '#0f172a',
-          light: '#ffffff'
-        }
-      })
-    } catch (err) {
-      console.error('Failed to generate SPAYD QR', err)
-    }
+  const canvas = qrCanvas.value
+  if (!canvas || !spaydString.value) return
+
+  try {
+    // qrcode writes inline width/height styles on every render; clear them so the
+    // Tailwind classes (w-44, max-w-full) stay in control of the displayed size.
+    canvas.style.removeProperty('width')
+    canvas.style.removeProperty('height')
+
+    // Render the pixel buffer at display size × device pixel ratio: crisp on retina
+    // displays without forcing a fixed CSS size that can overflow the modal column.
+    const displaySize = canvas.clientWidth || 176
+    const dpr = Math.min(window.devicePixelRatio || 1, 3)
+
+    await QRCode.toCanvas(canvas, spaydString.value, {
+      width: Math.round(displaySize * dpr),
+      margin: 1,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff'
+      }
+    })
+
+    // The library sets style.width/height to the buffer size (e.g. 352px), which
+    // would override w-44 and blow out the layout — strip them again.
+    canvas.style.removeProperty('width')
+    canvas.style.removeProperty('height')
+  } catch (err) {
+    console.error('Failed to generate SPAYD QR', err)
   }
 }
 
@@ -222,6 +243,11 @@ watch(() => settlement.value, renderQrCode, { deep: true })
 
 onMounted(() => {
   renderQrCode()
+  window.addEventListener('resize', renderQrCode)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', renderQrCode)
 })
 
 const copyText = (text: string, label: string) => {

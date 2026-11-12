@@ -114,6 +114,7 @@ export interface ExpensePrefillData {
   totalAmount?: number
   category?: ExpenseCategory
   cartItemId?: string
+  cartItemIds?: string[]
   items?: Array<{ id: string; name: string; price: number; qty: number }>
 }
 

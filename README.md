@@ -57,7 +57,7 @@ Vygenerované instalační balíčky najdete v:
 
 ### 3. Spuštění testů
 
-Součástí projektu je také sada 131 E2E testů, které ověřují funkčnost komponent, logiku výpočtů i jednotlivé uživatelské scénáře:
+Součástí projektu je také sada 132 E2E testů, které ověřují funkčnost komponent, logiku výpočtů i jednotlivé uživatelské scénáře:
 
 ```bash
 npm test
@@ -93,7 +93,7 @@ Díky němu si můžete rozhraní projít z pohledu různých členů domácnost
 5. **Vyhledávání, filtry a detail účtenky**  
    V sekci **Výdaje** si můžete vyzkoušet okamžité fulltextové vyhledávání, filtrování podle kategorií, plátce nebo měsíce a řazení tabulky kliknutím na záhlaví sloupců. Kliknutím na libovolný řádek se otevře detail výdaje se záložkami (*Doklad/Účtenka*, *Položkový rozpad*, *Auditní stopa*) a možností zvětšit si účtenku na celou obrazovku.
 6. **Obnovení výchozích dat**  
-   Všechny změny, které v prototypu provedete, se automaticky ukládají do `localStorage` vašeho prohlížeče, takže o ně nepřijdete ani po obnovení stránky. Kdykoliv budete chtít začít znovu od nuly, stačí kliknout na **Obnovit demo data** v zápatí aplikace nebo v sekci Nastavení.
+   Všechny změny, které v prototypu provedete, se automaticky ukládají do `localStorage` vašeho prohlížeče, takže o ně nepřijdete ani po obnovení stránky. Kdykoliv budete chtít začít znovu od nuly, klikněte na ikonu **Obnovit výchozí testovací data** v horní liště aplikace nebo na tlačítko **Resetovat data prototypu** v sekci Nastavení.
 
 ---
 

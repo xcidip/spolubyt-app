@@ -2,8 +2,8 @@
  * Comprehensive 4-Tier E2E Test Suite for Spolubyt App
  * Methodology: Category-Partition, Boundary Value Analysis, Pairwise Combinations, Real-World Workloads
  * 
- * Total Test Cases: 131
- * - Tier 1: Feature Coverage (55 tests across 11 features)
+ * Total Test Cases: 132
+ * - Tier 1: Feature Coverage (56 tests across 11 features)
  * - Tier 2: Boundary & Corner Cases (55 tests across 11 features)
  * - Tier 3: Cross-Feature Combinations (15 tests)
  * - Tier 4: Real-World Tenant Scenarios (6 tests)
@@ -165,7 +165,7 @@ export function getFreshStore() {
 }
 
 // =========================================================================
-// REGISTER ALL 131 TEST CASES ACROSS 4 TIERS
+// REGISTER ALL 132 TEST CASES ACROSS 4 TIERS
 // =========================================================================
 
 // -------------------------------------------------------------------------
@@ -353,6 +353,28 @@ test('T1.F5.5', 'closeModal clears expensePrefill state to prevent form leakage'
   store.closeModal()
   assertEqual(store.activeModal.value, null)
   assertEqual(store.expensePrefill.value, null, 'expensePrefill must be null after closeModal')
+})
+
+test('T1.F5.6', 'convertCartToExpense prefills EXP_ADD with correct keys and clears cart on save', 1, 'F5_Expense_Modal_Prefill', () => {
+  const store = getFreshStore()
+  const initialCount = store.cartItems.value.length
+  assert(initialCount > 0, 'Cart must have items to convert')
+  const expectedTotal = store.cartItems.value.reduce((sum, i) => sum + i.unitPrice * i.qty, 0)
+
+  store.convertCartToExpense()
+  assertEqual(store.activeModal.value, 'EXP_ADD', 'Modal must be set to EXP_ADD')
+  assertDefined(store.expensePrefill.value, 'expensePrefill must be populated')
+  assertEqual(store.expensePrefill.value.totalAmount, expectedTotal, 'Prefill totalAmount must equal cart total')
+  assertEqual(store.expensePrefill.value.category, 'Drogerie', 'Prefill category must be Drogerie')
+  assertEqual(store.expensePrefill.value.items.length, initialCount, 'Prefill must carry every cart line item')
+
+  const prefillTitle = store.expensePrefill.value.title
+  store.addExpense(createExpensePayload({
+    title: prefillTitle,
+    totalAmount: expectedTotal,
+    category: 'Drogerie'
+  }))
+  assertEqual(store.cartItems.value.length, 0, 'All transferred cart items must be removed after save')
 })
 
 // F6: Cleaning 'Hotovo' Visual State

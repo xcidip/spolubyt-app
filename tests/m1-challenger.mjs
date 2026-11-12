@@ -168,7 +168,7 @@ export async function runM1Challenger() {
     assertEqual(store.expensePrefill.value.category, item.category)
     assertEqual(store.expensePrefill.value.cartItemId, item.id)
     assertEqual(store.expensePrefill.value.items.length, 1)
-    assertEqual(store.expensePrefill.value.items[0].price, 378)
+    assertEqual(store.expensePrefill.value.items[0].price, 189)
   })
 
   await runTest('1.6 closeModal clears activeModal and resets expensePrefill to null', async () => {
