@@ -205,6 +205,7 @@
                   <span class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownEnergy', 'Energie:') }} {{ s.breakdown.energy }} Kč</span>
                   <span v-if="s.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">WiFi: {{ s.breakdown.wifi }} Kč</span>
                   <span v-if="s.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownDrugstore', 'Drogerie:') }} {{ s.breakdown.drogerie }} Kč</span>
+                  <span v-if="s.breakdown.other" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">{{ t('settlement.breakdownOther', 'Ostatní:') }} {{ s.breakdown.other }} Kč</span>
                 </div>
                 <div v-else class="text-xs text-emerald-400/90 mt-1">
                   {{ s.roommateId === managerRoommate.id ? t('settlement.managerNote', 'Správce bytu – vede účet pro nájem a zálohy.') : t('settlement.allDebtsCleared', 'Všechny pohledávky za měsíc Listopad 2026 byly kompletně vypořádány převodem na účet.') }}
@@ -322,7 +323,7 @@
               </td>
               <td class="py-2.5 px-3 font-mono text-slate-300">{{ s.breakdown.rent }} CZK</td>
               <td class="py-2.5 px-3 font-mono text-slate-300">{{ s.breakdown.energy }} CZK</td>
-              <td class="py-2.5 px-3 font-mono text-slate-300">{{ (s.breakdown.drogerie || 0) + (s.breakdown.wifi || 0) }} CZK</td>
+              <td class="py-2.5 px-3 font-mono text-slate-300">{{ (s.breakdown.drogerie || 0) + (s.breakdown.wifi || 0) + (s.breakdown.other || 0) }} CZK</td>
               <td class="py-2.5 px-3 font-mono font-bold text-right" :class="s.totalDebt > 0 ? (s.status === 'PO_SPLATNOSTI' ? 'text-rose-400' : 'text-amber-400') : 'text-emerald-400'">
                 {{ s.totalDebt.toLocaleString('cs-CZ') }} CZK
               </td>

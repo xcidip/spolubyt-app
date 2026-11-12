@@ -28,16 +28,17 @@ import {
   CLEANING_TASK_DEFS
 } from '../data/mockData'
 import { t } from '../i18n'
+import { roundMoney } from '../utils/money'
 
 const STORAGE_KEY_PREFIX = 'spolubyt_hifi_v1_'
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
     const item = localStorage.getItem(STORAGE_KEY_PREFIX + key)
-    return item ? JSON.parse(item) : defaultValue
+    return item ? JSON.parse(item) : JSON.parse(JSON.stringify(defaultValue))
   } catch (e) {
     console.error('Failed to load from localStorage', e)
-    return defaultValue
+    return JSON.parse(JSON.stringify(defaultValue))
   }
 }
 
@@ -368,6 +369,24 @@ export function useSpolubyt() {
     showToast(t('toasts.filtersReset.title', 'Filtry vyresetovány'), t('toasts.filtersReset.message', 'Zobrazen kompletní chronologický seznam výdajů.'), 'info')
   }
 
+  const applyExpenseDebt = (expense: Expense, direction: 1 | -1): void => {
+    // Settlements describe payments to the flat account, owned by the manager.
+    if (expense.payerId !== managerRoommate.value.id) return
+    const bucket = expense.category === 'Bydlení' ? 'rent'
+      : expense.category === 'Energie' ? 'energy'
+      : expense.category === 'Drogerie' ? 'drogerie' : 'other'
+    expense.shares.forEach(share => {
+      if (share.roommateId === expense.payerId || share.amount <= 0
+        || (share.status !== 'DLUŽÍ' && share.status !== 'PO_SPLATNOSTI')) return
+      const settlement = settlements.value.find(s => s.roommateId === share.roommateId)
+      if (!settlement) return
+      settlement.totalDebt = Math.max(0, roundMoney(settlement.totalDebt + direction * share.amount))
+      settlement.breakdown[bucket] = Math.max(0, roundMoney((settlement.breakdown[bucket] || 0) + direction * share.amount))
+      settlement.status = settlement.totalDebt === 0 ? 'VYROVNÁNO'
+        : settlement.daysOverdue > 0 ? 'PO_SPLATNOSTI' : 'PŘED_SPLATNOSTÍ'
+    })
+  }
+
   // Add Expense
   const addExpense = (newExpense: Omit<Expense, 'id' | 'code' | 'audit'>) => {
     const today = new Date()
@@ -384,20 +403,7 @@ export function useSpolubyt() {
       }
     }
 
-    // Update settlements for other members who owe
-    expense.shares.forEach(share => {
-      if (share.roommateId !== expense.payerId && share.status !== 'UHRAZENO') {
-        const s = settlements.value.find(set => set.roommateId === share.roommateId)
-        if (s) {
-          s.totalDebt += share.amount
-          if (expense.category === 'Bydlení') s.breakdown.rent += share.amount
-          else if (expense.category === 'Energie') s.breakdown.energy += share.amount
-          else if (expense.category === 'Drogerie') s.breakdown.drogerie = (s.breakdown.drogerie || 0) + share.amount
-          else s.breakdown.other = ((s.breakdown as any).other || 0) + share.amount
-          s.status = s.daysOverdue > 0 ? 'PO_SPLATNOSTI' : 'PŘED_SPLATNOSTÍ'
-        }
-      }
-    })
+    applyExpenseDebt(expense, 1)
 
     // If the expense originated from a cart conversion, remove the transferred items
     const transferredCartItemIds = expensePrefill.value?.cartItemIds
@@ -427,16 +433,7 @@ export function useSpolubyt() {
       cancelLabel: t('confirm.deleteExpense.cancel', 'Ponechat'),
       isDestructive: true,
       onConfirm: () => {
-        // Rollback shares in debts
-        exp.shares.forEach(share => {
-          if (share.roommateId !== exp.payerId && share.status !== 'UHRAZENO') {
-            const s = settlements.value.find(set => set.roommateId === share.roommateId)
-            if (s) {
-              s.totalDebt = Math.max(0, s.totalDebt - share.amount)
-              if (s.totalDebt === 0) s.status = 'VYROVNÁNO'
-            }
-          }
-        })
+        applyExpenseDebt(exp, -1)
 
         expenses.value = expenses.value.filter(e => e.id !== expenseId)
         if (selectedExpense.value?.id === expenseId) {
@@ -461,12 +458,13 @@ export function useSpolubyt() {
     s.totalDebt = 0
     s.status = 'VYROVNÁNO'
     s.daysOverdue = 0
-    s.breakdown = { rent: 0, energy: 0, drogerie: 0, wifi: 0 }
+    s.breakdown = { rent: 0, energy: 0, drogerie: 0, wifi: 0, other: 0 }
 
     // Update expense shares related to this roommate
     expenses.value.forEach(exp => {
+      if (exp.payerId !== managerRoommate.value.id) return
       exp.shares.forEach(share => {
-        if (share.roommateId === roommateId && share.status !== 'PLÁTCE') {
+        if (share.roommateId === roommateId && (share.status === 'DLUŽÍ' || share.status === 'PO_SPLATNOSTI')) {
           share.status = 'UHRAZENO'
           share.settledDate = paymentDetails.date
         }
@@ -1104,7 +1102,11 @@ export function useSpolubyt() {
     }
 
     const target = roommates.value.find(r => r.id === roomId)
-    if (!target || newArea <= 0) return false
+    if (!target) return false
+    if (!Number.isFinite(newArea) || newArea < 5) {
+      showToast('Neplatná výměra pokoje', 'Zadejte plochu pokoje alespoň 5 m².', 'error')
+      return false
+    }
 
     target.roomAreaM2 = newArea
     // Recalculate percentages

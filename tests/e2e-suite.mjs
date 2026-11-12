@@ -19,7 +19,6 @@ import QRCode from 'qrcode'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const APP_ROOT = path.resolve(__dirname, '..')
-const REPO_ROOT = path.resolve(APP_ROOT, '..')
 
 // In-memory localStorage mock for pristine test isolation
 class LocalStorageMock {
@@ -109,22 +108,29 @@ function loadSource(relativePath) {
 
 // Helper to create valid Expense payload
 function createExpensePayload(overrides = {}) {
-  const amount = overrides.totalAmount || 1200
+  const amount = overrides.totalAmount ?? 1200
+  const payerId = overrides.payerId ?? 'user-tomas'
+  const people = [
+    ['user-tomas', 'Tomáš Beránek'], ['user-jakub', 'Jakub Kovář'],
+    ['user-eliska', 'Eliška Malá'], ['user-martin', 'Martin Pospíšil'],
+  ]
+  const cents = Math.round(amount * 100)
   return {
-    title: overrides.title || 'Nákup do bytu',
-    category: overrides.category || 'Drogerie',
+    title: 'Nákup do bytu',
+    category: 'Drogerie',
     totalAmount: amount,
-    date: overrides.date || '2026-11-06',
-    calculationKey: overrides.calculationKey || 'EQUAL',
-    payerId: overrides.payerId || 'user-tomas',
-    payerName: overrides.payerName || 'Tomáš Beránek',
-    status: overrides.status || 'ČÁSTEČNĚ',
-    shares: overrides.shares || [
-      { roommateId: 'user-tomas', roommateName: 'Tomáš Beránek', amount: Math.round(amount / 4), status: 'PLÁTCE' },
-      { roommateId: 'user-jakub', roommateName: 'Jakub Kovář', amount: Math.round(amount / 4), status: 'DLUŽÍ' },
-      { roommateId: 'user-eliska', roommateName: 'Eliška Malá', amount: Math.round(amount / 4), status: 'DLUŽÍ' },
-      { roommateId: 'user-martin', roommateName: 'Martin Pospíšil', amount: Math.round(amount / 4), status: 'DLUŽÍ' }
-    ]
+    date: '2026-11-06',
+    calculationKey: 'EQUAL',
+    payerId,
+    payerName: people.find(([id]) => id === payerId)[1],
+    status: 'ČÁSTEČNĚ',
+    shares: people.map(([id, name], index) => ({
+      roommateId: id,
+      roommateName: name,
+      amount: (Math.floor(cents / 4) + (index < cents % 4 ? 1 : 0)) / 100,
+      status: id === payerId ? 'PLÁTCE' : 'DLUŽÍ',
+    })),
+    ...overrides,
   }
 }
 
@@ -171,6 +177,146 @@ export function getFreshStore() {
 // -------------------------------------------------------------------------
 // TIER 1: FEATURE COVERAGE (55 tests)
 // -------------------------------------------------------------------------
+
+// Run before any getFreshStore(): first-session mutations must not corrupt the seed.
+test('T3.M1', 'First-session mutations reset to pristine demo data', 3, 'Money_Regressions', () => {
+  const store = storeModule.useSpolubyt()
+  const slices = ['roommates', 'settings', 'settlements', 'expenses', 'meters', 'cartItems', 'cleaningShifts']
+  const before = Object.fromEntries(slices.map(key => [key, JSON.stringify(store[key].value)]))
+  store.roommates.value[0].roomAreaM2 = 99
+  store.settings.value.monthlyRent = 1
+  store.settlements.value[0].totalDebt = 1
+  store.expenses.value.pop()
+  store.meters.value.pop()
+  store.cartItems.value.pop()
+  store.cleaningShifts.value[0].isCompleted = !store.cleaningShifts.value[0].isCompleted
+  store.resetDemoData()
+  store.confirmModal.value.onConfirm()
+  for (const key of slices) assertEqual(JSON.stringify(store[key].value), before[key], key)
+})
+
+test('T3.M2', 'Expense splits preserve every haléř for equal and area allocation', 3, 'Money_Regressions', async () => {
+  const { splitAmount } = await viteServer.ssrLoadModule('./src/utils/money.ts')
+  const store = getFreshStore()
+  for (const key of ['EQUAL', 'BY_AREA']) {
+    for (const total of [0.01, 100, 110, 850.75]) {
+      for (const count of [1, 3, 4]) {
+        const shares = splitAmount(total, store.roommates.value.slice(0, count), key)
+        assertEqual(Object.keys(shares).length, count)
+        assertEqual(Object.values(shares).reduce((sum, amount) => sum + Math.round(amount * 100), 0), Math.round(total * 100))
+        assert(Object.values(shares).every(amount => amount >= 0))
+      }
+    }
+  }
+  assertEqual(Object.keys(splitAmount(100, [], 'EQUAL')).length, 0)
+  assertEqual(Object.keys(splitAmount(NaN, store.roommates.value, 'EQUAL')).length, 0)
+})
+
+function debtSnapshot(store) {
+  return JSON.stringify(store.settlements.value.map(s => ({
+    totalDebt: s.totalDebt,
+    status: s.status,
+    breakdown: ['rent', 'energy', 'drogerie', 'wifi', 'other'].map(key => s.breakdown[key] ?? 0),
+  })))
+}
+
+test('T3.M3', 'Add/delete restores debts and each category bucket exactly', 3, 'Money_Regressions', () => {
+  for (const [category, bucket] of [['Bydlení', 'rent'], ['Energie', 'energy'], ['Drogerie', 'drogerie'], ['Služby', 'other'], ['Údržba', 'other'], ['Jídlo', 'other']]) {
+    const store = getFreshStore()
+    const before = debtSnapshot(store)
+    const previous = store.settlements.value.map(s => ({ debt: s.totalDebt, bucket: s.breakdown[bucket] ?? 0 }))
+    store.addExpense(createExpensePayload({ category, totalAmount: 133.32 }))
+    const added = store.expenses.value[0]
+    store.settlements.value.forEach((s, index) => {
+      assertEqual(s.totalDebt, Math.round((previous[index].debt + 33.33) * 100) / 100)
+      assertEqual(s.breakdown[bucket], Math.round((previous[index].bucket + 33.33) * 100) / 100)
+      assertEqual(s.status, s.daysOverdue > 0 ? 'PO_SPLATNOSTI' : 'PŘED_SPLATNOSTÍ')
+    })
+    store.deleteExpense(added.id)
+    store.confirmModal.value.onConfirm()
+    assertEqual(debtSnapshot(store), before, category)
+    assert(!store.expenses.value.some(e => e.id === added.id))
+  }
+})
+
+test('T3.M4', 'Member-paid expenses never change debts to the flat account', 3, 'Money_Regressions', () => {
+  const store = getFreshStore()
+  const before = debtSnapshot(store)
+  store.addExpense(createExpensePayload({ payerId: 'user-jakub' }))
+  const added = store.expenses.value[0]
+  assertEqual(debtSnapshot(store), before)
+  store.confirmPayment('user-eliska', { date: '2026-11-06', method: 'bank', note: '', notifyMember: false })
+  assertEqual(added.shares.find(s => s.roommateId === 'user-eliska').status, 'DLUŽÍ')
+  const afterPayment = debtSnapshot(store)
+  store.deleteExpense(added.id)
+  store.confirmModal.value.onConfirm()
+  assertEqual(debtSnapshot(store), afterPayment)
+})
+
+test('T3.M5', 'Payment settles outstanding manager shares and preserves paid history', 3, 'Money_Regressions', () => {
+  const store = getFreshStore()
+  const oldShare = store.expenses.value.find(e => e.id === 'exp-1').shares.find(s => s.roommateId === 'user-jakub')
+  const oldDate = oldShare.settledDate
+  store.addExpense(createExpensePayload({ category: 'Jídlo' }))
+  const added = store.expenses.value[0]
+  store.confirmPayment('user-jakub', { date: '2026-11-06', method: 'bank', note: '', notifyMember: false })
+  assertEqual(oldShare.settledDate, oldDate)
+  assertEqual(added.shares.find(s => s.roommateId === 'user-jakub').status, 'UHRAZENO')
+  assertEqual(added.shares.find(s => s.roommateId === 'user-jakub').settledDate, '2026-11-06')
+  const settlement = store.settlements.value.find(s => s.roommateId === 'user-jakub')
+  assertEqual(settlement.totalDebt, 0)
+  assert(Object.values(settlement.breakdown).every(amount => amount === 0))
+  for (const id of ['user-eliska', 'user-martin']) {
+    store.confirmPayment(id, { date: '2026-11-06', method: 'bank', note: '', notifyMember: false })
+  }
+  assertEqual(added.status, 'UHRAZENO')
+})
+
+test('T3.M6', 'Zero shares do not create debt and decimal add/delete leaves no residue', 3, 'Money_Regressions', () => {
+  const store = getFreshStore()
+  const before = debtSnapshot(store)
+  store.addExpense(createExpensePayload({ shares: [{ roommateId: 'user-martin', roommateName: 'Martin', amount: 0, status: 'DLUŽÍ' }] }))
+  assertEqual(debtSnapshot(store), before)
+  const ids = []
+  for (const amount of [0.1, 0.2]) {
+    store.addExpense(createExpensePayload({ shares: [{ roommateId: 'user-martin', roommateName: 'Martin', amount, status: 'DLUŽÍ' }] }))
+    // Distinct IDs keep this regression focused on rounding rather than clock resolution.
+    store.expenses.value[0].id = 'decimal-' + amount
+    ids.push(store.expenses.value[0].id)
+  }
+  assertEqual(store.settlements.value.find(s => s.roommateId === 'user-martin').totalDebt, 0.3)
+  for (const id of ids) {
+    store.deleteExpense(id)
+    store.confirmModal.value.onConfirm()
+  }
+  assertEqual(debtSnapshot(store), before)
+})
+
+test('T3.M7', 'Invalid room areas never reach the store', 3, 'Money_Regressions', () => {
+  const store = getFreshStore()
+  const before = JSON.stringify(store.roommates.value)
+  for (const area of [0, -5, 4.9, NaN, Infinity]) {
+    assertEqual(store.updateRoommateArea('user-jakub', area), false)
+    assertEqual(JSON.stringify(store.roommates.value), before)
+    assertEqual(store.toasts.value.at(-1).type, 'error')
+  }
+  assertEqual(store.updateRoommateArea('user-jakub', 25), true)
+  assertEqual(store.roommates.value.find(r => r.id === 'user-jakub').roomAreaM2, 25)
+  const src = loadSource('src/views/SettingsView.vue')
+  assertNotContains(src, 'v-model.number="r.roomAreaM2"')
+})
+
+test('T3.M8', 'Money views retain fractional shares and QR uses two decimal places', 3, 'Money_Regressions', () => {
+  const form = loadSource('src/components/ExpenseAddModal.vue')
+  const detail = loadSource('src/components/ExpenseDetailModal.vue')
+  const qr = loadSource('src/components/QrPaymentModal.vue')
+  assertNotContains(form, 'Math.round(computedShares')
+  assertNotContains(form, 'Math.round(totalAllocatedShares)')
+  assertContains(form, 'roommates.value.filter(r => participantMap[r.id]).map')
+  assertNotContains(detail, 'Math.round(share.amount)')
+  assertContains(qr, 'minimumFractionDigits: 2, maximumFractionDigits: 2')
+  assertContains(qr, 'copyText(settlement.totalDebt.toFixed(2),')
+})
 
 // F1: Dashboard Cards (gap-2, flex-wrap)
 test('T1.F1.1', 'Card 2 bottom row has gap-2 or gap-x-2 layout class', 1, 'F1_Dashboard_Cards', () => {
@@ -585,7 +731,7 @@ test('T1.F10.5', 'canConfirmShift restricts shift confirmation to assigned roomm
 
 // F11: Build & Runtime Integrity
 test('T1.F11.1', 'npm run build executes with exit code 0', 1, 'F11_Build_Runtime_Integrity', () => {
-  const result = execSync('npm --prefix spolubyt-app run build', { cwd: REPO_ROOT, encoding: 'utf8' })
+  const result = execSync('npm run build', { cwd: APP_ROOT, encoding: 'utf8', timeout: 300_000 })
   assertContains(result, 'built in', 'Build must output completion message')
 })
 

@@ -66,11 +66,11 @@
               <div>
                 <span class="text-xs text-emerald-400/80 font-medium block">{{ t('qr.amountDue', 'Částka k úhradě:') }}</span>
                 <span class="text-xl font-mono font-extrabold text-emerald-300">
-                  {{ settlement.totalDebt.toLocaleString('cs-CZ') }},00 CZK
+                  {{ settlement.totalDebt.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} CZK
                 </span>
               </div>
               <button
-                @click="copyText(`${settlement.totalDebt}`, t('qr.amountDueCopy', 'Částka k úhradě'))"
+                @click="copyText(settlement.totalDebt.toFixed(2), t('qr.amountDueCopy', 'Částka k úhradě'))"
                 class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold transition-colors flex items-center gap-1"
               >
                 {{ t('qr.copy', 'Kopírovat') }}

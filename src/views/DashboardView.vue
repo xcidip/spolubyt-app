@@ -288,6 +288,7 @@
                 <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownEnergy', 'Energie:') }} {{ currentUserSettlement.breakdown.energy }} Kč</span>
                 <span v-if="currentUserSettlement.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">WiFi: {{ currentUserSettlement.breakdown.wifi }} Kč</span>
                 <span v-if="currentUserSettlement.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownDrogerie', 'Drogerie:') }} {{ currentUserSettlement.breakdown.drogerie }} Kč</span>
+                <span v-if="currentUserSettlement.breakdown.other" class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{{ t('dashboard.breakdownOther', 'Ostatní:') }} {{ currentUserSettlement.breakdown.other }} Kč</span>
               </div>
 
               <button

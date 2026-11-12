@@ -105,7 +105,7 @@
                         <span v-if="share.roommateId === currentUser.id" class="text-emerald-400 text-xs ml-1.5">{{ t('expenseDetail.you', '[Vy]') }}</span>
                       </td>
                       <td class="py-2.5 px-3 font-mono font-bold text-slate-100 text-right">
-                        {{ Math.round(share.amount).toLocaleString('cs-CZ') }} CZK
+                        {{ share.amount.toLocaleString('cs-CZ') }} CZK
                       </td>
                       <td class="py-2.5 px-3 text-center">
                         <span 

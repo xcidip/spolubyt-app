@@ -163,11 +163,11 @@
                 <td class="py-2.5 px-3.5 text-center">
                   <input
                     type="number"
-                    v-model.number="r.roomAreaM2"
+                    :value="r.roomAreaM2"
                     step="0.5"
                     min="5"
                     :disabled="!isMasterTenant"
-                    @change="updateRoommateArea(r.id, r.roomAreaM2)"
+                    @change="handleAreaChange($event, r.id)"
                     class="w-20 px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold text-center focus:ring-1 focus:ring-emerald-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <span class="ml-1 text-slate-400">m²</span>
@@ -332,6 +332,12 @@ const {
   resetDemoData, 
   showToast 
 } = useSpolubyt()
+
+const handleAreaChange = (event: Event, roommateId: string): void => {
+  const input = event.target as HTMLInputElement
+  updateRoommateArea(roommateId, Number(input.value))
+  input.value = String(roommates.value.find(r => r.id === roommateId)?.roomAreaM2 ?? '')
+}
 
 const formSettings = reactive(JSON.parse(JSON.stringify(settings.value)))
 

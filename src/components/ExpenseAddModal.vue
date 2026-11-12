@@ -190,7 +190,7 @@
                 <!-- Calculated share -->
                 <div class="text-right">
                   <div class="text-xs font-mono font-bold text-slate-100">
-                    {{ participantMap[r.id] ? Math.round(computedShares[r.id] || 0).toLocaleString('cs-CZ') + ' CZK' : t('expenseAdd.excluded', 'Vyloučen') }}
+                    {{ participantMap[r.id] ? (computedShares[r.id] || 0).toLocaleString('cs-CZ') + ' CZK' : t('expenseAdd.excluded', 'Vyloučen') }}
                   </div>
                   <div v-if="participantMap[r.id]" class="text-xs text-slate-400">
                     {{ form.calculationKey === 'BY_AREA' ? t('expenseAdd.areaShare', '{pct} % plochy', { pct: r.areaSharePct }) : t('expenseAdd.equalShare', 'Rovný podíl') }}
@@ -202,7 +202,7 @@
               <div class="flex items-center justify-between pt-3 mt-2 border-t border-slate-800 text-xs">
                 <span class="text-slate-400">
                   {{ t('expenseAdd.checksumLabel', 'Kontrolní součet podílů:') }}
-                  <strong class="font-mono text-slate-200">{{ Math.round(totalAllocatedShares).toLocaleString('cs-CZ') }} CZK</strong> {{ t('expenseAdd.of', 'z') }}
+                  <strong class="font-mono text-slate-200">{{ totalAllocatedShares.toLocaleString('cs-CZ') }} CZK</strong> {{ t('expenseAdd.of', 'z') }}
                   <strong class="font-mono text-slate-200">{{ (form.totalAmount || 0).toLocaleString('cs-CZ') }} CZK</strong>
                 </span>
                 <span 
@@ -290,6 +290,7 @@ import { reactive, ref, computed, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CalculationKey, ExpenseCategory, ExpenseShare } from '../types'
 import { t } from '../i18n'
+import { roundMoney, splitAmount } from '../utils/money'
 
 const { roommates, currentUser, expensePrefill, closeModal, addExpense } = useSpolubyt()
 
@@ -325,12 +326,9 @@ watch(() => currentUser.value.id, (newId) => {
 }, { immediate: true })
 
 // Checkboxes for roommates
-const participantMap = reactive<Record<string, boolean>>({
-  'user-tomas': true,
-  'user-jakub': true,
-  'user-eliska': true,
-  'user-martin': true
-})
+const participantMap = reactive<Record<string, boolean>>(
+  Object.fromEntries(roommates.value.map(r => [r.id, true]))
+)
 
 const hasUploadedReceipt = ref(true)
 const receiptFilename = ref('uctenka_nakup_' + todayStr + '.jpg')
@@ -339,55 +337,36 @@ const toggleSimulatedReceipt = () => {
   hasUploadedReceipt.value = !hasUploadedReceipt.value
 }
 
-// Compute individual shares
-const computedShares = computed(() => {
-  const result: Record<string, number> = {}
-  const total = form.totalAmount || 0
-
-  const activeIds = Object.keys(participantMap).filter(id => participantMap[id])
-  if (activeIds.length === 0) return result
-
-  if (form.calculationKey === 'EQUAL') {
-    const perPerson = Math.round((total / activeIds.length) * 10) / 10
-    activeIds.forEach(id => {
-      result[id] = perPerson
-    })
-  } else {
-    // BY_AREA
-    const activeRoommates = roommates.value.filter(r => participantMap[r.id])
-    const totalActiveArea = activeRoommates.reduce((sum, r) => sum + r.roomAreaM2, 0)
-    activeRoommates.forEach(r => {
-      const share = totalActiveArea > 0 ? (r.roomAreaM2 / totalActiveArea) * total : 0
-      result[r.id] = Math.round(share)
-    })
-  }
-
-  return result
-})
+const computedShares = computed(() => splitAmount(
+  form.totalAmount,
+  roommates.value.filter(r => participantMap[r.id]),
+  form.calculationKey,
+))
 
 const totalAllocatedShares = computed(() => {
-  return Object.values(computedShares.value).reduce((sum, val) => sum + val, 0)
+  return roundMoney(Object.values(computedShares.value).reduce((sum, val) => sum + val, 0))
 })
 
 const isShareSumValid = computed(() => {
-  return Object.values(participantMap).some(Boolean) && form.totalAmount > 0
+  return Number.isFinite(form.totalAmount) && form.totalAmount > 0
+    && Object.keys(computedShares.value).length > 0
+    && Math.round(totalAllocatedShares.value * 100) === Math.round(form.totalAmount * 100)
 })
 
 const handleSubmit = () => {
   if (!isShareSumValid.value || form.totalAmount <= 0) return
 
   const payer = roommates.value.find(r => r.id === form.payerId)
-  const shares: ExpenseShare[] = Object.keys(participantMap).map(id => {
-    const isParticipant = participantMap[id]
-    const r = roommates.value.find(rm => rm.id === id)!
-    const amount = isParticipant ? computedShares.value[id] || 0 : 0
+  const shares: ExpenseShare[] = roommates.value.filter(r => participantMap[r.id]).map(r => {
+    const id = r.id
+    const amount = computedShares.value[id] || 0
     const isPayer = id === form.payerId
     
     return {
       roommateId: id,
       roommateName: r.name,
       amount,
-      status: isPayer ? 'PLÁTCE' : 'DLUŽÍ'
+      status: isPayer ? 'PLÁTCE' : amount > 0 ? 'DLUŽÍ' : 'UHRAZENO'
     }
   })
 
@@ -397,12 +376,12 @@ const handleSubmit = () => {
     payerId: form.payerId,
     payerName: payer ? payer.name : 'Tomáš Beránek',
     date: form.date,
-    totalAmount: form.totalAmount,
+    totalAmount: roundMoney(form.totalAmount),
     calculationKey: form.calculationKey,
     shares,
     receiptName: hasUploadedReceipt.value ? receiptFilename.value : undefined,
     receiptType: 'JPG',
-    status: 'ČÁSTEČNĚ'
+    status: shares.every(share => share.status === 'PLÁTCE' || share.status === 'UHRAZENO') ? 'UHRAZENO' : 'ČÁSTEČNĚ'
   })
 }
 </script>
