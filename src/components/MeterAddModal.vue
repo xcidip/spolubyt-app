@@ -37,7 +37,7 @@
           
           <!-- Section 1: Medium selection -->
           <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            <label class="block text-xs font-bold text-slate-400 mb-2">
               1. Zvolte měřené médium:
             </label>
             <div class="grid grid-cols-2 gap-2 text-xs">
@@ -96,7 +96,7 @@
             </div>
 
             <!-- Validation Error Alert -->
-            <div v-if="!isInputValid" class="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-300">
+            <div v-if="!isInputValid" class="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300">
               Hodnota nesmí být nižší než předchozí stav ({{ previousReading?.value }} {{ currentUnit }})!
             </div>
 

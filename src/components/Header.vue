@@ -17,11 +17,11 @@
           <div>
             <div class="flex items-center gap-1.5">
               <span class="font-extrabold text-base tracking-tight text-white">Spolubyt</span>
-              <span class="text-xs px-1.5 py-0.2 rounded font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">.cz</span>
+              <span class="text-xs px-1.5 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">.cz</span>
             </div>
-            <div class="text-[11px] text-slate-400 flex items-center gap-1">
+            <div class="text-xs text-slate-400 flex items-center gap-1">
               <span>{{ settings.name }}</span>
-              <span class="text-slate-600">•</span>
+              <span class="text-slate-400">•</span>
               <span class="text-emerald-400 font-medium">Praha 6</span>
             </div>
           </div>
@@ -32,7 +32,7 @@
 
         <!-- Breadcrumb / Active Page Indicator -->
         <div class="hidden md:flex items-center gap-2 text-xs text-slate-400">
-          <span class="text-slate-500">Modul:</span>
+          <span class="text-slate-400">Modul:</span>
           <span class="font-semibold text-slate-200 bg-slate-800 px-2.5 py-1 rounded-md border border-slate-700/60">
             {{ pageLabels[currentPage] }}
           </span>
@@ -51,7 +51,7 @@
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span class="text-[11px] font-mono">Sync: OK</span>
+          <span class="text-xs font-mono">Sync: OK</span>
         </div>
 
         <!-- User Persona Switcher -->
@@ -74,7 +74,7 @@
               <div class="text-xs font-semibold text-slate-200 leading-none">
                 {{ currentUser.name }}
               </div>
-              <div class="text-[10px] text-slate-400 leading-tight mt-0.5">
+              <div class="text-xs text-slate-400 leading-tight mt-0.5">
                 {{ currentUser.role }} ({{ currentUser.roomName.split(' ')[0] }})
               </div>
             </div>
@@ -90,7 +90,7 @@
             class="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-40"
             role="listbox"
           >
-            <div class="px-2.5 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div class="px-2.5 py-1.5 text-xs font-semibold text-slate-400">
               Testovat jako persona:
             </div>
             <div class="space-y-1">
@@ -109,13 +109,13 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="font-medium truncate">{{ r.name }}</div>
-                  <div class="text-[10px] text-slate-400">{{ r.role }} • {{ r.roomName }}</div>
+                  <div class="text-xs text-slate-400">{{ r.role }} • {{ r.roomName }}</div>
                 </div>
                 <span v-if="r.id === currentUser.id" class="text-emerald-400 text-xs">✓</span>
               </button>
             </div>
             
-            <div class="mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-500 px-2">
+            <div class="mt-2 pt-2 border-t border-slate-800 text-xs text-slate-400 px-2">
               Umožňuje testovat pohled správce i dlužníka.
             </div>
           </div>

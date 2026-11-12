@@ -28,7 +28,7 @@
 
         <button
           @click="openModal('EXP_ADD')"
-          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-102"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-105"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
@@ -50,6 +50,7 @@
             v-model="expenseFilters.search"
             type="text"
             placeholder="Hledat výdaj dle názvu, kódu či plátce..."
+            aria-label="Hledat výdaj dle názvu, kódu či plátce"
             class="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none transition-colors"
           />
           <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -61,6 +62,7 @@
         <div class="sm:col-span-3">
           <select
             v-model="expenseFilters.period"
+            aria-label="Období výdajů"
             class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none transition-colors"
           >
             <option value="ALL">Všechna období</option>
@@ -74,6 +76,7 @@
         <div class="sm:col-span-2">
           <select
             v-model="expenseFilters.category"
+            aria-label="Kategorie výdajů"
             class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none transition-colors"
           >
             <option value="ALL">Všechny kategorie</option>
@@ -90,6 +93,7 @@
         <div class="sm:col-span-2">
           <select
             v-model="expenseFilters.payer"
+            aria-label="Plátce výdajů"
             class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:ring-2 focus:ring-emerald-500/40 focus:outline-none transition-colors"
           >
             <option value="ALL">Všichni plátci</option>
@@ -146,34 +150,37 @@
     <!-- Expenses Table -->
     <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
       
-      <div class="overflow-x-auto border border-slate-800 rounded-xl bg-slate-850">
-        <table class="w-full text-left text-xs">
+      <div class="overflow-x-auto border border-slate-800 rounded-xl bg-slate-850" tabindex="0" role="region" aria-label="Výpis výdajů a plateb">
+        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
+        <table class="w-full min-w-[960px] text-left text-xs">
           <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700 select-none">
             <tr>
               <!-- Sortable Date -->
               <th 
                 @click="toggleSort('date')"
-                class="py-3 px-3.5 font-semibold cursor-pointer hover:text-emerald-400 transition-colors"
+                :aria-sort="expenseFilters.sortBy === 'date' ? (expenseFilters.sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'"
+                class="py-3 px-3.5 font-semibold"
               >
-                <div class="flex items-center gap-1.5">
+                <button type="button" class="flex items-center gap-1.5 hover:text-emerald-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 rounded">
                   <span>Datum</span>
                   <span v-if="expenseFilters.sortBy === 'date'" class="text-emerald-400 font-bold">
                     {{ expenseFilters.sortOrder === 'asc' ? '▲' : '▼' }}
                   </span>
-                </div>
+                </button>
               </th>
 
               <!-- Sortable Title -->
               <th 
                 @click="toggleSort('title')"
-                class="py-3 px-3.5 font-semibold cursor-pointer hover:text-emerald-400 transition-colors"
+                :aria-sort="expenseFilters.sortBy === 'title' ? (expenseFilters.sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'"
+                class="py-3 px-3.5 font-semibold"
               >
-                <div class="flex items-center gap-1.5">
+                <button type="button" class="flex items-center gap-1.5 hover:text-emerald-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 rounded">
                   <span>Název výdaje</span>
                   <span v-if="expenseFilters.sortBy === 'title'" class="text-emerald-400 font-bold">
                     {{ expenseFilters.sortOrder === 'asc' ? '▲' : '▼' }}
                   </span>
-                </div>
+                </button>
               </th>
 
               <th class="py-3 px-3.5 font-semibold">Kategorie</th>
@@ -182,13 +189,16 @@
               <!-- Sortable Amount -->
               <th 
                 @click="toggleSort('amount')"
-                class="py-3 px-3.5 font-semibold text-right cursor-pointer hover:text-emerald-400 transition-colors"
+                :aria-sort="expenseFilters.sortBy === 'amount' ? (expenseFilters.sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'"
+                class="py-3 px-3.5 font-semibold text-right"
               >
                 <div class="flex items-center justify-end gap-1.5">
-                  <span>Celkem CZK</span>
-                  <span v-if="expenseFilters.sortBy === 'amount'" class="text-emerald-400 font-bold">
-                    {{ expenseFilters.sortOrder === 'asc' ? '▲' : '▼' }}
-                  </span>
+                  <button type="button" class="flex items-center gap-1.5 hover:text-emerald-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 rounded">
+                    <span>Celkem CZK</span>
+                    <span v-if="expenseFilters.sortBy === 'amount'" class="text-emerald-400 font-bold">
+                      {{ expenseFilters.sortOrder === 'asc' ? '▲' : '▼' }}
+                    </span>
+                  </button>
                 </div>
               </th>
 
@@ -203,8 +213,12 @@
             <tr 
               v-for="exp in filteredExpenses" 
               :key="exp.id"
-              class="hover:bg-slate-800/60 transition-colors group cursor-pointer"
+              class="hover:bg-slate-800/60 transition-colors group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
               @click="openModal('EXP_DETAIL', exp)"
+              tabindex="0"
+              role="button"
+              @keydown.enter="openModal('EXP_DETAIL', exp)"
+              @keydown.space.prevent="openModal('EXP_DETAIL', exp)"
             >
               <!-- Date -->
               <td class="py-3 px-3.5 font-mono text-slate-400 whitespace-nowrap">
@@ -216,14 +230,14 @@
                 <div class="font-medium text-slate-100 group-hover:text-emerald-300 transition-colors">
                   {{ exp.title }}
                 </div>
-                <div class="text-[10px] font-mono text-slate-500 mt-0.5">
+                <div class="text-xs font-mono text-slate-400 mt-0.5">
                   {{ exp.code }}
                 </div>
               </td>
 
               <!-- Category -->
               <td class="py-3 px-3.5 whitespace-nowrap">
-                <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[11px] border border-slate-700">
+                <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-xs border border-slate-700">
                   {{ exp.category }}
                 </span>
               </td>
@@ -247,30 +261,30 @@
 
               <!-- Receipt Badge -->
               <td class="py-3 px-3.5 text-center whitespace-nowrap">
-                <span 
-                  v-if="exp.receiptName"
-                  class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold"
-                  :class="exp.receiptType === 'PDF' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'"
-                  :title="exp.receiptName"
-                >
-                  [{{ exp.receiptType || 'Scan' }}]
-                </span>
-                <span v-else class="text-slate-600 text-xs">
-                  [--]
-                </span>
+                <div v-if="exp.receiptName" class="inline-flex flex-col items-center gap-0.5">
+                  <span
+                    class="px-2 py-0.5 rounded text-xs font-mono font-semibold"
+                    :class="exp.receiptType === 'PDF' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'"
+                    :title="exp.receiptName"
+                  >
+                    📎 {{ exp.receiptType || 'Scan' }}
+                  </span>
+                  <span class="max-w-[120px] truncate text-xs text-slate-400" :title="exp.receiptName">{{ exp.receiptName }}</span>
+                </div>
+                <span v-else class="text-xs text-slate-400">Bez dokladu</span>
               </td>
 
               <!-- Status Badge -->
               <td class="py-3 px-3.5 text-center whitespace-nowrap">
                 <span 
-                  class="px-2 py-0.5 rounded text-[10px] font-bold"
+                  class="px-2 py-0.5 rounded text-xs font-bold"
                   :class="[
                     exp.status === 'UHRAZENO' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
                     exp.status === 'PO_SPLATNOSTI' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
                     'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                   ]"
                 >
-                  {{ exp.status }}
+                  {{ EXPENSE_STATUS_LABELS[exp.status] }}
                 </span>
               </td>
 
@@ -279,7 +293,7 @@
                 <div class="flex items-center justify-end">
                   <button
                     @click="deleteExpense(exp.id)"
-                    class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                     title="Smazat výdaj"
                     aria-label="Smazat výdaj"
                   >
@@ -309,18 +323,13 @@
         </table>
       </div>
 
-      <!-- Pagination / Summary Footer -->
+      <!-- Summary Footer -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400 pt-2 border-t border-slate-800">
         <div>
           Celkem záznamů v databázi: <strong class="text-slate-200">{{ expenses.length }}</strong>
         </div>
-        <div class="flex items-center gap-2">
-          <span>Strana 1 z 1</span>
-          <div class="flex items-center gap-1">
-            <button disabled class="px-2 py-1 rounded bg-slate-800 text-slate-600 cursor-not-allowed">«</button>
-            <button class="px-2.5 py-1 rounded bg-emerald-600 text-white font-bold">1</button>
-            <button disabled class="px-2 py-1 rounded bg-slate-800 text-slate-600 cursor-not-allowed">»</button>
-          </div>
+        <div>
+          Zobrazeno: <strong class="text-slate-200">{{ filteredExpenses.length }}</strong>
         </div>
       </div>
 
@@ -333,6 +342,7 @@
 import { computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { Expense } from '../types'
+import { EXPENSE_STATUS_LABELS } from '../utils/labels'
 
 const { 
   expenses, 
@@ -375,7 +385,7 @@ const formatDate = (dateStr: string) => {
 const getMyShareText = (exp: Expense) => {
   const share = exp.shares.find(s => s.roommateId === currentUser.value.id)
   if (!share) return '0 CZK'
-  if (share.status === 'PLÁTCE') return 'Zafinancoval'
+  if (share.status === 'PLÁTCE') return 'Plátce — 0 Kč k doplacení'
   return `${Math.round(share.amount).toLocaleString('cs-CZ')} CZK`
 }
 </script>

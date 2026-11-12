@@ -7,12 +7,12 @@
     <div :class="isSidebarCollapsed ? 'p-2 space-y-2' : 'p-3 space-y-1'">
       <!-- Header with title & minimize button -->
       <div 
-        class="flex items-center pb-1.5 text-slate-500"
+        class="flex items-center pb-1.5 text-slate-400"
         :class="isSidebarCollapsed ? 'justify-center pt-1' : 'justify-between px-3 pt-2'"
       >
         <span 
           v-if="!isSidebarCollapsed" 
-          class="text-[11px] font-bold uppercase tracking-wider text-slate-500"
+          class="text-xs font-bold text-slate-400"
         >
           Hlavní menu
         </span>
@@ -96,7 +96,7 @@
         <!-- Badge for Master Tenant (overdue count) -->
         <span 
           v-if="!isSidebarCollapsed && isMasterTenant && overdueDebtorsCount > 0"
-          class="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap"
+          class="text-xs px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap"
         >
           {{ overdueDebtorsCount }} po spl.
         </span>
@@ -104,13 +104,13 @@
         <!-- Badge for Regular Member (personal overdue or debt) -->
         <span 
           v-else-if="!isSidebarCollapsed && !isMasterTenant && isCurrentUserOverdue"
-          class="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap animate-pulse"
+          class="text-xs px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap animate-pulse"
         >
           Po splatnosti
         </span>
         <span 
           v-else-if="!isSidebarCollapsed && !isMasterTenant && currentUserDebt > 0"
-          class="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap"
+          class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold shrink-0 ml-2 whitespace-nowrap"
         >
           K úhradě
         </span>
@@ -175,7 +175,7 @@
         <!-- Collapsed cart badge -->
         <span 
           v-if="isSidebarCollapsed && cartTotalCount > 0"
-          class="absolute top-1 right-1 text-[10px] w-4 h-4 rounded-full bg-emerald-500 text-slate-950 font-bold flex items-center justify-center shadow"
+          class="absolute top-1 right-1 text-xs w-4 h-4 rounded-full bg-emerald-500 text-slate-950 font-bold flex items-center justify-center shadow"
         >
           {{ cartTotalCount }}
         </span>
@@ -262,12 +262,12 @@
         </div>
         <div v-if="!isSidebarCollapsed" class="flex-1 min-w-0">
           <div class="text-xs font-bold text-white truncate">{{ currentUser.name }}</div>
-          <div class="text-[11px] text-slate-400 truncate">{{ currentUser.role }} • {{ currentUser.roomName.split(' ')[0] }}</div>
+          <div class="text-xs text-slate-400 truncate">{{ currentUser.role }} • {{ currentUser.roomName.split(' ')[0] }}</div>
         </div>
       </div>
 
       <!-- Course & App info -->
-      <div v-if="!isSidebarCollapsed" class="text-[11px] text-slate-500 space-y-1">
+      <div v-if="!isSidebarCollapsed" class="text-xs text-slate-400 space-y-1">
         <div class="flex items-center justify-between">
           <span>Verze prototypu:</span>
           <span class="font-mono text-slate-400">1.0.0-rc</span>

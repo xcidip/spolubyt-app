@@ -9,7 +9,7 @@
             Společný nákupní košík bytu
           </h1>
           <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold font-mono">
-            {{ cartTotalCount }} kusů
+            {{ cartRemainingCount }} ks zbývá
           </span>
         </div>
         <p class="text-xs text-slate-400 mt-0.5">
@@ -27,14 +27,14 @@
         </button>
 
         <button
-          @click="convertCartToExpense"
-          :disabled="cartItems.length === 0"
-          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-102"
+          @click="convertRemainingCartToExpense"
+          :disabled="cartRemainingCount === 0"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7" />
           </svg>
-          <span>Převést na společný výdaj ({{ cartTotalPrice.toLocaleString('cs-CZ') }} CZK)</span>
+          <span>Převést zbývající na výdaj ({{ cartRemainingPrice.toLocaleString('cs-CZ') }} CZK)</span>
         </button>
       </div>
     </div>
@@ -47,14 +47,15 @@
         
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div class="flex items-center justify-between">
-            <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
+            <h2 class="text-sm font-bold text-slate-100">
               Položky v nákupním košíku
             </h2>
             <span class="text-xs text-slate-400">Okamžitý přepočet součtů</span>
           </div>
 
           <!-- Table of items -->
-          <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850">
+          <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" aria-label="Položky nákupního košíku">
+            <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
             <table class="w-full min-w-[600px] text-left text-xs">
               <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
                 <tr>
@@ -95,12 +96,12 @@
                           </span>
                           <span
                             v-if="item.isPurchased"
-                            class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold"
+                            class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold"
                           >
                             Koupeno
                           </span>
                         </div>
-                        <div class="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                        <div class="text-xs text-slate-400 mt-0.5 leading-relaxed">
                           <span class="whitespace-nowrap">Přidal(a): {{ item.addedBy }}</span>
                           <span class="whitespace-nowrap"> • {{ item.addedAt }}</span>
                           <span
@@ -116,7 +117,7 @@
 
                   <!-- Category -->
                   <td class="py-3 px-3 whitespace-nowrap">
-                    <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-semibold border border-slate-700">
+                    <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700">
                       {{ item.category }}
                     </span>
                   </td>
@@ -148,12 +149,12 @@
 
                   <!-- Unit price -->
                   <td class="py-3 px-3 text-right font-mono text-slate-300 whitespace-nowrap tabular-nums">
-                    {{ item.unitPrice.toLocaleString('cs-CZ') }} <span class="text-[10px] text-slate-500">CZK</span>
+                    {{ item.unitPrice.toLocaleString('cs-CZ') }} <span class="text-xs text-slate-400">CZK</span>
                   </td>
 
                   <!-- Subtotal (qty * unitPrice) -->
                   <td class="py-3 px-3 text-right font-mono font-bold text-emerald-400 text-sm whitespace-nowrap tabular-nums">
-                    {{ (item.unitPrice * item.qty).toLocaleString('cs-CZ') }} <span class="text-[10px] font-semibold text-emerald-500/70">CZK</span>
+                    {{ (item.unitPrice * item.qty).toLocaleString('cs-CZ') }} <span class="text-xs font-semibold text-emerald-500/70">CZK</span>
                   </td>
 
                   <!-- Actions: Převést do výdajů and Remove -->
@@ -163,7 +164,7 @@
                         v-if="item.isPurchased"
                         @click="convertCartItemToExpense(item)"
                         type="button"
-                        class="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold shadow-md shadow-emerald-950/40 transition-all flex items-center gap-1 shrink-0"
+                        class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all flex items-center gap-1 shrink-0 hover:bg-emerald-500/20"
                         title="Převést tuto položku přímo do výdajů bytu"
                         aria-label="Převést tuto položku přímo do výdajů bytu"
                       >
@@ -176,7 +177,7 @@
 
                       <button
                         @click="removeCartItem(item.id)"
-                        class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0"
+                        class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0"
                         title="Odebrat z košíku"
                         aria-label="Odebrat z košíku"
                       >
@@ -193,7 +194,7 @@
                   <td colspan="6" class="py-12 text-center text-slate-400">
                     <div class="space-y-2">
                       <p class="text-sm font-semibold text-slate-300">Váš společný nákupní košík je prázdný.</p>
-                      <p class="text-xs text-slate-500">Pomocí formuláře vpravo přidejte věci, které v bytě chybí.</p>
+                      <p class="text-xs text-slate-400">Pomocí formuláře vpravo přidejte věci, které v bytě chybí.</p>
                     </div>
                   </td>
                 </tr>
@@ -212,7 +213,7 @@
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">+</span>
-            <h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider">
+            <h2 class="text-xs font-bold text-slate-200">
               Přidat položku do košíku
             </h2>
           </div>
@@ -242,7 +243,7 @@
                     placeholder="0"
                     class="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
                   />
-                  <span class="absolute right-2.5 top-2 text-[10px] text-slate-400 font-bold">CZK</span>
+                  <span class="absolute right-2.5 top-2 text-xs text-slate-400 font-bold">CZK</span>
                 </div>
               </div>
 
@@ -287,7 +288,7 @@
 
         <!-- Summary Card -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
-          <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <h2 class="text-xs font-bold text-slate-400">
             Rekapitulace košíku
           </h2>
 
@@ -297,30 +298,40 @@
               <span class="font-mono font-bold text-slate-100">{{ cartTotalCount }} ks</span>
             </div>
             <div class="flex justify-between text-slate-300">
+              <span>Zbývá nakoupit:</span>
+              <span class="font-mono font-bold text-amber-300">{{ cartRemainingCount }} ks</span>
+            </div>
+            <div class="flex justify-between text-slate-300">
               <span>Položek celkem:</span>
               <span class="font-mono font-bold text-slate-100">{{ cartItems.length }} druhů</span>
             </div>
             <div class="flex justify-between items-baseline gap-3 text-slate-300">
-              <span class="min-w-0">Odhadovaný podíl na 1 člena:</span>
+              <span class="min-w-0">Odhadovaný podíl na 1 člena (zbývá):</span>
               <span class="font-mono font-bold text-emerald-400 whitespace-nowrap">
-                {{ Math.round(cartTotalPrice / 4).toLocaleString('cs-CZ') }} CZK
+                {{ Math.round(cartRemainingPrice / 4).toLocaleString('cs-CZ') }} CZK
               </span>
             </div>
             
             <div class="pt-3 border-t border-slate-800 flex justify-between items-baseline gap-3">
               <span class="text-sm font-bold text-white min-w-0">Celková cena nákupu:</span>
-              <span class="text-xl font-mono font-extrabold text-emerald-400 whitespace-nowrap">
+              <span class="text-xl font-mono font-extrabold text-slate-100 whitespace-nowrap">
                 {{ cartTotalPrice.toLocaleString('cs-CZ') }} CZK
+              </span>
+            </div>
+            <div class="flex justify-between items-baseline gap-3">
+              <span class="text-sm font-bold text-amber-300 min-w-0">Zbývá nakoupit:</span>
+              <span class="text-xl font-mono font-extrabold text-amber-300 whitespace-nowrap">
+                {{ cartRemainingPrice.toLocaleString('cs-CZ') }} CZK
               </span>
             </div>
           </div>
 
           <button
-            @click="convertCartToExpense"
-            :disabled="cartItems.length === 0"
-            class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center whitespace-nowrap"
+            @click="convertRemainingCartToExpense"
+            :disabled="cartRemainingCount === 0"
+            class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center whitespace-nowrap"
           >
-            Vytvořit společný výdaj z košíku →
+            Vytvořit společný výdaj ze zbývajícího nákupu →
           </button>
         </div>
 
@@ -340,11 +351,13 @@ const {
   cartItems, 
   cartTotalCount, 
   cartTotalPrice, 
+  cartRemainingCount,
+  cartRemainingPrice,
   addCartItem, 
   updateCartItemQty, 
   removeCartItem, 
   clearCart, 
-  convertCartToExpense,
+  convertRemainingCartToExpense,
   convertCartItemToExpense,
   toggleCartItemPurchased
 } = useSpolubyt()

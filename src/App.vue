@@ -14,57 +14,19 @@
       <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0">
         
         <!-- Mobile Bottom Nav -->
-        <div class="md:hidden flex items-center justify-around bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs">
-          <button 
-            @click="navigateTo('DASH')"
-            class="px-2 py-1.5 rounded-lg"
-            :class="currentPage === 'DASH' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
+        <nav class="md:hidden flex items-center gap-1 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" aria-label="Hlavní navigace">
+          <button
+            v-for="item in mobileNavItems"
+            :key="item.id"
+            @click="navigateTo(item.id)"
+            class="flex flex-col items-center justify-center min-w-[64px] px-2 py-1.5 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+            :class="currentPage === item.id ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
+            :aria-current="currentPage === item.id ? 'page' : undefined"
           >
-            Nástěnka
+            <component :is="item.icon" class="w-4 h-4 mb-0.5" />
+            <span class="text-xs leading-tight">{{ item.label }}</span>
           </button>
-          <button 
-            @click="navigateTo('EXPENSES')"
-            class="px-2 py-1.5 rounded-lg"
-            :class="currentPage === 'EXPENSES' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
-          >
-            Výdaje
-          </button>
-          <button 
-            @click="navigateTo('SETTLEMENT')"
-            class="px-2 py-1.5 rounded-lg"
-            :class="currentPage === 'SETTLEMENT' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
-          >
-            Vyrovnání
-          </button>
-          <button 
-            @click="navigateTo('ENERGY')"
-            class="px-2 py-1.5 rounded-lg"
-            :class="currentPage === 'ENERGY' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
-          >
-            Energie
-          </button>
-          <button 
-            @click="navigateTo('CART')"
-            class="px-2 py-1.5 rounded-lg"
-            :class="currentPage === 'CART' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
-          >
-            Košík
-          </button>
-          <button 
-            @click="navigateTo('CLEANING')"
-            class="px-2 py-1.5 rounded-lg"
-            :class="currentPage === 'CLEANING' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
-          >
-            Úklid
-          </button>
-          <button 
-            @click="navigateTo('SETTINGS')"
-            class="px-2 py-1.5 rounded-lg"
-            :class="currentPage === 'SETTINGS' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
-          >
-            Nastavení
-          </button>
-        </div>
+        </nav>
 
         <!-- Dynamic Views -->
         <transition 
@@ -100,6 +62,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import {
+  LayoutDashboard,
+  Receipt,
+  Scale,
+  Zap,
+  ShoppingCart,
+  Sparkles,
+  Settings
+} from 'lucide-vue-next'
 import { useSpolubyt } from './composables/useSpolubyt'
 
 // Components
@@ -144,5 +115,15 @@ const activeViewComponent = computed(() => {
     default: return DashboardView
   }
 })
+
+const mobileNavItems = [
+  { id: 'DASH', label: 'Nástěnka', icon: LayoutDashboard },
+  { id: 'EXPENSES', label: 'Výdaje', icon: Receipt },
+  { id: 'SETTLEMENT', label: 'Vyrovnání', icon: Scale },
+  { id: 'ENERGY', label: 'Energie', icon: Zap },
+  { id: 'CART', label: 'Košík', icon: ShoppingCart },
+  { id: 'CLEANING', label: 'Úklid', icon: Sparkles },
+  { id: 'SETTINGS', label: 'Nastavení', icon: Settings }
+] as const
 </script>
 

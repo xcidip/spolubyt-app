@@ -37,7 +37,7 @@
           
           <!-- Rekapitulace pohledávky -->
           <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <div class="text-xs font-bold text-slate-400">
               Rekapitulace pohledávky k zaúčtování:
             </div>
             <div class="flex items-center justify-between text-xs">
@@ -117,7 +117,7 @@
                 v-model="notifyMember"
                 class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400 border-slate-700 bg-slate-900"
               />
-              <span class="text-[11px] text-slate-300 leading-tight">
+              <span class="text-xs text-slate-300 leading-tight">
                 Odeslat uživateli <strong>{{ settlement.roommateName }}</strong> automatické potvrzení o zaúčtování platby (in-app notifikace a e-mail).
               </span>
             </label>
@@ -125,7 +125,7 @@
           </div>
 
           <!-- Bezpečnostní upozornění -->
-          <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 flex items-start gap-2">
+          <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200/90 flex items-start gap-2">
             <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>

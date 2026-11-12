@@ -39,7 +39,7 @@
           <div class="space-y-4">
             <div class="flex items-center gap-2 pb-1 border-b border-slate-800">
               <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">1</span>
-              <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider">Základní parametry transakce</h3>
+              <h3 class="text-sm font-semibold text-slate-200">Základní parametry transakce</h3>
             </div>
 
             <div>
@@ -125,7 +125,7 @@
           <div class="space-y-4">
             <div class="flex items-center gap-2 pb-1 border-b border-slate-800">
               <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">2</span>
-              <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider">Kalkulační klíč a zúčastněné osoby</h3>
+              <h3 class="text-sm font-semibold text-slate-200">Kalkulační klíč a zúčastněné osoby</h3>
             </div>
 
             <!-- Key radio buttons -->
@@ -137,7 +137,7 @@
                 <input type="radio" v-model="form.calculationKey" value="EQUAL" class="text-emerald-500 focus:ring-emerald-400" />
                 <div class="text-xs">
                   <div class="font-semibold">Rovným dílem</div>
-                  <div class="text-slate-400 text-[11px]">Stejná částka mezi vybrané členy</div>
+                  <div class="text-slate-400 text-xs">Stejná částka mezi vybrané členy</div>
                 </div>
               </label>
 
@@ -148,7 +148,7 @@
                 <input type="radio" v-model="form.calculationKey" value="BY_AREA" class="text-emerald-500 focus:ring-emerald-400" />
                 <div class="text-xs">
                   <div class="font-semibold">Poměrem dle m² pokoje</div>
-                  <div class="text-slate-400 text-[11px]">Dle podlahové plochy z nastavení bytu</div>
+                  <div class="text-slate-400 text-xs">Dle podlahové plochy z nastavení bytu</div>
                 </div>
               </label>
             </div>
@@ -180,9 +180,9 @@
                     <div>
                       <div class="text-xs font-medium text-slate-200">
                         {{ r.name }}
-                        <span v-if="r.id === form.payerId" class="text-[10px] text-emerald-400 font-semibold ml-1">[Plátce]</span>
+                        <span v-if="r.id === form.payerId" class="text-xs text-emerald-400 font-semibold ml-1">[Plátce]</span>
                       </div>
-                      <div class="text-[10px] text-slate-400">{{ r.roomName }} ({{ r.roomAreaM2 }} m²)</div>
+                      <div class="text-xs text-slate-400">{{ r.roomName }} ({{ r.roomAreaM2 }} m²)</div>
                     </div>
                   </div>
                 </label>
@@ -192,7 +192,7 @@
                   <div class="text-xs font-mono font-bold text-slate-100">
                     {{ participantMap[r.id] ? Math.round(computedShares[r.id] || 0).toLocaleString('cs-CZ') + ' CZK' : 'Vyloučen' }}
                   </div>
-                  <div v-if="participantMap[r.id]" class="text-[10px] text-slate-400">
+                  <div v-if="participantMap[r.id]" class="text-xs text-slate-400">
                     {{ form.calculationKey === 'BY_AREA' ? `${r.areaSharePct} % plochy` : 'Rovný podíl' }}
                   </div>
                 </div>
@@ -206,7 +206,7 @@
                   <strong class="font-mono text-slate-200">{{ (form.totalAmount || 0).toLocaleString('cs-CZ') }} CZK</strong>
                 </span>
                 <span 
-                  class="font-semibold px-2 py-0.5 rounded text-[11px]"
+                  class="font-semibold px-2 py-0.5 rounded text-xs"
                   :class="isShareSumValid ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'"
                 >
                   {{ isShareSumValid ? '✓ Součet je v pořádku' : '⚠ Zvolte alespoň 1 osobu' }}
@@ -219,7 +219,7 @@
           <div class="space-y-3">
             <div class="flex items-center gap-2 pb-1 border-b border-slate-800">
               <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">3</span>
-              <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider">Příloha / Doklad o nákupu</h3>
+              <h3 class="text-sm font-semibold text-slate-200">Příloha / Doklad o nákupu</h3>
             </div>
 
             <!-- Dropzone simulator -->
@@ -236,7 +236,7 @@
                 </div>
                 <div class="text-left">
                   <div class="text-xs font-semibold text-emerald-300">{{ receiptFilename }}</div>
-                  <div class="text-[10px] text-slate-400">Digitalizovaný daňový doklad připojen (JPG, 412 KB)</div>
+                  <div class="text-xs text-slate-400">Digitalizovaný daňový doklad připojen (JPG, 412 KB)</div>
                 </div>
                 <button 
                   type="button" 
@@ -254,7 +254,7 @@
                 <div class="text-xs font-medium text-slate-300">
                   Přetáhněte sem soubor účtenky nebo <span class="text-emerald-400 font-semibold underline">vyberte z disku</span>
                 </div>
-                <div class="text-[11px] text-slate-500">
+                <div class="text-xs text-slate-400">
                   Podporované formáty: PDF, JPG, PNG (max. 10 MB)
                 </div>
               </div>

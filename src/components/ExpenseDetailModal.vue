@@ -22,7 +22,7 @@
                 class="text-xs font-semibold px-2 py-0.5 rounded"
                 :class="expense.status === 'UHRAZENO' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
               >
-                {{ expense.status }}
+                {{ EXPENSE_STATUS_LABELS[expense.status] }}
               </span>
             </div>
             <h2 id="modal-detail-title" class="text-lg font-bold text-white tracking-tight mt-1">
@@ -49,38 +49,38 @@
             <!-- Metadata Cards -->
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-850 border border-slate-800 text-xs">
               <div>
-                <span class="text-slate-400 block text-[11px]">Celková suma:</span>
+                <span class="text-slate-400 block text-xs">Celková suma:</span>
                 <span class="text-base font-bold text-emerald-400 font-mono">
                   {{ expense.totalAmount.toLocaleString('cs-CZ') }} CZK
                 </span>
               </div>
               <div>
-                <span class="text-slate-400 block text-[11px]">Plátce výdaje:</span>
+                <span class="text-slate-400 block text-xs">Plátce výdaje:</span>
                 <span class="font-semibold text-slate-200">{{ expense.payerName }}</span>
               </div>
               <div>
-                <span class="text-slate-400 block text-[11px]">Datum pořízení:</span>
+                <span class="text-slate-400 block text-xs">Datum pořízení:</span>
                 <span class="font-mono text-slate-200">{{ formatDate(expense.date) }}</span>
               </div>
               <div>
-                <span class="text-slate-400 block text-[11px]">Kategorie:</span>
+                <span class="text-slate-400 block text-xs">Kategorie:</span>
                 <span class="font-medium text-slate-300">{{ expense.category }}</span>
               </div>
               <div>
-                <span class="text-slate-400 block text-[11px]">Kalkulační klíč:</span>
+                <span class="text-slate-400 block text-xs">Kalkulační klíč:</span>
                 <span class="font-medium text-slate-300">
                   {{ expense.calculationKey === 'BY_AREA' ? 'Podle m² plochy' : 'Rovným dílem' }}
                 </span>
               </div>
               <div>
-                <span class="text-slate-400 block text-[11px]">Doklad:</span>
+                <span class="text-slate-400 block text-xs">Doklad:</span>
                 <span class="font-medium text-slate-300">{{ expense.receiptName || 'Bez přílohy' }}</span>
               </div>
             </div>
 
             <!-- Rozpad nákladů mezi spolubydlící -->
             <div class="space-y-2">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <h3 class="text-xs font-bold text-slate-400">
                 Rozpad podílů na jednotlivé členy bytu:
               </h3>
 
@@ -102,14 +102,14 @@
                     >
                       <td class="py-2.5 px-3 font-medium text-slate-200">
                         <span>{{ share.roommateName }}</span>
-                        <span v-if="share.roommateId === currentUser.id" class="text-emerald-400 text-[11px] ml-1.5">[Vy]</span>
+                        <span v-if="share.roommateId === currentUser.id" class="text-emerald-400 text-xs ml-1.5">[Vy]</span>
                       </td>
                       <td class="py-2.5 px-3 font-mono font-bold text-slate-100 text-right">
                         {{ Math.round(share.amount).toLocaleString('cs-CZ') }} CZK
                       </td>
                       <td class="py-2.5 px-3 text-center">
                         <span 
-                          class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                          class="px-2 py-0.5 rounded text-xs font-bold"
                           :class="[
                             share.status === 'PLÁTCE' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
                             share.status === 'UHRAZENO' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
@@ -117,28 +117,28 @@
                             'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                           ]"
                         >
-                          {{ share.status }}
+                          {{ EXPENSE_SHARE_STATUS_LABELS[share.status] }}
                         </span>
                       </td>
                       <td class="py-2.5 px-3 text-right">
-                        <span v-if="share.status === 'PLÁTCE'" class="text-[11px] text-slate-500">
-                          Zafinancoval
+                        <span v-if="share.status === 'PLÁTCE'" class="text-xs text-slate-400">
+                          Plátce – 0 Kč k doplacení
                         </span>
-                        <span v-else-if="share.status === 'UHRAZENO'" class="text-[11px] text-emerald-400">
+                        <span v-else-if="share.status === 'UHRAZENO'" class="text-xs text-emerald-400">
                           {{ share.settledDate || 'Uhrazeno' }}
                         </span>
-                        <span v-else-if="share.roommateId === currentUser.id" class="text-[11px] text-amber-400 font-semibold">
+                        <span v-else-if="share.roommateId === currentUser.id" class="text-xs text-amber-400 font-semibold">
                           Váš dluh k úhradě
                         </span>
                         <button
                           v-else-if="isMasterTenant || expense.payerId === currentUser.id"
                           @click="triggerReminder(share.roommateId)"
-                          class="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-medium transition-colors"
+                          class="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-colors"
                           title="Odeslat diskrétní notifikaci dlužníkovi"
                         >
                           Upomínka
                         </button>
-                        <span v-else class="text-[11px] text-slate-500">
+                        <span v-else class="text-xs text-slate-400">
                           Čeká na úhradu
                         </span>
                       </td>
@@ -149,13 +149,13 @@
             </div>
 
             <!-- Audit Trail -->
-            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
               <div>
-                <span class="text-slate-500">Záznam pořídil:</span>
+                <span class="text-slate-400">Záznam pořídil:</span>
                 <span class="font-semibold text-slate-300 ml-1">{{ expense.audit.createdBy }}</span>
               </div>
               <div>
-                <span class="text-slate-500">Čas pořízení:</span>
+                <span class="text-slate-400">Čas pořízení:</span>
                 <span class="font-mono text-slate-300 ml-1">{{ expense.audit.createdAt }}</span>
               </div>
             </div>
@@ -195,13 +195,13 @@
               <div class="bg-amber-50 text-slate-900 font-mono text-xs p-4 rounded-lg shadow-inner space-y-3 relative overflow-hidden">
                 <div class="text-center border-b border-dashed border-slate-400 pb-2">
                   <div class="font-bold text-sm tracking-widest uppercase">DM DROGERIE MARKT s.r.o.</div>
-                  <div class="text-[10px] text-slate-600">Thákurova 14, 160 00 Praha 6</div>
-                  <div class="text-[10px] text-slate-600">IČO: 12345678 • DIČ: CZ12345678</div>
-                  <div class="text-[10px] text-slate-500 mt-1">{{ expense.date }} 16:45:12</div>
+                  <div class="text-xs text-slate-600">Thákurova 14, 160 00 Praha 6</div>
+                  <div class="text-xs text-slate-600">IČO: 12345678 • DIČ: CZ12345678</div>
+                  <div class="text-xs text-slate-500 mt-1">{{ expense.date }} 16:45:12</div>
                 </div>
 
                 <!-- Items list on paper receipt -->
-                <div class="space-y-1 text-[11px] pt-1">
+                <div class="space-y-1 text-xs pt-1">
                   <div class="flex justify-between">
                     <span>Prací gel Ariel Sensitive</span>
                     <span class="font-bold">349 Kč</span>
@@ -233,7 +233,7 @@
                   <span>CELKEM K ÚHRADĚ:</span>
                   <span class="text-sm">{{ expense.totalAmount.toLocaleString('cs-CZ') }} CZK</span>
                 </div>
-                <div class="text-[9px] text-center text-slate-500 pt-2 border-t border-dashed border-slate-400">
+                <div class="text-xs text-center text-slate-500 pt-2 border-t border-dashed border-slate-400">
                   PLATBA KARTOU VISA: ************4821<br/>
                   DĚKUJEME ZA NÁKUP!
                 </div>
@@ -264,7 +264,7 @@
 
             <!-- Tab 2: Itemized breakdown -->
             <div v-else-if="activeTab === 'items'" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs space-y-3">
-              <div class="text-slate-400 text-[11px] mb-2 font-medium">
+              <div class="text-slate-400 text-xs mb-2 font-medium">
                 Položkový seznam z dokladu:
               </div>
               <div class="space-y-2">
@@ -275,7 +275,7 @@
                 >
                   <div>
                     <div class="font-medium text-slate-200">{{ item.name }}</div>
-                    <div class="text-[10px] text-slate-400">Počet kusů: {{ item.qty }} ks</div>
+                    <div class="text-xs text-slate-400">Počet kusů: {{ item.qty }} ks</div>
                   </div>
                   <div class="font-mono font-bold text-emerald-400 text-xs">
                     {{ item.price }} CZK
@@ -289,25 +289,25 @@
               <div class="font-bold text-slate-200 border-b border-slate-800 pb-1">
                 Kryptografická a systémová stopa záznamu
               </div>
-              <div class="space-y-1.5 text-[11px]">
+              <div class="space-y-1.5 text-xs">
                 <div class="flex justify-between">
-                  <span class="text-slate-500">ID záznamu:</span>
+                  <span class="text-slate-400">ID záznamu:</span>
                   <span class="font-mono text-slate-300">{{ expense.id }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-slate-500">Autorizace:</span>
+                  <span class="text-slate-400">Autorizace:</span>
                   <span class="text-emerald-400 font-medium">BcA. Tomáš Beránek (Správce)</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-slate-500">Čas zápisu:</span>
+                  <span class="text-slate-400">Čas zápisu:</span>
                   <span class="font-mono text-slate-300">{{ expense.audit.createdAt }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-slate-500">Status integrity:</span>
+                  <span class="text-slate-400">Status integrity:</span>
                   <span class="text-emerald-400 font-semibold">Ověřeno (SHA-256 match)</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-slate-500">Poslední synchronizace:</span>
+                  <span class="text-slate-400">Poslední synchronizace:</span>
                   <span class="font-mono text-slate-400">Před 2 minutami</span>
                 </div>
               </div>
@@ -347,7 +347,7 @@
           <div class="max-w-md w-full bg-amber-50 p-6 rounded-2xl shadow-2xl text-slate-900 font-mono text-sm space-y-4" @click.stop>
             <div class="flex justify-between items-center border-b pb-2">
               <span class="font-bold">DETAIL DOKLADU (LIGHTBOX)</span>
-              <button @click="isLightboxOpen = false" class="text-slate-500 hover:text-black font-bold p-1">✕</button>
+              <button @click="isLightboxOpen = false" class="text-slate-600 hover:text-black font-bold p-1">✕</button>
             </div>
             <div class="text-center font-bold text-base">DM DROGERIE MARKT</div>
             <div class="text-xs text-slate-600 text-center">Účtenka z pokladny č. 4</div>
@@ -381,6 +381,7 @@
 import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { Expense } from '../types'
+import { EXPENSE_SHARE_STATUS_LABELS, EXPENSE_STATUS_LABELS } from '../utils/labels'
 
 const { 
   selectedExpense, 

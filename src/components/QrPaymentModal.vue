@@ -52,7 +52,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <span>Standard SPAYD (ČR)</span>
               </div>
-              <p class="text-[11px] text-slate-400 max-w-[200px]">
+              <p class="text-xs text-slate-400 max-w-[200px]">
                 Naskenujte v aplikaci mobilního bankovnictví (ČS, Air Bank, KB, Fio, ČSOB...)
               </p>
             </div>
@@ -64,7 +64,7 @@
             <!-- Amount Highlight -->
             <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
               <div>
-                <span class="text-[11px] text-emerald-400/80 font-medium block">Částka k úhradě:</span>
+                <span class="text-xs text-emerald-400/80 font-medium block">Částka k úhradě:</span>
                 <span class="text-xl font-mono font-extrabold text-emerald-300">
                   {{ settlement.totalDebt.toLocaleString('cs-CZ') }},00 CZK
                 </span>
@@ -80,12 +80,12 @@
             <!-- Account Number -->
             <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
               <div>
-                <span class="text-slate-400 text-[10px] block">Číslo účtu příjemce:</span>
+                <span class="text-slate-400 text-xs block">Číslo účtu příjemce:</span>
                 <span class="font-mono font-bold text-slate-200">{{ settings.accountNumber.split(' ')[0] }}</span>
               </div>
               <button
                 @click="copyText(settings.accountNumber.split(' ')[0], 'Číslo účtu')"
-                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-[11px]"
+                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs"
               >
                 Kopírovat
               </button>
@@ -94,12 +94,12 @@
             <!-- IBAN -->
             <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
               <div>
-                <span class="text-slate-400 text-[10px] block">IBAN:</span>
+                <span class="text-slate-400 text-xs block">IBAN:</span>
                 <span class="font-mono text-slate-200">{{ settings.iban }}</span>
               </div>
               <button
                 @click="copyText(settings.iban, 'IBAN')"
-                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-[11px]"
+                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs"
               >
                 Kopírovat
               </button>
@@ -108,12 +108,12 @@
             <!-- Variable Symbol -->
             <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
               <div>
-                <span class="text-slate-400 text-[10px] block">Variabilní symbol:</span>
+                <span class="text-slate-400 text-xs block">Variabilní symbol:</span>
                 <span class="font-mono font-bold text-slate-200">{{ variableSymbol }}</span>
               </div>
               <button
                 @click="copyText(variableSymbol, 'Variabilní symbol')"
-                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-[11px]"
+                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs"
               >
                 Kopírovat
               </button>
@@ -122,21 +122,21 @@
             <!-- Message for recipient -->
             <div class="p-2.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs">
               <div class="min-w-0 pr-2">
-                <span class="text-slate-400 text-[10px] block">Zpráva pro příjemce:</span>
+                <span class="text-slate-400 text-xs block">Zpráva pro příjemce:</span>
                 <span class="font-mono text-slate-200 truncate block">{{ paymentMessage }}</span>
               </div>
               <button
                 @click="copyText(paymentMessage, 'Zpráva pro příjemce')"
-                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-[11px] shrink-0"
+                class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-colors text-xs shrink-0"
               >
                 Kopírovat
               </button>
             </div>
 
             <!-- Due Date info -->
-            <div class="text-[11px] text-slate-400 flex items-center justify-between px-1">
+            <div class="text-xs text-slate-400 flex items-center justify-between px-1">
               <span>Termín splatnosti:</span>
-              <span class="font-bold text-slate-200">10. 11. 2026</span>
+              <span class="font-bold text-slate-200">{{ dueDateLabel }}</span>
             </div>
 
           </div>
@@ -181,6 +181,17 @@ const qrCanvas = ref<HTMLCanvasElement | null>(null)
 
 const variableSymbol = '20261101'
 const paymentMessage = computed(() => `Spolubyt: Najem 11/2026 - ${settlement.value?.roommateName || ''}`)
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '—'
+  const parts = dateStr.split('-')
+  if (parts.length === 3) {
+    return `${parts[2]}. ${parts[1]}. ${parts[0]}`
+  }
+  return dateStr
+}
+
+const dueDateLabel = computed(() => formatDate(settlement.value?.dueDate || ''))
 
 /**
  * Strips Czech diacritics and non-ASCII characters to standard ASCII for SPAYD banking app compatibility.

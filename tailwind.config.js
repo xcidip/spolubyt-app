@@ -22,7 +22,11 @@ export default {
           dark: '#0f172a',
           card: '#1e293b',
           border: '#334155',
-          hover: '#283548',
+          hover: '#283548'
+        },
+        slate: {
+          750: '#243044',
+          850: '#172033'
         }
       },
       fontFamily: {

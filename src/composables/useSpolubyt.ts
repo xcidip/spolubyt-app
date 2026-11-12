@@ -518,6 +518,30 @@ export function useSpolubyt() {
     return cartItems.value.reduce((sum, i) => sum + (i.unitPrice * i.qty), 0)
   })
 
+  const unpurchasedCartItems = computed(() => {
+    return cartItems.value.filter(i => !i.isPurchased)
+  })
+
+  const cartRemainingCount = computed(() => {
+    return unpurchasedCartItems.value.reduce((sum, i) => sum + i.qty, 0)
+  })
+
+  const cartRemainingPrice = computed(() => {
+    return unpurchasedCartItems.value.reduce((sum, i) => sum + (i.unitPrice * i.qty), 0)
+  })
+
+  const purchasedCartCount = computed(() => {
+    return cartItems.value
+      .filter(i => i.isPurchased)
+      .reduce((sum, i) => sum + i.qty, 0)
+  })
+
+  const purchasedCartPrice = computed(() => {
+    return cartItems.value
+      .filter(i => i.isPurchased)
+      .reduce((sum, i) => sum + (i.unitPrice * i.qty), 0)
+  })
+
   const addCartItem = (item: { name: string; category: ExpenseCategory; unitPrice: number; qty: number }) => {
     if (!item.name.trim() || item.unitPrice <= 0 || item.qty <= 0) {
       showToast('Neplatné údaje', 'Vyplňte prosím název položky a kladnou cenu.', 'warning')
@@ -627,26 +651,39 @@ export function useSpolubyt() {
   }
 
   // Convert Cart to Expense
-  const convertCartToExpense = () => {
-    if (cartItems.value.length === 0) {
-      showToast('Košík je prázdný', 'Nejprve přidejte položky k nákupu.', 'warning')
+  const openCartConversion = (items: CartItem[], title: string) => {
+    if (items.length === 0) {
+      showToast('Košík je prázdný', 'Nejsou k dispozici žádné položky k převodu.', 'warning')
       return
     }
 
-    // Prepare payload and open EXP_ADD modal with prefilled receipt items!
-    const total = cartTotalPrice.value
+    const total = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0)
     openModal('EXP_ADD', {
-      title: 'Společný nákup ze seznamu (drogerie a úklid)',
+      title,
       totalAmount: total,
       category: 'Drogerie',
-      cartItemIds: cartItems.value.map(i => i.id),
-      items: cartItems.value.map(i => ({
+      cartItemIds: items.map(i => i.id),
+      items: items.map(i => ({
         id: i.id,
         name: i.name,
         price: i.unitPrice,
         qty: i.qty
       }))
     })
+  }
+
+  const convertCartToExpense = () => {
+    openCartConversion(
+      cartItems.value,
+      'Společný nákup ze seznamu (drogerie a úklid)'
+    )
+  }
+
+  const convertRemainingCartToExpense = () => {
+    openCartConversion(
+      unpurchasedCartItems.value,
+      'Společný nákup ze seznamu (zbývá nakoupit)'
+    )
   }
 
   // Energy / Meters
@@ -1036,18 +1073,37 @@ export function useSpolubyt() {
   })
 
   // Settings & Apartment configuration
-  const saveApartmentSettings = (newSettings: ApartmentSettings) => {
+  const saveApartmentSettings = (newSettings: ApartmentSettings): boolean => {
+    if (!isMasterTenant.value) {
+      showToast(
+        'Přístup odepřen',
+        'Kmenové údaje bytu a bankovní spojení může upravit pouze správce bytu.',
+        'warning'
+      )
+      return false
+    }
+
     settings.value = { ...newSettings }
     showToast(
       'Nastavení uloženo',
       'Kmenové údaje bytu, bankovní spojení a zálohy byly úspěšně aktualizovány.',
       'success'
     )
+    return true
   }
 
-  const updateRoommateArea = (roomId: string, newArea: number) => {
+  const updateRoommateArea = (roomId: string, newArea: number): boolean => {
+    if (!isMasterTenant.value) {
+      showToast(
+        'Přístup odepřen',
+        'Podlahovou výměru pokojů může upravit pouze správce bytu.',
+        'warning'
+      )
+      return false
+    }
+
     const target = roommates.value.find(r => r.id === roomId)
-    if (!target || newArea <= 0) return
+    if (!target || newArea <= 0) return false
 
     target.roomAreaM2 = newArea
     // Recalculate percentages
@@ -1061,6 +1117,7 @@ export function useSpolubyt() {
       `Pokoj uživatele ${target.name} má nyní ${newArea} m² (${target.areaSharePct} % plochy bytu).`,
       'info'
     )
+    return true
   }
 
   // Reset demo data
@@ -1172,11 +1229,17 @@ export function useSpolubyt() {
     cartItems,
     cartTotalCount,
     cartTotalPrice,
+    unpurchasedCartItems,
+    cartRemainingCount,
+    cartRemainingPrice,
+    purchasedCartCount,
+    purchasedCartPrice,
     addCartItem,
     updateCartItemQty,
     removeCartItem,
     clearCart,
     convertCartToExpense,
+    convertRemainingCartToExpense,
     convertCartItemToExpense,
     toggleCartItemPurchased,
 

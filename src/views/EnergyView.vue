@@ -8,14 +8,14 @@
           Energie a odečty měřidel
         </h1>
         <p class="text-xs text-slate-400 mt-0.5">
-          Zúčtovací rok: <strong class="text-slate-200">2026</strong> (zbývají 2 měsíce do ročního vyúčtování) • Další odečet: 30. 11. 2026
+          Zúčtovací rok: <strong class="text-slate-200">2026</strong> • Poslední odečet: <strong class="text-slate-200">{{ lastReadingDate }}</strong>
         </p>
       </div>
 
       <div class="flex items-center gap-2.5">
         <button
           @click="openModal('METER_ADD')"
-          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-102"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition-all hover:scale-105"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
@@ -27,67 +27,23 @@
 
     <!-- 4 Cards for Physical Meters -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      
-      <!-- Electricity -->
-      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden">
+      <div
+        v-for="meter in meterCards"
+        :key="meter.type"
+        class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden"
+      >
         <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span class="font-bold uppercase tracking-wider">Elektřina (kWh)</span>
-          <span class="text-amber-400 font-bold">⚡</span>
+          <span class="font-bold">{{ meter.label }} ({{ meter.unit }})</span>
+          <span :class="meter.color" class="font-bold">{{ meter.icon }}</span>
         </div>
         <div class="text-2xl font-mono font-extrabold text-white">
-          {{ latestMeters['ELEKTŘINA']?.value.toLocaleString('cs-CZ') || '14 820' }} kWh
+          {{ latestMeters[meter.type]?.value.toLocaleString('cs-CZ') || '—' }} {{ meter.unit }}
         </div>
         <div class="text-xs text-emerald-400 mt-2 flex items-center justify-between font-mono">
-          <span>+{{ latestMeters['ELEKTŘINA']?.delta || 185 }} kWh za měsíc</span>
-          <span class="text-[10px] text-slate-500 font-sans">31. 10.</span>
+          <span>{{ latestMeters[meter.type] ? `+${latestMeters[meter.type].delta} ${meter.unit} za měsíc` : 'Bez odečtu' }}</span>
+          <span class="text-xs text-slate-400 font-sans">{{ latestMeters[meter.type] ? formatDate(latestMeters[meter.type].date) : '—' }}</span>
         </div>
       </div>
-
-      <!-- Gas -->
-      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span class="font-bold uppercase tracking-wider">Plyn (m³)</span>
-          <span class="text-sky-400 font-bold">🔥</span>
-        </div>
-        <div class="text-2xl font-mono font-extrabold text-white">
-          {{ latestMeters['PLYN']?.value.toLocaleString('cs-CZ') || '3 410' }} m³
-        </div>
-        <div class="text-xs text-emerald-400 mt-2 flex items-center justify-between font-mono">
-          <span>+{{ latestMeters['PLYN']?.delta || 28 }} m³ za měsíc</span>
-          <span class="text-[10px] text-slate-500 font-sans">31. 10.</span>
-        </div>
-      </div>
-
-      <!-- Cold Water -->
-      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span class="font-bold uppercase tracking-wider">Studená voda (m³)</span>
-          <span class="text-blue-400 font-bold">💧</span>
-        </div>
-        <div class="text-2xl font-mono font-extrabold text-white">
-          {{ latestMeters['STUDENÁ_VODA']?.value.toLocaleString('cs-CZ') || '284' }} m³
-        </div>
-        <div class="text-xs text-emerald-400 mt-2 flex items-center justify-between font-mono">
-          <span>+{{ latestMeters['STUDENÁ_VODA']?.delta || 6 }} m³ za měsíc</span>
-          <span class="text-[10px] text-slate-500 font-sans">31. 10.</span>
-        </div>
-      </div>
-
-      <!-- Hot Water -->
-      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg relative overflow-hidden">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span class="font-bold uppercase tracking-wider">Teplá voda (TUV)</span>
-          <span class="text-rose-400 font-bold">♨</span>
-        </div>
-        <div class="text-2xl font-mono font-extrabold text-white">
-          {{ latestMeters['TEPLÁ_VODA']?.value.toLocaleString('cs-CZ') || '142' }} m³
-        </div>
-        <div class="text-xs text-emerald-400 mt-2 flex items-center justify-between font-mono">
-          <span>+{{ latestMeters['TEPLÁ_VODA']?.delta || 4 }} m³ za měsíc</span>
-          <span class="text-[10px] text-slate-500 font-sans">31. 10.</span>
-        </div>
-      </div>
-
     </div>
 
     <!-- Chart & Prediction Grid -->
@@ -98,8 +54,8 @@
         
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-800">
           <div>
-            <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
-              Monitoring spotřeby v čase (Měsíční trendy)
+            <h2 class="text-sm font-bold text-slate-100">
+              Monitoring spotřeby v čase (měsíční trendy)
             </h2>
             <p class="text-xs text-slate-400">
               Porovnání reálné spotřeby vůči fixní hranici měsíčních záloh
@@ -121,18 +77,30 @@
           </div>
         </div>
 
-        <!-- SVG Chart container -->
-        <div class="h-64 w-full flex flex-col justify-end pt-4 pb-2">
-          
+        <!-- Accessible chart with visible scale and table fallback -->
+        <div class="h-64 w-full flex flex-col justify-end pt-4 pb-2" role="img" :aria-label="chartAriaLabel">
+          <div class="flex justify-between px-4 text-xs text-slate-400 pb-1">
+            <span>0</span>
+            <span>{{ Math.round(currentConfig.maxScale / 2) }}</span>
+            <span>{{ currentConfig.maxScale }} {{ currentConfig.unit }}</span>
+          </div>
+
           <div class="relative flex-1 flex items-end justify-between gap-4 px-4 border-b border-l border-slate-700">
-            
+            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none" aria-hidden="true">
+              <div class="border-t border-slate-700/40"></div>
+              <div class="border-t border-slate-700/40"></div>
+              <div class="border-t border-slate-700/40"></div>
+              <div class="border-t border-slate-700/40"></div>
+              <div class="border-t border-slate-700/40"></div>
+            </div>
+
             <!-- Reference Allowance line (Zálohová hranice) -->
             <div 
               class="absolute left-0 right-0 border-b border-dashed border-amber-400/80 flex items-center justify-end pr-2 z-20 transition-opacity duration-200 pointer-events-auto cursor-default before:content-[''] before:absolute before:-top-2.5 before:-bottom-2.5 before:left-0 before:right-0"
               :class="hasValueAboveAllowance ? 'opacity-40 hover:opacity-100' : 'opacity-100'"
               :style="{ bottom: `${(currentConfig.allowance / currentConfig.maxScale) * 100}%` }"
             >
-              <span class="text-[10px] font-mono font-bold text-amber-300 bg-slate-900/80 px-2 py-0.5 rounded border border-amber-400/50 shadow-md backdrop-blur-sm whitespace-nowrap">
+              <span class="text-xs font-mono font-bold text-amber-300 bg-slate-900/80 px-2 py-0.5 rounded border border-amber-400/50 shadow-md backdrop-blur-sm whitespace-nowrap">
                 Zálohová hranice: {{ currentConfig.allowance }} {{ currentConfig.unit }}
               </span>
             </div>
@@ -141,16 +109,16 @@
             <div 
               v-for="bar in chartData" 
               :key="bar.month"
-              class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
+              class="flex-1 flex flex-col items-center h-full justify-end relative"
+              :title="`${bar.month}: ${bar.value} ${currentConfig.unit}`"
+              aria-hidden="true"
             >
-              <!-- Bar value tooltip on hover -->
-              <span class="text-[10px] font-mono text-slate-300 mb-1 group-hover:text-emerald-400 font-bold transition-all group-hover:scale-110 group-hover:z-30 relative">
+              <span class="text-xs font-mono text-slate-300 mb-1 font-bold relative">
                 {{ bar.value }}
               </span>
 
-              <!-- Visual Bar -->
               <div 
-                class="w-full max-w-[42px] rounded-t-lg transition-all duration-300 group-hover:opacity-90 relative"
+                class="w-full max-w-[42px] rounded-t-lg transition-all duration-300 relative"
                 :class="bar.value > currentConfig.allowance ? 'bg-gradient-to-t from-amber-600 to-amber-400' : 'bg-gradient-to-t from-emerald-600 to-teal-400'"
                 :style="{ height: `${(bar.value / currentConfig.maxScale) * 100}%` }"
               ></div>
@@ -159,12 +127,25 @@
           </div>
 
           <!-- X Axis Labels -->
-          <div class="flex items-center justify-between gap-4 px-4 pt-2 text-[11px] font-mono text-slate-400">
+          <div class="flex items-center justify-between gap-4 px-4 pt-2 text-xs font-mono text-slate-400">
             <span v-for="bar in chartData" :key="bar.month" class="flex-1 text-center">
               {{ bar.month }}
             </span>
           </div>
 
+          <table class="sr-only">
+            <caption>Měsíční spotřeba – {{ activeChartMedium }} ({{ currentConfig.unit }})</caption>
+            <thead>
+              <tr><th>Měsíc</th><th>Spotřeba</th><th>Zálohová hranice</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="bar in chartData" :key="bar.month">
+                <td>{{ bar.month }}</td>
+                <td>{{ bar.value }} {{ currentConfig.unit }}</td>
+                <td>{{ currentConfig.allowance }} {{ currentConfig.unit }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
@@ -178,7 +159,7 @@
               <span>Nad zálohovou hranicí</span>
             </span>
           </div>
-          <span class="font-mono text-[11px] text-slate-400">
+          <span class="font-mono text-xs text-slate-400">
             Záloha: <strong class="text-amber-300 font-semibold">{{ currentConfig.allowance }} {{ currentConfig.unit }}</strong> • Jednotky: {{ currentConfig.unit }}
           </span>
         </div>
@@ -190,7 +171,7 @@
         
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
+            <h2 class="text-sm font-bold text-slate-100">
               Predikce ročního vyúčtování
             </h2>
             <span 
@@ -216,14 +197,14 @@
 
           <!-- Expected Outcome Card -->
           <div class="p-4 rounded-xl bg-slate-850 border border-slate-800 space-y-2">
-            <div class="text-[11px] text-slate-400">Očekávaný stav k 31. 12. 2026:</div>
+            <div class="text-xs text-slate-400">Očekávaný stav k 31. 12. 2026:</div>
             <div 
               class="text-xl font-mono font-extrabold"
               :class="annualEnergyPrediction.isSurplus ? 'text-emerald-400' : 'text-rose-400'"
             >
               {{ annualEnergyPrediction.isSurplus ? 'ODHADOVANÝ PŘEPLATEK' : 'ODHADOVANÝ NEDOPLATEK' }} {{ annualEnergyPrediction.formattedDelta }}
             </div>
-            <div class="text-[11px] text-slate-400">
+            <div class="text-xs text-slate-400">
               {{ annualEnergyPrediction.isSurplus ? 'Předpokládaná vratka na účet správce bytu.' : 'Předpokládaný nedoplatek k rozpočítání mezi spolubydlící.' }}
             </div>
           </div>
@@ -286,14 +267,15 @@
     <!-- Meter Readings History Table -->
     <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
+        <h2 class="text-sm font-bold text-slate-100">
           Historie zaznamenaných odečtů měřidel
         </h2>
         <span class="text-xs text-slate-400">Archiv fyzických stavů počítadel</span>
       </div>
 
-      <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-850">
-        <table class="w-full text-left text-xs">
+      <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" aria-label="Historie odečtů měřidel">
+        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
+        <table class="w-full min-w-[760px] text-left text-xs">
           <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
             <tr>
               <th class="py-2.5 px-3">Datum odečtu</th>
@@ -307,7 +289,7 @@
           <tbody class="divide-y divide-slate-800">
             <tr v-for="m in meters" :key="m.id" class="hover:bg-slate-800/60 transition-colors">
               <td class="py-2.5 px-3 font-mono text-slate-400">{{ formatDate(m.date) }}</td>
-              <td class="py-2.5 px-3 font-semibold text-slate-200">{{ m.type }}</td>
+              <td class="py-2.5 px-3 font-semibold text-slate-200">{{ METER_TYPE_LABELS[m.type] }}</td>
               <td class="py-2.5 px-3 font-mono font-bold text-slate-100">
                 {{ m.value.toLocaleString('cs-CZ') }} {{ m.unit }}
               </td>
@@ -315,7 +297,15 @@
                 +{{ m.delta }} {{ m.unit }}
               </td>
               <td class="py-2.5 px-3 text-slate-300">{{ m.recordedBy }}</td>
-              <td class="py-2.5 px-3 text-slate-400 text-[11px]">{{ m.note || '—' }}</td>
+              <td class="py-2.5 px-3 text-slate-400 text-xs">{{ m.note || '—' }}</td>
+            </tr>
+            <tr v-if="meters.length === 0">
+              <td colspan="6" class="py-10 text-center text-slate-400">
+                <div class="space-y-2">
+                  <p class="font-medium text-slate-300">Zatím nejsou zaznamenány žádné odečty.</p>
+                  <button @click="openModal('METER_ADD')" class="text-xs text-emerald-400 underline font-semibold">Zadat první odečet</button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -329,10 +319,26 @@
 import { ref, computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { ENERGY_MONTHLY_HISTORY } from '../data/mockData'
+import { METER_TYPE_LABELS } from '../utils/labels'
 
 const { meters, latestMeters, openModal, annualEnergyPrediction } = useSpolubyt()
 
 const activeChartMedium = ref('Elektřina')
+
+const meterCards = computed(() => [
+  { type: 'ELEKTŘINA' as const, label: 'Elektřina', unit: 'kWh', icon: '⚡', color: 'text-amber-400' },
+  { type: 'PLYN' as const, label: 'Plyn', unit: 'm³', icon: '🔥', color: 'text-sky-400' },
+  { type: 'STUDENÁ_VODA' as const, label: 'Studená voda', unit: 'm³', icon: '💧', color: 'text-blue-400' },
+  { type: 'TEPLÁ_VODA' as const, label: 'Teplá voda (TUV)', unit: 'm³', icon: '♨', color: 'text-rose-400' }
+])
+
+const lastReadingDate = computed(() => {
+  const latest = meters.value.reduce((latestDate, meter) => {
+    if (!latestDate) return meter.date
+    return new Date(meter.date) > new Date(latestDate) ? meter.date : latestDate
+  }, '')
+  return latest ? formatDate(latest) : '—'
+})
 
 interface MediumConfig {
   unit: string
@@ -386,6 +392,13 @@ const chartData = computed(() => {
 
 const hasValueAboveAllowance = computed(() => {
   return chartData.value.some(bar => bar.value > currentConfig.value.allowance)
+})
+
+const chartAriaLabel = computed(() => {
+  const values = chartData.value
+    .map(bar => `${bar.month}: ${bar.value} ${currentConfig.value.unit}`)
+    .join(', ')
+  return `Měsíční spotřeba ${activeChartMedium.value} v ${currentConfig.value.unit}. Zálohová hranice ${currentConfig.value.allowance} ${currentConfig.value.unit}. Hodnoty: ${values}.`
 })
 
 const formatDate = (dateStr: string) => {

@@ -4,7 +4,7 @@
     <!-- Top Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-1" :class="isMasterTenant ? 'text-emerald-400' : 'text-sky-400'">
+        <div class="flex items-center gap-2 text-xs font-semibold mb-1" :class="isMasterTenant ? 'text-emerald-400' : 'text-sky-400'">
           <span class="w-2 h-2 rounded-full animate-pulse" :class="isMasterTenant ? 'bg-emerald-500' : 'bg-sky-500'"></span>
           <span>{{ isMasterTenant ? 'Správa plateb a vyrovnání správce' : `Přehled vyrovnání uživatele ${currentUser.name}` }}</span>
         </div>
@@ -40,7 +40,7 @@
       
       <!-- Card 1: Receivables (Manager) vs My Personal Debt (Member) -->
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">
-        <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+        <div class="text-xs font-bold text-slate-400 mb-1">
           {{ isMasterTenant ? 'Celkové pohledávky za bytem' : 'Můj celkový dluh správci' }}
         </div>
         <div 
@@ -57,10 +57,10 @@
             {{ settlementDebtorsSummary }}
           </template>
           <template v-else-if="isCurrentUserOverdue">
-            <span class="text-rose-400 font-semibold">⚠️ 4 dny po splatnosti (termín byl 01. 11. 2026)</span>
+            <span class="text-rose-400 font-semibold">⚠️ {{ currentUserOverdueText }} (termín byl {{ currentUserDueDateLabel }})</span>
           </template>
           <template v-else-if="currentUserDebt > 0">
-            <span class="text-amber-400">Termín splatnosti: 10. 11. 2026 (zbývá 5 dní)</span>
+            <span class="text-amber-400">Termín splatnosti: {{ currentUserDueDateLabel }}</span>
           </template>
           <template v-else>
             <span class="text-emerald-400 font-medium">✓ Všechny závazky máte řádně uhrazeny</span>
@@ -70,7 +70,7 @@
 
       <!-- Card 2: My Obligations (Manager) vs My Receivables from others (Member) -->
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">
-        <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+        <div class="text-xs font-bold text-slate-400 mb-1">
           {{ isMasterTenant ? 'Moje závazky vůči bytu' : 'Moje pohledávky vůči ostatním' }}
         </div>
         <div class="text-2xl font-mono font-extrabold text-white">
@@ -91,7 +91,7 @@
 
       <!-- Card 3: Payment Discipline -->
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">
-        <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+        <div class="text-xs font-bold text-slate-400 mb-1">
           {{ isMasterTenant ? 'Stav platební morálky bytu' : 'Stav mé platební morálky' }}
         </div>
         <div 
@@ -102,7 +102,7 @@
           ]"
         >
           <template v-if="isMasterTenant">
-            {{ overdueDebtorsCount > 0 ? `${overdueDebtorsCount} z 3 členů po splatnosti` : 'Všichni členové bez prodlení' }}
+            {{ overdueDebtorsCount > 0 ? `${overdueDebtorsCount} z ${Math.max(roommates.length - 1, 0)} členů po splatnosti` : 'Všichni členové bez prodlení' }}
           </template>
           <template v-else-if="isCurrentUserOverdue">
             V prodlení (Po splatnosti!)
@@ -116,13 +116,13 @@
         </div>
         <div class="text-xs text-slate-400 mt-2">
           <template v-if="isMasterTenant">
-            Termín splatnosti nájmu: <strong>10. 11. 2026</strong>
+            Termín splatnosti nájmu: <strong>{{ rentDueDateLabel }}</strong>
           </template>
           <template v-else-if="isCurrentUserOverdue">
             Prosíme o bezodkladnou úhradu na účet správce
           </template>
           <template v-else-if="currentUserDebt > 0">
-            Termín úhrady správci: <strong>10. 11. 2026</strong>
+            Termín úhrady správci: <strong>{{ currentUserDueDateLabel }}</strong>
           </template>
           <template v-else>
             Platba za listopad byla v pořádku zaúčtována
@@ -135,7 +135,7 @@
     <!-- Settlement Cards for Each Roommate -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider">
+        <h2 class="text-sm font-bold text-slate-200">
           {{ isMasterTenant ? 'Přehled platebních předpisů členů domácnosti:' : 'Platební předpisy v domácnosti:' }}
         </h2>
         <span class="text-xs text-slate-400">Automatický propočet dle m² a spotřeby</span>
@@ -156,7 +156,7 @@
           <!-- Current user badge banner -->
           <div 
             v-if="s.roommateId === currentUser.id"
-            class="absolute top-0 right-0 bg-emerald-500 text-slate-950 text-[10px] font-extrabold px-3 py-0.5 rounded-bl-xl shadow uppercase tracking-wider"
+            class="absolute top-0 right-0 bg-emerald-500 text-slate-950 text-xs font-extrabold px-3 py-0.5 rounded-bl-xl shadow"
           >
             Váš platební předpis (Vy)
           </div>
@@ -178,20 +178,20 @@
                   
                   <span 
                     v-if="s.roommateId === managerRoommate.id"
-                    class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                   >
                     Správce bytu
                   </span>
 
                   <span 
-                    class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+                    class="px-2 py-0.5 rounded text-xs font-bold"
                     :class="[
                       s.status === 'VYROVNÁNO' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
                       s.status === 'PO_SPLATNOSTI' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse' :
                       'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                     ]"
                   >
-                    {{ s.status === 'PO_SPLATNOSTI' ? 'PO SPLATNOSTI (4 DNY)' : (s.status === 'VYROVNÁNO' ? 'VYROVNÁNO - V POŘÁDKU' : 'PŘED SPLATNOSTÍ') }}
+                    {{ s.status === 'PO_SPLATNOSTI' ? `Po splatnosti (${s.daysOverdue} dní)` : (s.status === 'VYROVNÁNO' ? 'Vyrovnáno – v pořádku' : SETTLEMENT_STATUS_LABELS[s.status]) }}
                   </span>
                 </div>
 
@@ -201,17 +201,17 @@
 
                 <!-- Cost Breakdown text -->
                 <div v-if="s.totalDebt > 0" class="text-xs text-slate-300 mt-2 flex flex-wrap items-center gap-2 font-mono">
-                  <span class="bg-slate-800 px-2 py-0.5 rounded text-[11px] border border-slate-700">Nájem: {{ s.breakdown.rent }} Kč</span>
-                  <span class="bg-slate-800 px-2 py-0.5 rounded text-[11px] border border-slate-700">Energie: {{ s.breakdown.energy }} Kč</span>
-                  <span v-if="s.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded text-[11px] border border-slate-700">WiFi: {{ s.breakdown.wifi }} Kč</span>
-                  <span v-if="s.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded text-[11px] border border-slate-700">Drogerie: {{ s.breakdown.drogerie }} Kč</span>
+                  <span class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">Nájem: {{ s.breakdown.rent }} Kč</span>
+                  <span class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">Energie: {{ s.breakdown.energy }} Kč</span>
+                  <span v-if="s.breakdown.wifi" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">WiFi: {{ s.breakdown.wifi }} Kč</span>
+                  <span v-if="s.breakdown.drogerie" class="bg-slate-800 px-2 py-0.5 rounded text-xs border border-slate-700">Drogerie: {{ s.breakdown.drogerie }} Kč</span>
                 </div>
                 <div v-else class="text-xs text-emerald-400/90 mt-1">
                   {{ s.roommateId === managerRoommate.id ? 'Správce bytu – vede účet pro nájem a zálohy.' : 'Všechny pohledávky za měsíc Listopad 2026 byly kompletně vypořádány převodem na účet.' }}
                 </div>
 
                 <!-- Upomínka Timestamp info -->
-                <div v-if="s.lastReminderSent" class="text-[11px] text-amber-400/90 mt-2 flex items-center gap-1.5">
+                <div v-if="s.lastReminderSent" class="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -224,7 +224,7 @@
             <div class="flex flex-col sm:flex-row lg:flex-col sm:items-center lg:items-end justify-between gap-3 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-800">
               
               <div class="text-left sm:text-right">
-                <span class="text-[11px] text-slate-400 block">Dlužná částka celkem:</span>
+                <span class="text-xs text-slate-400 block">Dlužná částka celkem:</span>
                 <span 
                   class="text-2xl font-mono font-extrabold"
                   :class="s.totalDebt > 0 ? (s.status === 'PO_SPLATNOSTI' ? 'text-rose-400' : 'text-amber-400') : 'text-emerald-400'"
@@ -290,14 +290,15 @@
     <!-- Debt Matrix Summary -->
     <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
       <div class="flex items-center justify-between">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">
+        <h3 class="text-xs font-bold text-slate-400">
           Matice vzájemného vyrovnání všech členů bytu:
         </h3>
-        <span class="text-xs text-slate-500">Zvýrazněn váš řádek</span>
+        <span class="text-xs text-slate-400">Zvýrazněn váš řádek</span>
       </div>
 
-      <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-850">
-        <table class="w-full text-left text-xs">
+      <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" aria-label="Matice vzájemného vyrovnání">
+        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
+        <table class="w-full min-w-[760px] text-left text-xs">
           <thead class="bg-slate-800/80 text-slate-400 border-b border-slate-700">
             <tr>
               <th class="py-2.5 px-3">Člen bytu</th>
@@ -316,8 +317,8 @@
             >
               <td class="py-2.5 px-3 text-slate-200">
                 <span class="font-semibold">{{ s.roommateName }}</span>
-                <span v-if="s.roommateId === currentUser.id" class="text-emerald-400 ml-1.5 text-[11px]">[Vy]</span>
-                <span v-else-if="s.roommateId === managerRoommate.id" class="text-slate-400 ml-1.5 text-[11px]">[Správce]</span>
+                <span v-if="s.roommateId === currentUser.id" class="text-emerald-400 ml-1.5 text-xs">[Vy]</span>
+                <span v-else-if="s.roommateId === managerRoommate.id" class="text-slate-400 ml-1.5 text-xs">[Správce]</span>
               </td>
               <td class="py-2.5 px-3 font-mono text-slate-300">{{ s.breakdown.rent }} CZK</td>
               <td class="py-2.5 px-3 font-mono text-slate-300">{{ s.breakdown.energy }} CZK</td>
@@ -327,10 +328,10 @@
               </td>
               <td class="py-2.5 px-3 text-center">
                 <span 
-                  class="px-2 py-0.5 rounded text-[10px] font-bold"
+                  class="px-2 py-0.5 rounded text-xs font-bold"
                   :class="s.status === 'VYROVNÁNO' ? 'bg-emerald-500/20 text-emerald-300' : (s.status === 'PO_SPLATNOSTI' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300')"
                 >
-                  {{ s.status }}
+                  {{ SETTLEMENT_STATUS_LABELS[s.status] }}
                 </span>
               </td>
             </tr>
@@ -346,16 +347,19 @@
 import { computed } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { DebtSettlement } from '../types'
+import { SETTLEMENT_STATUS_LABELS } from '../utils/labels'
 
 const { 
   currentUser,
   managerRoommate,
   isMasterTenant,
+  currentUserSettlement,
   currentUserDebt,
   isCurrentUserOverdue,
   currentUserReceivables,
   settlements, 
   settings, 
+  roommates,
   totalReceivables, 
   debtorsCount, 
   overdueDebtorsCount, 
@@ -385,7 +389,7 @@ const allDisplaySettlements = computed<DebtSettlement[]>(() => {
     roomAreaM2: managerRoommate.value.roomAreaM2,
     areaSharePct: managerRoommate.value.areaSharePct,
     totalDebt: 0,
-    breakdown: { rent: 5600, energy: 1720, wifi: 0, drogerie: 0 },
+    breakdown: { rent: 0, energy: 0, wifi: 0, drogerie: 0 },
     dueDate: '2026-11-10',
     daysOverdue: 0,
     status: 'VYROVNÁNO'
@@ -410,4 +414,40 @@ const getRoommateColor = (roommateId: string) => {
 const showExportToast = () => {
   showToast('Generování PDF', 'Měsíční protokol vyrovnání byl vygenerován a připraven k tisku.', 'success')
 }
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  const parts = dateStr.split('-')
+  if (parts.length === 3) {
+    return `${parts[2]}. ${parts[1]}.`
+  }
+  return dateStr
+}
+
+const currentUserDueDateLabel = computed(() => {
+  return currentUserSettlement.value?.dueDate
+    ? formatDate(currentUserSettlement.value.dueDate)
+    : '—'
+})
+
+const currentUserDaysOverdue = computed(() => {
+  return currentUserSettlement.value?.daysOverdue || 0
+})
+
+const currentUserOverdueText = computed(() => {
+  const days = currentUserDaysOverdue.value
+  if (days === 1) return '1 den po splatnosti'
+  if (days >= 2 && days <= 4) return `${days} dny po splatnosti`
+  return `${days} dní po splatnosti`
+})
+
+const rentDueDate = computed(() => {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), settings.value.dueDayOfMonth)
+})
+
+const rentDueDateLabel = computed(() => {
+  const d = rentDueDate.value
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`
+})
 </script>

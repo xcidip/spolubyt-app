@@ -4,14 +4,14 @@
     <!-- Top Header & Role Indicator -->
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
       <div>
-        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-1" :class="isMasterTenant ? 'text-emerald-400' : 'text-sky-400'">
+        <div class="flex items-center gap-2 text-xs font-semibold mb-1" :class="isMasterTenant ? 'text-emerald-400' : 'text-sky-400'">
           <span class="w-2 h-2 rounded-full animate-pulse" :class="isMasterTenant ? 'bg-emerald-500' : 'bg-sky-500'"></span>
           <span>{{ isMasterTenant ? 'Správa úklidových směn (Správce bytu)' : `Úklidové směny spolubydlícího (${currentUser.role})` }}</span>
         </div>
         <h1 class="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
           <span>Úklidové směny a rotace</span>
           <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold font-mono">
-            4 zóny • 4 spolubydlící
+            {{ cleaningTaskDefs.length }} zóny • {{ roommates.length }} spolubydlící
           </span>
         </h1>
         <p class="text-xs text-slate-400 mt-1">
@@ -33,8 +33,8 @@
         {{ isMasterTenant ? '🛡️' : '🔒' }}
       </div>
       <div class="text-xs space-y-1">
-        <div class="font-bold uppercase tracking-wider text-[11px]">
-          {{ isMasterTenant ? 'Oprávnění správce bytu (Plný přístup)' : 'Oprávnění člena bytu (Omezený přístup)' }}
+        <div class="font-bold text-xs">
+          {{ isMasterTenant ? 'Oprávnění správce bytu (plný přístup)' : 'Oprávnění člena bytu (omezený přístup)' }}
         </div>
         <p v-if="isMasterTenant" class="text-slate-300">
           Jste přihlášen jako <strong>{{ currentUser.name }} (Správce bytu)</strong>. Můžete potvrdit, schválit nebo zrušit 
@@ -52,7 +52,7 @@
       v-if="pendingIncomingSwaps.length > 0"
       class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/60 via-purple-900/40 to-slate-900 border border-purple-500/40 shadow-xl space-y-3"
     >
-      <div class="flex items-center gap-2 text-xs font-bold text-purple-300 uppercase tracking-wider">
+      <div class="flex items-center gap-2 text-xs font-bold text-purple-300">
         <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse"></span>
         <span>Žádost o výměnu směny k vyřízení</span>
       </div>
@@ -113,7 +113,7 @@
               {{ currentWeekLabel }}
             </span>
             <span 
-              class="text-[11px] font-semibold px-2 py-0.5 rounded-md border"
+              class="text-xs font-semibold px-2 py-0.5 rounded-md border"
               :class="[
                 selectedCleaningWeek === currentWeekNumber 
                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
@@ -151,8 +151,12 @@
             <div class="text-xs font-semibold text-slate-300">
               Splněno: <span class="text-white font-mono font-bold">{{ completedCount }}/{{ activeShifts.length }}</span> směn
             </div>
-            <div class="text-[11px] text-slate-400">
-              {{ completedCount === activeShifts.length ? 'Všechny zóny uklizeny 👏' : `${activeShifts.length - completedCount} zóny zbývají uklidit` }}
+            <div class="text-xs text-slate-400">
+              {{ activeShifts.length === 0
+                ? 'Pro tento týden nejsou naplánované směny.'
+                : (completedCount === activeShifts.length
+                  ? 'Všechny zóny uklizeny 👏'
+                  : `${activeShifts.length - completedCount} zón zbývá uklidit`) }}
             </div>
           </div>
           <div class="w-24 sm:w-32 bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700/60 p-0.5">
@@ -166,7 +170,7 @@
     </div>
 
     <!-- 4 Duty Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div v-if="activeShifts.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div 
         v-for="taskDef in cleaningTaskDefs"
         :key="taskDef.key"
@@ -194,7 +198,7 @@
                 <span v-else-if="taskDef.key === 'TRASH'">♻️</span>
               </div>
               <div class="min-w-0">
-                <div class="text-[11px] uppercase tracking-wider font-bold" :class="getTitleColor(taskDef.key)">
+                <div class="text-xs font-bold" :class="getTitleColor(taskDef.key)">
                   {{ taskDef.shortTitle }}
                 </div>
                 <h3 class="text-base font-bold text-white tracking-tight truncate">
@@ -263,12 +267,12 @@
                   </span>
                   <span 
                     v-if="isMyShift(getShiftForTask(taskDef.key))"
-                    class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500 text-slate-950 uppercase tracking-wider"
+                    class="text-xs font-bold px-2 py-0.5 rounded bg-amber-500 text-slate-950"
                   >
                     Moje směna
                   </span>
                 </div>
-                <div class="text-[11px] text-slate-400">
+                <div class="text-xs text-slate-400">
                   {{ getRoommate(getShiftForTask(taskDef.key)?.roommateId)?.roomName }} • 
                   {{ getRoommate(getShiftForTask(taskDef.key)?.roommateId)?.role }}
                 </div>
@@ -277,10 +281,10 @@
 
             <!-- Due date / Done timestamp -->
             <div class="text-right shrink-0">
-              <div v-if="getShiftForTask(taskDef.key)?.isCompleted" class="text-[11px] text-emerald-400 font-mono">
+              <div v-if="getShiftForTask(taskDef.key)?.isCompleted" class="text-xs text-emerald-400 font-mono">
                 {{ getShiftForTask(taskDef.key)?.completedAt }}
               </div>
-              <div v-else class="text-[11px] text-slate-400">
+              <div v-else class="text-xs text-slate-400">
                 Termín: <strong class="text-slate-300">Do neděle</strong>
               </div>
             </div>
@@ -304,7 +308,7 @@
               <button
                 v-if="canCancelSwap(getShiftForTask(taskDef.key))"
                 @click="cancelShiftSwap(getShiftForTask(taskDef.key)!.id)"
-                class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 transition-colors"
                 title="Odvolat žádost o výměnu směny"
               >
                 Zrušit žádost
@@ -314,7 +318,7 @@
             <div v-if="getShiftForTask(taskDef.key)?.swapRequest?.note" class="text-xs text-slate-300 italic">
               Poznámka: "{{ getShiftForTask(taskDef.key)?.swapRequest?.note }}"
             </div>
-            <div class="text-[11px] text-slate-400 flex items-center gap-2">
+            <div class="text-xs text-slate-400 flex items-center gap-2">
               <span>Žadatel: <strong class="text-slate-200">{{ getShiftForTask(taskDef.key)?.swapRequest?.requestedByRoommateName }}</strong></span>
               <span>•</span>
               <span>Podáno: {{ getShiftForTask(taskDef.key)?.swapRequest?.createdAt }}</span>
@@ -345,7 +349,7 @@
 
           <!-- Subtasks Checklist -->
           <div class="space-y-1.5 pt-1">
-            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <div class="text-xs font-bold text-slate-400">
               Doporučený kontrolní seznam:
             </div>
             <ul class="space-y-1 text-xs text-slate-300">
@@ -356,7 +360,7 @@
               >
                 <svg 
                   class="w-4 h-4 mt-0.5 shrink-0" 
-                  :class="getShiftForTask(taskDef.key)?.isCompleted ? 'text-emerald-400' : 'text-slate-500'" 
+                  :class="getShiftForTask(taskDef.key)?.isCompleted ? 'text-emerald-400' : 'text-slate-400'"
                   fill="none" 
                   viewBox="0 0 24 24" 
                   stroke="currentColor"
@@ -371,13 +375,13 @@
           <!-- Completed by audit if done -->
           <div 
             v-if="getShiftForTask(taskDef.key)?.isCompleted"
-            class="text-[11px] text-slate-300 bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-1"
+            class="text-xs text-slate-300 bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-1"
           >
             <div class="flex items-center gap-1.5">
               <span class="text-emerald-400 font-bold">✓ Splněno</span>
               <span>— potvrdil(a): <strong class="text-white">{{ getShiftForTask(taskDef.key)?.completedBy }}</strong></span>
             </div>
-            <div v-if="getShiftForTask(taskDef.key)?.completedAt" class="text-emerald-300 font-mono text-[10px]">
+            <div v-if="getShiftForTask(taskDef.key)?.completedAt" class="text-emerald-300 font-mono text-xs">
               {{ getShiftForTask(taskDef.key)?.completedAt }}
             </div>
             <div v-if="getShiftForTask(taskDef.key)?.notes" class="text-slate-400 italic">
@@ -396,7 +400,7 @@
             <button
               v-if="!getShiftForTask(taskDef.key)?.isCompleted"
               @click="handleConfirmShift(getShiftForTask(taskDef.key)!)"
-              class="flex-1 min-w-[160px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all hover:scale-101"
+              class="flex-1 min-w-[160px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all hover:scale-105"
               :class="[
                 isMyShift(getShiftForTask(taskDef.key))
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/40'
@@ -431,10 +435,10 @@
               <!-- Disabled Locked Button -->
               <button
                 disabled
-                class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800/40 text-slate-500 text-xs font-medium border border-slate-800 cursor-not-allowed"
+                class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800/40 text-slate-400 text-xs font-medium border border-slate-800 cursor-not-allowed"
                 :title="`Tuto směnu smí potvrdit pouze ${getShiftForTask(taskDef.key)?.roommateName} nebo správce bytu.`"
               >
-                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <span>Uzamčeno (pouze pro {{ getShiftForTask(taskDef.key)?.roommateName.split(' ')[0] }})</span>
@@ -469,11 +473,25 @@
       </div>
     </div>
 
+    <div v-else class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg text-center space-y-3">
+      <div class="text-3xl">🧹</div>
+      <div class="space-y-1">
+        <p class="text-sm font-semibold text-slate-200">Pro vybraný týden nejsou k dispozici žádné úklidové směny.</p>
+        <p class="text-xs text-slate-400">Zkuste zvolit aktuální týden nebo posunout rozpis na další týden.</p>
+      </div>
+      <button
+        @click="selectCleaningWeek(currentWeekNumber)"
+        class="text-xs px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-400 border border-slate-700 font-medium transition-colors"
+      >
+        Zobrazit aktuální týden
+      </button>
+    </div>
+
     <!-- 4-Week Rotation Matrix / Harmonogram -->
     <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
         <div>
-          <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
             <span>Harmonogram rotace na 4 týdny</span>
             <span class="text-xs text-emerald-400 font-normal">Posun každé pondělí o 1 zónu</span>
           </h2>
@@ -484,8 +502,9 @@
       </div>
 
       <!-- Rotation Matrix Table -->
-      <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850">
-        <table class="w-full text-left text-xs whitespace-nowrap">
+      <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" aria-label="Harmonogram rotace úklidu">
+        <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">Tabulku lze posouvat vodorovně →</p>
+        <table class="w-full min-w-[720px] text-left text-xs whitespace-nowrap">
           <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
             <tr>
               <th class="p-3.5 font-bold">Úklidová zóna</th>
@@ -499,12 +518,12 @@
                   <span>{{ w.label }}</span>
                   <span 
                     v-if="w.number === currentWeekNumber"
-                    class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    class="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                   >
                     Dnes
                   </span>
                 </div>
-                <div class="text-[10px] text-slate-400 font-normal">{{ w.dates }}</div>
+                <div class="text-xs text-slate-400 font-normal">{{ w.dates }}</div>
               </th>
             </tr>
           </thead>
@@ -522,7 +541,7 @@
                   </span>
                   <div>
                     <div>{{ task.title }}</div>
-                    <div class="text-[10px] text-slate-400">{{ task.shortTitle }}</div>
+                    <div class="text-xs text-slate-400">{{ task.shortTitle }}</div>
                   </div>
                 </div>
               </td>
@@ -543,7 +562,7 @@
                   ]"
                 >
                   <div 
-                    class="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                    class="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                     :class="getAssignedRoommateFor(task.key, w.number)?.avatarColor || 'bg-slate-700'"
                   >
                     {{ getAssignedRoommateFor(task.key, w.number)?.avatarInitial }}
@@ -551,7 +570,7 @@
                   <span>{{ getAssignedRoommateFor(task.key, w.number)?.name.split(' ')[0] }}</span>
                   <span 
                     v-if="getAssignedRoommateFor(task.key, w.number)?.id === currentUser.id"
-                    class="text-[9px] bg-amber-500 text-slate-950 px-1 rounded font-extrabold uppercase"
+                    class="text-xs bg-amber-500 text-slate-950 px-1 rounded font-extrabold"
                   >
                     Ty
                   </span>
@@ -565,7 +584,7 @@
 
     <!-- House Agreement & Rules -->
     <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
-      <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+      <h2 class="text-sm font-bold text-white flex items-center gap-2">
         <span>Domovní dohoda a pravidla úklidu</span>
         <span class="text-xs text-slate-400 font-normal">Schváleno všemi spolubydlícími</span>
       </h2>
@@ -608,29 +627,40 @@
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
       @click.self="closeSwapModal"
     >
-      <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in duration-150">
+      <div
+        ref="swapModalPanel"
+        class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in duration-150"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="swap-modal-title"
+        aria-describedby="swap-modal-description"
+        tabindex="-1"
+        @keydown.tab="trapSwapFocus"
+      >
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div>
-            <div class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-0.5">Výměna úklidu</div>
-            <h3 class="text-lg font-bold text-white tracking-tight">
+            <div class="text-xs font-bold text-purple-400 mb-0.5">Výměna úklidu</div>
+            <h3 id="swap-modal-title" class="text-lg font-bold text-white tracking-tight">
               Žádost o výměnu směny ⇄
             </h3>
           </div>
           <button 
+            ref="swapCloseButton"
             @click="closeSwapModal"
-            class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
+            aria-label="Zavřít dialog výměny směny"
           >
             ✕
           </button>
         </div>
 
-        <div class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 text-xs space-y-1">
+        <div id="swap-modal-description" class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 text-xs space-y-1">
           <div class="text-slate-400">Převáděná směna:</div>
           <div class="text-sm font-bold text-white flex items-center gap-2">
             <span>{{ shiftToSwap.taskTitle }}</span>
             <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">{{ shiftToSwap.weekLabel }}</span>
           </div>
-          <div class="text-slate-400 text-[11px] pt-1">
+          <div class="text-slate-400 text-xs pt-1">
             Současný řešitel: <strong class="text-slate-200">{{ shiftToSwap.roommateName }}</strong>
           </div>
         </div>
@@ -689,7 +719,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useSpolubyt } from '../composables/useSpolubyt'
 import { CleaningShift, CleaningTaskKey } from '../types'
 
@@ -716,6 +746,8 @@ const isSwapModalOpen = ref(false)
 const shiftToSwap = ref<CleaningShift | null>(null)
 const selectedTargetRoommateId = ref<string>('')
 const swapNote = ref<string>('')
+const swapModalPanel = ref<HTMLElement | null>(null)
+const swapCloseButton = ref<HTMLButtonElement | null>(null)
 
 const swapCandidates = computed(() => {
   if (!shiftToSwap.value) return []
@@ -735,6 +767,45 @@ const closeSwapModal = () => {
   shiftToSwap.value = null
   swapNote.value = ''
 }
+
+const trapSwapFocus = (event: KeyboardEvent) => {
+  if (!isSwapModalOpen.value || !swapModalPanel.value) return
+  const focusable = Array.from(swapModalPanel.value.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter(el => el.offsetParent !== null)
+  if (focusable.length === 0) return
+
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+const handleGlobalKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && isSwapModalOpen.value) {
+    closeSwapModal()
+  }
+}
+
+watch(isSwapModalOpen, async (isOpen) => {
+  if (isOpen) {
+    await nextTick()
+    swapCloseButton.value?.focus()
+  }
+})
+
+onMounted(() => {
+  document.addEventListener('keydown', handleGlobalKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleGlobalKeydown)
+})
 
 const submitSwap = () => {
   if (!shiftToSwap.value || !selectedTargetRoommateId.value) return
