@@ -146,7 +146,7 @@
         </div>
 
         <!-- Weekly Progress Stats -->
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
           <div class="text-right">
             <div class="text-xs font-semibold text-slate-300">
               {{ t('cleaning.completedLabel', 'Splněno') }}: <span class="text-white font-mono font-bold">{{ completedCount }}/{{ activeShifts.length }}</span> {{ t('cleaning.shiftsUnit', 'směn') }}
@@ -185,7 +185,7 @@
       >
         <!-- Top Card Header -->
         <div class="p-5 pb-4 border-b border-slate-800/80">
-          <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start justify-between gap-3 max-sm:flex-col">
             <div class="flex items-center gap-3 min-w-0">
               <!-- Zone Icon -->
               <div 
@@ -201,7 +201,7 @@
                 <div class="text-xs font-bold" :class="getTitleColor(taskDef.key)">
                   {{ t('cleaning.taskShort.' + taskDef.key.toLowerCase(), taskDef.shortTitle) }}
                 </div>
-                <h3 class="text-base font-bold text-white tracking-tight truncate">
+                <h3 class="text-base font-bold text-white tracking-tight truncate max-sm:whitespace-normal">
                   {{ t('cleaning.task.' + taskDef.key.toLowerCase(), taskDef.title) }}
                 </h3>
               </div>
@@ -245,7 +245,7 @@
         <div class="p-5 space-y-4 flex-1">
           <!-- Roommate Assignment Box -->
           <div 
-            class="p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-colors"
+            class="p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-colors max-sm:flex-col max-sm:items-start"
             :class="[
               isMyShift(getShiftForTask(taskDef.key))
                 ? 'bg-amber-500/10 border-amber-500/30'
@@ -261,13 +261,13 @@
                 {{ getRoommate(getShiftForTask(taskDef.key)?.roommateId)?.avatarInitial || '?' }}
               </div>
               <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-white truncate">
+                <div class="flex items-center gap-2 max-sm:flex-wrap">
+                  <span class="text-xs font-bold text-white truncate max-sm:whitespace-normal">
                     {{ getShiftForTask(taskDef.key)?.roommateName }}
                   </span>
                   <span 
                     v-if="isMyShift(getShiftForTask(taskDef.key))"
-                    class="text-xs font-bold px-2 py-0.5 rounded bg-amber-500 text-slate-950"
+                    class="text-xs font-bold px-2 py-0.5 rounded bg-amber-500 text-slate-950 max-sm:whitespace-nowrap"
                   >
                     {{ t('cleaning.myShift', 'Moje směna') }}
                   </span>
@@ -280,7 +280,7 @@
             </div>
 
             <!-- Due date / Done timestamp -->
-            <div class="text-right shrink-0">
+            <div class="text-right shrink-0 max-sm:text-left">
               <div v-if="getShiftForTask(taskDef.key)?.isCompleted" class="text-xs text-emerald-400 font-mono">
                 {{ getShiftForTask(taskDef.key)?.completedAt }}
               </div>
@@ -629,7 +629,7 @@
     >
       <div
         ref="swapModalPanel"
-        class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in duration-150"
+        class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 animate-in fade-in zoom-in duration-150"
         role="dialog"
         aria-modal="true"
         aria-labelledby="swap-modal-title"
@@ -696,7 +696,7 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+        <div class="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
           <button type="button"
             @click="closeSwapModal"
             class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"

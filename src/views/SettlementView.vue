@@ -183,7 +183,7 @@
               </div>
               
               <div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                   <h3 class="text-base font-bold text-white">{{ s.roommateName }}</h3>
                   
                   <span 

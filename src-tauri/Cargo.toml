@@ -1,6 +1,6 @@
 [package]
 name = "spolubyt-app"
-version = "3.0.0"
+version = "3.0.3"
 description = "Spolubyt.cz Desktop App"
 authors = ["Rafael Prokop"]
 license = "MIT"

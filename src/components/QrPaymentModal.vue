@@ -1,7 +1,7 @@
 <template>
   <teleport to="body">
     <div 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
+      class="max-sm:[&_input:not([type=checkbox]):not([type=radio])]:text-base max-sm:[&_select]:text-base max-sm:[&_textarea]:text-base fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-qr-title"
@@ -9,13 +9,13 @@
       @click.self="closeModal"
     >
       <div 
-        class="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-6 text-slate-100"
+        class="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain my-6 text-slate-100"
         ref="dialogPanel"
         tabindex="-1"
         @click.stop
       >
         <!-- Modal Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-850">
+        <div class="flex items-start justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-800 bg-slate-850">
           <div>
             <h2 id="modal-qr-title" class="text-lg font-bold text-white tracking-tight">
               {{ t('qr.title', 'Platební předpis & SPAYD QR platba') }}
@@ -26,7 +26,7 @@
           </div>
           <button type="button"
             @click="closeModal"
-            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            class="shrink-0 min-h-11 min-w-11 p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             :aria-label="t('qr.close', 'Zavřít')"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,7 +36,7 @@
         </div>
 
         <!-- Modal Body -->
-        <div class="p-6 grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+        <div class="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
           
           <!-- Left Column (5 cols): Rendered SPAYD QR Code -->
           <div class="sm:col-span-5 flex flex-col items-center justify-center p-4 bg-slate-950 rounded-2xl border border-slate-800 text-center">
@@ -147,7 +147,7 @@
         </div>
 
         <!-- Modal Footer -->
-        <div class="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-850">
+        <div class="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-800 bg-slate-850">
           <button
             type="button"
             @click="copyAll"

@@ -14,7 +14,7 @@
         </p>
       </div>
 
-      <div class="flex items-center gap-2.5">
+      <div class="flex flex-wrap items-center gap-2.5">
         <button type="button"
           @click="exportExpensesCsv"
           class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
@@ -108,7 +108,7 @@
       <!-- Bottom Row: Status pills & Reset button -->
       <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80 text-xs">
         
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span class="text-slate-400 font-medium">{{ t('expenses.statusFilterLabel', 'Stav:') }}</span>
           <button type="button"
             @click="expenseFilters.status = 'ALL'"

@@ -1,6 +1,6 @@
 <template>
-  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 lg:px-6 py-3">
-    <div class="flex items-center justify-between gap-4">
+  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-3 sm:px-4 lg:px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <div class="flex items-center justify-between gap-2 sm:gap-4">
       
       <!-- Left: Logo & Apartment switcher -->
       <div class="flex items-center gap-4">
@@ -41,7 +41,7 @@
       </div>
 
       <!-- Right controls: User Switcher, Sync status, Reset data, CTA -->
-      <div class="flex items-center gap-2.5 sm:gap-3">
+      <div class="flex items-center gap-1 sm:gap-3">
         
         <!-- LocalStorage Sync Status -->
         <div 
@@ -65,14 +65,14 @@
           <button
             type="button"
             @click="setLocale('cs')"
-            class="px-2 py-1 rounded-lg text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+            class="min-h-10 px-2 py-1 rounded-lg text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
             :class="locale === 'cs' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-slate-200'"
             :aria-pressed="locale === 'cs'"
           >CS</button>
           <button
             type="button"
             @click="setLocale('en')"
-            class="px-2 py-1 rounded-lg text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+            class="min-h-10 px-2 py-1 rounded-lg text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
             :class="locale === 'en' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-slate-200'"
             :aria-pressed="locale === 'en'"
           >EN</button>
@@ -83,7 +83,7 @@
           <button type="button"
             ref="personaTrigger"
             @click="isUserMenuOpen = !isUserMenuOpen"
-            class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 transition-colors focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
+            class="min-h-11 flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 transition-colors focus:ring-2 focus:ring-emerald-500/40 focus:outline-none"
             aria-controls="persona-menu"
             :aria-label="t('header.switchUser', 'Přepnout aktivního uživatele / personu')"
             :aria-expanded="isUserMenuOpen"
@@ -113,7 +113,7 @@
           <!-- Dropdown menu -->
           <div
             v-if="isUserMenuOpen"
-            class="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-40"
+            class="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full mt-2 sm:w-64 max-h-[calc(100dvh-5rem)] overflow-y-auto bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-40"
             id="persona-menu"
             role="group"
             :aria-label="t('header.testAs', 'Testovat jako persona:')"
@@ -153,7 +153,7 @@
         <!-- Reset demo data button -->
         <button type="button"
           @click="resetDemoData"
-          class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl transition-colors border border-transparent hover:border-slate-700"
+          class="min-h-11 min-w-11 flex items-center justify-center p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl transition-colors border border-transparent hover:border-slate-700"
           :title="t('header.reset', 'Obnovit výchozí testovací data')"
           :aria-label="t('header.reset', 'Obnovit výchozí testovací data')"
         >
@@ -165,12 +165,13 @@
         <!-- Primary CTA: Nový výdaj -->
         <button type="button"
           @click="openModal('EXP_ADD')"
-          class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-md shadow-emerald-900/30 transition-all transform hover:-translate-y-0.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+          :aria-label="t('header.newExpense', 'Nový výdaj')"
+          class="min-h-11 min-w-11 justify-center flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm px-3 sm:px-3.5 py-2 rounded-xl shadow-md shadow-emerald-900/30 transition-all transform hover:-translate-y-0.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
           </svg>
-          <span>{{ t('header.newExpense', 'Nový výdaj') }}</span>
+          <span class="hidden sm:inline">{{ t('header.newExpense', 'Nový výdaj') }}</span>
         </button>
 
       </div>

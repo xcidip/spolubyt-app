@@ -18,7 +18,7 @@
       @click.self="closeConfirmation"
       >
         <div 
-          class="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 text-slate-100"
+          class="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-4 sm:p-6 text-slate-100"
           ref="dialogPanel"
         tabindex="-1"
         @click.stop
@@ -47,7 +47,7 @@
           </p>
 
           <!-- Action buttons -->
-          <div class="flex items-center justify-end gap-3">
+          <div class="flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               @click="closeConfirmation"

@@ -85,7 +85,7 @@
             <span>{{ currentConfig.maxScale }} {{ currentConfig.unit }}</span>
           </div>
 
-          <div class="relative flex-1 flex items-end justify-between gap-4 px-4 border-b border-l border-slate-700">
+          <div class="relative flex-1 flex items-end justify-between gap-1 sm:gap-4 px-1 sm:px-4 border-b border-l border-slate-700">
             <div class="absolute inset-0 flex flex-col justify-between pointer-events-none" aria-hidden="true">
               <div class="border-t border-slate-700/40"></div>
               <div class="border-t border-slate-700/40"></div>
@@ -127,7 +127,7 @@
           </div>
 
           <!-- X Axis Labels -->
-          <div class="flex items-center justify-between gap-4 px-4 pt-2 text-xs font-mono text-slate-400">
+          <div class="flex items-center justify-between gap-1 sm:gap-4 px-1 sm:px-4 pt-2 text-xs font-mono text-slate-400">
             <span v-for="bar in chartData" :key="bar.month" class="flex-1 text-center">
               {{ bar.month }}
             </span>
@@ -148,8 +148,8 @@
           </table>
         </div>
 
-        <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
-          <div class="flex items-center gap-3">
+        <div class="flex flex-wrap gap-2 items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
+          <div class="flex flex-wrap items-center gap-3">
             <span class="flex items-center gap-1.5">
               <span class="w-3 h-3 rounded bg-emerald-500"></span>
               <span>{{ t('energy.belowAllowance', 'Pod zálohovou hranicí') }}</span>

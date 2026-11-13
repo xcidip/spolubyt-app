@@ -4,7 +4,7 @@
     <!-- Top Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <h1 class="text-2xl font-extrabold text-white tracking-tight">
             {{ t('cart.title', 'Společný nákupní košík bytu') }}
           </h1>
@@ -17,7 +17,7 @@
         </p>
       </div>
 
-      <div class="flex items-center gap-2.5">
+      <div class="flex flex-wrap items-center gap-2.5">
         <button type="button"
           v-if="cartItems.length > 0"
           @click="clearCart"
@@ -46,7 +46,7 @@
       <div class="xl:col-span-8 min-w-0 space-y-4">
         
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between max-sm:flex-col max-sm:items-start max-sm:gap-1">
             <h2 class="text-sm font-bold text-slate-100">
               {{ t('cart.itemsTitle', 'Položky v nákupním košíku') }}
             </h2>
@@ -55,9 +55,9 @@
 
           <!-- Table of items -->
           <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" :aria-label="t('cart.tableAriaLabel', 'Položky nákupního košíku')">
-            <p class="px-3 pt-2 text-xs text-slate-400 md:hidden">{{ t('cart.scrollHint', 'Tabulku lze posouvat vodorovně →') }}</p>
-            <table class="w-full min-w-[600px] text-left text-xs">
-              <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
+            <p class="px-3 pt-2 text-xs text-slate-400 hidden sm:block md:hidden">{{ t('cart.scrollHint', 'Tabulku lze posouvat vodorovně →') }}</p>
+            <table class="w-full min-w-[600px] text-left text-xs max-sm:block max-sm:min-w-0">
+              <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700 max-sm:sr-only">
                 <tr>
                   <th class="py-3 pl-4 pr-3 font-semibold">{{ t('cart.thItem', 'Položka') }}</th>
                   <th class="py-3 px-3 font-semibold">{{ t('cart.thCategory', 'Kategorie') }}</th>
@@ -67,16 +67,16 @@
                   <th class="py-3 pl-3 pr-4 font-semibold text-right">{{ t('cart.thActions', 'Akce') }}</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-800">
+              <tbody class="divide-y divide-slate-800 max-sm:block">
                 <tr 
                   v-for="item in cartItems" 
                   :key="item.id"
-                  class="hover:bg-slate-800/50 transition-colors"
+                  class="hover:bg-slate-800/50 transition-colors max-sm:grid max-sm:grid-cols-2 max-sm:p-3 max-sm:gap-x-3 max-sm:gap-y-3"
                   :class="item.isPurchased ? 'bg-slate-900/60' : ''"
                 >
                   <!-- Item name, toggle checkbox & who added / purchased -->
-                  <td class="py-3 pl-4 pr-3 min-w-[170px]">
-                    <div class="flex items-center gap-2.5">
+                  <td class="py-3 pl-4 pr-3 min-w-[170px] max-sm:col-span-2 max-sm:min-w-0 max-sm:p-0">
+                    <div class="flex flex-wrap items-center gap-2.5 max-sm:flex-nowrap max-sm:items-start">
                       <button
                         type="button"
                         @click="toggleCartItemPurchased(item.id)"
@@ -102,11 +102,11 @@
                           </span>
                         </div>
                         <div class="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                          <span class="whitespace-nowrap">{{ t('cart.addedBy', 'Přidal(a): {name}', { name: item.addedBy }) }}</span>
-                          <span class="whitespace-nowrap"> • {{ formatStoredTime(item.addedAt) }}</span>
+                          <span class="whitespace-nowrap max-sm:whitespace-normal">{{ t('cart.addedBy', 'Přidal(a): {name}', { name: item.addedBy }) }}</span>
+                          <span class="whitespace-nowrap max-sm:whitespace-normal"> • {{ formatStoredTime(item.addedAt) }}</span>
                           <span
                             v-if="item.isPurchased && item.purchasedBy"
-                            class="text-emerald-400 font-medium whitespace-nowrap"
+                            class="text-emerald-400 font-medium whitespace-nowrap max-sm:whitespace-normal"
                           >
                             • {{ t('cart.purchasedBy', 'Koupil(a): {name} ({date})', { name: item.purchasedBy, date: item.purchasedAt ? formatStoredTime(item.purchasedAt) : t('cart.purchasedUnknown', 'koupeno') }) }}
                           </span>
@@ -116,14 +116,16 @@
                   </td>
 
                   <!-- Category -->
-                  <td class="py-3 px-3 whitespace-nowrap">
+                  <td class="py-3 px-3 whitespace-nowrap max-sm:p-0">
+                    <span class="hidden max-sm:block max-sm:mb-1 text-xs font-sans font-normal text-slate-400">{{ t('cart.thCategory', 'Kategorie') }}</span>
                     <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700">
                       {{ t('categories.' + item.category, item.category) }}
                     </span>
                   </td>
 
                   <!-- Quantity +/- buttons (Interactive state recalculation!) -->
-                  <td class="py-3 px-3 text-center whitespace-nowrap">
+                  <td class="py-3 px-3 text-center whitespace-nowrap max-sm:p-0 max-sm:text-left">
+                    <span class="hidden max-sm:block max-sm:mb-1 text-xs font-sans font-normal text-slate-400">{{ t('cart.thQty', 'Počet kusů') }}</span>
                     <div class="inline-flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1">
                       <button type="button"
                         @click="updateCartItemQty(item.id, -1)"
@@ -148,18 +150,20 @@
                   </td>
 
                   <!-- Unit price -->
-                  <td class="py-3 px-3 text-right font-mono text-slate-300 whitespace-nowrap tabular-nums">
+                  <td class="py-3 px-3 text-right font-mono text-slate-300 whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left">
+                    <span class="hidden max-sm:block max-sm:mb-1 text-xs font-sans font-normal text-slate-400">{{ t('cart.thUnitPrice', 'Cena / ks') }}</span>
                     {{ item.unitPrice.toLocaleString('cs-CZ') }} <span class="text-xs text-slate-400">CZK</span>
                   </td>
 
                   <!-- Subtotal (qty * unitPrice) -->
-                  <td class="py-3 px-3 text-right font-mono font-bold text-emerald-400 text-sm whitespace-nowrap tabular-nums">
+                  <td class="py-3 px-3 text-right font-mono font-bold text-emerald-400 text-sm whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left">
+                    <span class="hidden max-sm:block max-sm:mb-1 text-xs font-sans font-normal text-slate-400">{{ t('cart.thSubtotal', 'Mezisoučet') }}</span>
                     {{ (item.unitPrice * item.qty).toLocaleString('cs-CZ') }} <span class="text-xs font-semibold text-emerald-500/70">CZK</span>
                   </td>
 
                   <!-- Actions: Převést do výdajů and Remove -->
-                  <td class="py-3 pl-3 pr-4 text-right whitespace-nowrap">
-                    <div class="flex items-center justify-end gap-1">
+                  <td class="py-3 pl-3 pr-4 text-right whitespace-nowrap max-sm:col-span-2 max-sm:p-0">
+                    <div class="flex items-center justify-end gap-1 max-sm:justify-between">
                       <button
                         v-if="item.isPurchased"
                         @click="convertCartItemToExpense(item)"
@@ -191,7 +195,7 @@
 
                 <!-- Empty Cart State -->
                 <tr v-if="cartItems.length === 0">
-                  <td colspan="6" class="py-12 text-center text-slate-400">
+                  <td colspan="6" class="py-12 text-center text-slate-400 max-sm:block max-sm:px-3">
                     <div class="space-y-2">
                       <p class="text-sm font-semibold text-slate-300">{{ t('cart.emptyTitle', 'Váš společný nákupní košík je prázdný.') }}</p>
                       <p class="text-xs text-slate-400">{{ t('cart.emptyHint', 'Pomocí formuláře vpravo přidejte věci, které v bytě chybí.') }}</p>
@@ -211,7 +215,7 @@
         
         <!-- Add Item Form -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">+</span>
             <h2 class="text-xs font-bold text-slate-200">
               {{ t('cart.addTitle', 'Přidat položku do košíku') }}
@@ -305,20 +309,20 @@
               <span>{{ t('cart.itemsCountLabel', 'Položek celkem:') }}</span>
               <span class="font-mono font-bold text-slate-100">{{ t('cart.kindsValue', '{count} druhů', { count: cartItems.length }) }}</span>
             </div>
-            <div class="flex justify-between items-baseline gap-3 text-slate-300">
+            <div class="flex flex-wrap justify-between items-baseline gap-3 text-slate-300">
               <span class="min-w-0">{{ t('cart.sharePerMember', 'Odhadovaný podíl na 1 člena (zbývá):') }}</span>
               <span class="font-mono font-bold text-emerald-400 whitespace-nowrap">
                 {{ Math.round(cartRemainingPrice / 4).toLocaleString('cs-CZ') }} CZK
               </span>
             </div>
             
-            <div class="pt-3 border-t border-slate-800 flex justify-between items-baseline gap-3">
+            <div class="pt-3 border-t border-slate-800 flex flex-wrap justify-between items-baseline gap-3">
               <span class="text-sm font-bold text-white min-w-0">{{ t('cart.totalPriceLabel', 'Celková cena nákupu:') }}</span>
               <span class="text-xl font-mono font-extrabold text-slate-100 whitespace-nowrap">
                 {{ cartTotalPrice.toLocaleString('cs-CZ') }} CZK
               </span>
             </div>
-            <div class="flex justify-between items-baseline gap-3">
+            <div class="flex flex-wrap justify-between items-baseline gap-3">
               <span class="text-sm font-bold text-amber-300 min-w-0">{{ t('cart.remainingLabel', 'Zbývá nakoupit:') }}</span>
               <span class="text-xl font-mono font-extrabold text-amber-300 whitespace-nowrap">
                 {{ cartRemainingPrice.toLocaleString('cs-CZ') }} CZK
@@ -329,7 +333,7 @@
           <button type="button"
             @click="convertRemainingCartToExpense"
             :disabled="cartRemainingCount === 0"
-            class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center whitespace-nowrap"
+            class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center whitespace-normal"
           >
             {{ t('cart.createExpense', 'Vytvořit společný výdaj ze zbývajícího nákupu →') }}
           </button>

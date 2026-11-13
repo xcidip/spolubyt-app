@@ -116,7 +116,7 @@
 
       <!-- Section 2: Rooms and m² Area -->
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
-        <div class="flex items-center justify-between pb-1 border-b border-slate-800">
+        <div class="flex items-center justify-between pb-1 border-b border-slate-800 max-sm:flex-col max-sm:items-start max-sm:gap-3 max-sm:pb-3">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">2</span>
             <h2 class="text-sm font-bold text-slate-100">
@@ -197,9 +197,9 @@
 
       <!-- Section 3: Roommates Management -->
       <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
-        <div class="flex items-center justify-between pb-1 border-b border-slate-800">
+        <div class="flex items-center justify-between pb-1 border-b border-slate-800 max-sm:flex-col max-sm:items-start max-sm:gap-3 max-sm:pb-3">
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">3</span>
+            <span class="w-5 h-5 shrink-0 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center">3</span>
             <h2 class="text-sm font-bold text-slate-100">
               {{ t('settings.sectionMembers', 'Seznam členů domácnosti a kontakty') }}
             </h2>
@@ -209,10 +209,10 @@
             :disabled="!isMasterTenant"
             class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-emerald-400 max-sm:shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            <span>{{ t('settings.invite', 'Pozvat spolubydlícího') }}</span>
+            <span class="max-sm:whitespace-nowrap">{{ t('settings.invite', 'Pozvat spolubydlícího') }}</span>
           </button>
         </div>
 
@@ -220,17 +220,17 @@
           <div 
             v-for="r in roommates" 
             :key="r.id"
-            class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between"
+            class="p-3.5 rounded-xl bg-slate-850 border border-slate-800 flex flex-wrap items-center justify-between gap-3"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex min-w-0 items-center gap-3">
               <div 
-                class="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white"
+                class="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold text-white"
                 :class="r.avatarColor"
               >
                 {{ r.avatarInitial }}
               </div>
-              <div>
-                <div class="font-bold text-slate-100 flex items-center gap-1.5">
+              <div class="min-w-0 break-words">
+                <div class="font-bold text-slate-100 flex flex-wrap items-center gap-1.5">
                   <span>{{ r.name }}</span>
                   <span 
                     class="px-1.5 py-0.5 rounded text-xs"

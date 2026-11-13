@@ -1,7 +1,7 @@
 <template>
   <teleport to="body">
     <div 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
+      class="max-sm:[&_input:not([type=checkbox]):not([type=radio])]:text-base max-sm:[&_select]:text-base max-sm:[&_textarea]:text-base fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-add-title"
@@ -9,13 +9,13 @@
       @click.self="closeModal"
     >
       <div 
-        class="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-8"
+        class="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain my-8"
         ref="dialogPanel"
         tabindex="-1"
         @click.stop
       >
         <!-- Modal Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-850">
+        <div class="flex items-start justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-800 bg-slate-850">
           <div>
             <h2 id="modal-add-title" class="text-lg font-bold text-white tracking-tight">
               {{ t('expenseAdd.title', 'Zaevidovat nový výdaj domácnosti') }}
@@ -26,7 +26,7 @@
           </div>
           <button type="button"
             @click="closeModal"
-            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            class="shrink-0 min-h-11 min-w-11 p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             :aria-label="t('expenseAdd.close', 'Zavřít')"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,7 +36,7 @@
         </div>
 
         <!-- Modal Body (Scrollable) -->
-        <form @submit.prevent="handleSubmit" class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-6">
           
           <!-- Section 1: Basic Parameters -->
           <div class="space-y-4">
@@ -167,7 +167,7 @@
               <div 
                 v-for="r in roommates" 
                 :key="r.id"
-                class="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60"
+                class="flex flex-wrap gap-2 items-center justify-between p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60"
               >
                 <label class="flex items-center gap-3 cursor-pointer">
                   <input
@@ -271,7 +271,7 @@
           </div>
 
           <!-- Footer Buttons -->
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-800">
             <button
               type="button"
               @click="closeModal"

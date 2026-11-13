@@ -1,7 +1,7 @@
 <template>
   <teleport to="body">
     <div 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
+      class="max-sm:[&_input:not([type=checkbox]):not([type=radio])]:text-base max-sm:[&_select]:text-base max-sm:[&_textarea]:text-base fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-detail-title"
@@ -9,13 +9,13 @@
       @click.self="closeModal"
     >
       <div 
-        class="relative w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-6 text-slate-100"
+        class="relative w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain my-6 text-slate-100"
         ref="dialogPanel"
         tabindex="-1"
         @click.stop
       >
         <!-- Modal Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-850">
+        <div class="flex items-start justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-800 bg-slate-850">
           <div>
             <div class="flex items-center gap-2">
               <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
@@ -34,7 +34,7 @@
           </div>
           <button type="button"
             @click="closeModal"
-            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            class="shrink-0 min-h-11 min-w-11 p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             :aria-label="t('expenseDetail.close', 'Zavřít')"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,13 +44,13 @@
         </div>
 
         <!-- Modal Body (Two-column layout) -->
-        <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-h-[75vh] overflow-y-auto">
+        <div class="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           <!-- Left Column (7 cols): Metadata & Breakdown table -->
           <div class="lg:col-span-7 space-y-6">
             
             <!-- Metadata Cards -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-850 border border-slate-800 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-850 border border-slate-800 text-xs">
               <div>
                 <span class="text-slate-400 block text-xs">{{ t('expenseDetail.totalLabel', 'Celková suma:') }}</span>
                 <span class="text-base font-bold text-emerald-400 font-mono">
@@ -94,8 +94,8 @@
                 <label class="flex items-center gap-2 sm:col-span-2"><input v-model="memberPaymentNotify" type="checkbox" />{{ t('expenseDetail.notifySharePayment', 'Připravit simulované potvrzení pro člena') }}</label>
               </div>
 
-              <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-850">
-                <table class="w-full text-left text-xs">
+              <div class="border border-slate-800 rounded-xl overflow-x-auto bg-slate-850" tabindex="0" role="region" :aria-label="t('expenseDetail.breakdownTitle', 'Rozpad podílů na jednotlivé členy bytu:')">
+                <table class="w-full min-w-[480px] text-left text-xs">
                   <thead class="bg-slate-800/80 text-slate-400 border-b border-slate-700">
                     <tr>
                       <th class="py-2.5 px-3 font-semibold">{{ t('expenseDetail.thMember', 'Člen domácnosti') }}</th>
@@ -267,7 +267,7 @@
         </div>
 
         <!-- Modal Footer -->
-        <div class="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-850">
+        <div class="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-800 bg-slate-850">
           <button
             type="button"
             v-if="canDeleteExpense(expense)"

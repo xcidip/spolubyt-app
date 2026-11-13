@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen h-dvh bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300 overflow-hidden print:h-auto print:overflow-visible">
+  <div class="h-screen h-dvh bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300 max-sm:[&_input:not([type=checkbox]):not([type=radio])]:text-base max-sm:[&_select]:text-base max-sm:[&_textarea]:text-base overflow-hidden print:h-auto print:overflow-visible">
     
     <div v-if="storageWriteFailed || storageRecovered || storageConflict" role="alert" class="print:hidden p-3 bg-amber-950 text-amber-200 text-sm">
       {{ storageConflict ? t('storage.conflict', 'Data změnila jiná záložka. Před dalšími úpravami obnovte tuto stránku.') : storageWriteFailed ? t('storage.writeFailed', 'Změny se nepodařilo uložit. Zůstanou pouze do zavření stránky.') : t('storage.recovered', 'Uložená data byla poškozená. Byl obnoven výchozí stav prototypu.') }}
@@ -11,18 +11,19 @@
     <div class="flex-1 flex overflow-hidden min-h-0 print:block print:overflow-visible">
       
       <!-- Permanent Left Navigation -->
-      <Sidebar class="hidden md:flex shrink-0 h-full print:hidden" />
+      <Sidebar class="hidden lg:flex shrink-0 h-full print:hidden" />
 
       <!-- Central Content Area -->
-      <main ref="mainRef" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0 print:overflow-visible print:max-w-none print:p-0 print:bg-white print:text-black print:[&_*]:!text-black print:[&_*]:!bg-white print:[&_*]:!bg-none print:[&_*]:!shadow-none print:[&_*]:!ring-0 print:[&_*]:!border-slate-300 print:[&_button]:hidden print:[&_table]:!min-w-0 print:[&_table]:!table-fixed print:[&_th]:!p-1 print:[&_td]:!p-1 print:[&_th]:!whitespace-normal print:[&_td]:!whitespace-normal print:[&_th]:!break-words print:[&_td]:!break-words">
+      <main ref="mainRef" class="flex-1 min-w-0 overflow-y-auto overscroll-y-contain p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0 pb-[max(1rem,env(safe-area-inset-bottom))] print:overflow-visible print:max-w-none print:p-0 print:bg-white print:text-black print:[&_*]:!text-black print:[&_*]:!bg-white print:[&_*]:!bg-none print:[&_*]:!shadow-none print:[&_*]:!ring-0 print:[&_*]:!border-slate-300 print:[&_button]:hidden print:[&_table]:!min-w-0 print:[&_table]:!table-fixed print:[&_th]:!p-1 print:[&_td]:!p-1 print:[&_th]:!whitespace-normal print:[&_td]:!whitespace-normal print:[&_th]:!break-words print:[&_td]:!break-words">
         
-        <!-- Mobile Bottom Nav -->
-        <nav class="md:hidden print:hidden flex items-center gap-1 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" :aria-label="t('nav.main', 'Hlavní navigace')">
+        <!-- Mobile navigation stays reachable while scrolling -->
+        <nav class="lg:hidden print:hidden sticky top-0 z-20 flex items-center gap-1 shrink-0 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" :aria-label="t('nav.main', 'Hlavní navigace')">
           <button
             v-for="item in mobileNavItems"
             :key="item.id"
+            type="button"
             @click="navigateTo(item.id)"
-            class="flex flex-col items-center justify-center min-w-[64px] px-2 py-1.5 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+            class="flex flex-col items-center justify-center min-w-[64px] min-h-11 shrink-0 px-2 py-1.5 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
             :class="currentPage === item.id ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400'"
             :aria-current="currentPage === item.id ? 'page' : undefined"
           >

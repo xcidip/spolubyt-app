@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2.5 max-w-md w-full pointer-events-none px-4 sm:px-0"
+    class="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-0 sm:right-5 z-50 flex flex-col space-y-2.5 max-w-md w-full pointer-events-none px-4 sm:px-0"
     aria-live="polite"
     aria-relevant="additions"
     role="region" 
@@ -43,7 +43,7 @@
         </div>
 
         <!-- Content -->
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 break-words">
           <div class="text-sm font-semibold tracking-tight">{{ toast.title }}</div>
           <div class="text-xs mt-0.5 opacity-90 leading-relaxed">{{ toast.message }}</div>
         </div>
