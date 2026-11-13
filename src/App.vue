@@ -1,6 +1,6 @@
 <template>
-  <div class="h-screen h-dvh bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300 max-sm:[&_input:not([type=checkbox]):not([type=radio])]:text-base max-sm:[&_select]:text-base max-sm:[&_textarea]:text-base overflow-hidden print:h-auto print:overflow-visible">
-    
+  <div class="h-dvh bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-300 max-sm:[&_input:not([type=checkbox]):not([type=radio])]:text-base max-sm:[&_select]:text-base max-sm:[&_textarea]:text-base overflow-hidden print:h-auto print:overflow-visible">
+
     <div v-if="storageWriteFailed || storageRecovered || storageConflict" role="alert" class="print:hidden p-3 bg-amber-950 text-amber-200 text-sm">
       {{ storageConflict ? t('storage.conflict', 'Data změnila jiná záložka. Před dalšími úpravami obnovte tuto stránku.') : storageWriteFailed ? t('storage.writeFailed', 'Změny se nepodařilo uložit. Zůstanou pouze do zavření stránky.') : t('storage.recovered', 'Uložená data byla poškozená. Byl obnoven výchozí stav prototypu.') }}
     </div>
@@ -9,13 +9,13 @@
 
     <!-- Main Layout: Left Sidebar + Central Work Area -->
     <div class="flex-1 flex overflow-hidden min-h-0 print:block print:overflow-visible">
-      
+
       <!-- Permanent Left Navigation -->
       <Sidebar class="hidden lg:flex shrink-0 h-full print:hidden" />
 
       <!-- Central Content Area -->
       <main ref="mainRef" class="flex-1 min-w-0 overflow-y-auto overscroll-y-contain p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full min-h-0 pb-[max(1rem,env(safe-area-inset-bottom))] print:overflow-visible print:max-w-none print:p-0 print:bg-white print:text-black print:[&_*]:!text-black print:[&_*]:!bg-white print:[&_*]:!bg-none print:[&_*]:!shadow-none print:[&_*]:!ring-0 print:[&_*]:!border-slate-300 print:[&_button]:hidden print:[&_table]:!min-w-0 print:[&_table]:!table-fixed print:[&_th]:!p-1 print:[&_td]:!p-1 print:[&_th]:!whitespace-normal print:[&_td]:!whitespace-normal print:[&_th]:!break-words print:[&_td]:!break-words">
-        
+
         <!-- Mobile navigation stays reachable while scrolling -->
         <nav class="lg:hidden print:hidden sticky top-0 z-20 flex items-center gap-1 shrink-0 overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl p-2 mb-4 text-xs" :aria-label="t('nav.main', 'Hlavní navigace')">
           <button
@@ -33,8 +33,8 @@
         </nav>
 
         <!-- Dynamic Views -->
-        <transition 
-          name="fade" 
+        <transition
+          name="fade"
           mode="out-in"
           enter-active-class="transition duration-150 ease-out"
           enter-from-class="opacity-0 translate-y-1"
@@ -93,15 +93,15 @@ import CartView from './views/CartView.vue'
 import CleaningView from './views/CleaningView.vue'
 import SettingsView from './views/SettingsView.vue'
 
-const { 
+const {
   storageWriteFailed,
   storageRecovered,
   storageConflict,
-  currentPage, 
-  activeModal, 
-  selectedExpense, 
-  selectedSettlement, 
-  navigateTo 
+  currentPage,
+  activeModal,
+  selectedExpense,
+  selectedSettlement,
+  navigateTo
 } = useSpolubyt()
 
 const mainRef = ref<HTMLElement | null>(null)
